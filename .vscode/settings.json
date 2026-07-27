@@ -1,0 +1,37 @@
+{
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
+
+  "files.associations": {
+    "*.Rnw": "latex"
+  },
+
+  "latex-workshop.latex.autoBuild.run": "never",
+  "latex-workshop.latex.recipe.default": "lastUsed",
+
+  "latex-workshop.latex.tools": [
+    {
+      "name": "knitr",
+      "command": "Rscript",
+      "args": ["-e", "knitr::knit('%DOCFILE_EXT%')"]
+    },
+    {
+      "name": "xelatex",
+      "command": "xelatex",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "%DOC%"
+      ]
+    }
+  ],
+
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "knitr -> xelatex x2",
+      "tools": ["knitr", "xelatex", "xelatex"]
+    }
+  ]
+}
