@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# knitr / LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.toc
