@@ -513,7 +513,7 @@ param_grid <- expand.grid(
 
 folds_inner <- stratified_folds(y_train, k = 5, seed = 42)
 
-grid_scores <- numeric(nrow(param_grid))
+grid_mean <- grid_sd <- numeric(nrow(param_grid))
 for (g in seq_len(nrow(param_grid))) {
   scores <- numeric(5)
   for (i in seq_len(5)) {
@@ -524,15 +524,43 @@ for (g in seq_len(nrow(param_grid))) {
     pred_g <- as.integer(pipeline_proba(fit_g, X_train[te, , drop = FALSE]) >= 0.5)
     scores[i] <- compute_metrics(y_train[te], pred_g)["macro_f1"]
   }
-  grid_scores[g] <- mean(scores)
+  grid_mean[g] <- mean(scores)
+  grid_sd[g] <- sd(scores)          # dao động giữa 5 fold, dùng để đo mức nhiễu
 }
 
-param_grid$macro_f1 <- grid_scores
-best <- param_grid[which.max(param_grid$macro_f1), ]
+param_grid$macro_f1 <- grid_mean
+param_grid$sd_fold <- grid_sd
+
+# ---- Quy tắc phá thế hoà -----------------------------------------------------
+# Lấy thẳng which.max là sai lầm khi các bộ tham số cho điểm chênh nhau ít hơn
+# chính sai số của phép đo: lúc đó "bộ thắng" chỉ là bộ gặp may với cách chia fold
+# cụ thể này, chọn nó không có cơ sở thống kê nào.
+#
+# Cách xử lý: coi mọi bộ nằm trong PHẠM VI MỘT SAI SỐ CHUẨN quanh điểm cao nhất
+# là ngang tài nhau, rồi phá hoà bằng một tiêu chí có lý do rõ ràng.
+#
+# Ở đây tiêu chí là CHỌN LAMBDA NHỎ NHẤT. Lưu ý điều này NGƯỢC với quy tắc 1-SE
+# quen thuộc (vốn ưu tiên mô hình điều chuẩn mạnh hơn cho gọn). Lý do đảo chiều:
+# bước tiếp theo của quy trình là chỉnh ngưỡng phân loại, mà việc đó cần xác suất
+# dự đoán trải rộng. Lambda lớn nén hệ số lại, kéo xác suất co về quanh 0.5, khiến
+# ngưỡng trở nên cực kỳ nhạy - dịch một chút là recall của hai lớp đảo lộn.
+# Khi các bộ đã ngang điểm nhau, chọn bộ cho xác suất trải rộng hơn là hợp lý.
+i_top <- which.max(param_grid$macro_f1)
+se_top <- param_grid$sd_fold[i_top] / sqrt(5)              # sai số chuẩn của trung bình
+tied <- which(param_grid$macro_f1 >= param_grid$macro_f1[i_top] - se_top)
+
+cand <- tied[param_grid$lambda[tied] == min(param_grid$lambda[tied])]
+best_idx <- cand[which.max(param_grid$macro_f1[cand])]     # cùng lambda thì lấy điểm cao nhất
+best <- param_grid[best_idx, ]
 
 cat("\nTop 5 bộ tham số:\n")
 print(head(param_grid[order(-param_grid$macro_f1), ], 5), row.names = FALSE)
-cat(sprintf("\nBộ tốt nhất: lambda = %g, smote_k = %g  (macro F1 = %.4f)\n",
+
+cat(sprintf("\nĐiểm cao nhất: %.4f (lambda = %g), sai số chuẩn = %.4f\n",
+            param_grid$macro_f1[i_top], param_grid$lambda[i_top], se_top))
+cat(sprintf("Có %d/%d bộ nằm trong phạm vi một sai số chuẩn -> coi là ngang nhau\n",
+            length(tied), nrow(param_grid)))
+cat(sprintf("Phá hoà bằng lambda nhỏ nhất -> chọn lambda = %g, smote_k = %g (macro F1 = %.4f)\n",
             best$lambda, best$smote_k, best$macro_f1))
 cat(sprintf("Đã thử %d bộ x 5 fold = %d lần khớp mô hình\n",
             nrow(param_grid), nrow(param_grid) * 5))
