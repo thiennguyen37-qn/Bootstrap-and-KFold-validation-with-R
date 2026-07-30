@@ -15,6 +15,15 @@
 
 set.seed(42)
 
+# Chạy bằng Rscript thì thiết bị đồ hoạ mặc định là pdf(), thiết bị này không in
+# được dấu tiếng Việt (báo 'mbcsToSbcs: conversion failure'). cairo_pdf xử lý
+# UTF-8 đúng nên dùng thay. Chạy tương tác (RStudio) thì giữ thiết bị của IDE.
+if (!interactive()) {
+  dir.create("figure", showWarnings = FALSE)
+  cairo_pdf("figure/bootstrap_kfold_analysis.pdf", onefile = TRUE,
+            width = 9, height = 7)
+}
+
 # =============================================================================
 # PHẦN 1. NẠP DỮ LIỆU VÀ TIỀN XỬ LÝ
 # =============================================================================
@@ -700,5 +709,10 @@ arrows(ci_tbl$ci_duoi, seq_len(n_m), ci_tbl$ci_tren, seq_len(n_m),
 axis(2, seq_len(n_m), rownames(ci_tbl), las = 2, cex.axis = 0.85)
 abline(v = 0.5, col = "#d53e4f", lty = 3)
 par(mar = c(5, 4, 4, 2) + 0.1)
+
+if (!interactive()) {
+  dev.off()
+  cat("\nBiểu đồ đã lưu: figure/bootstrap_kfold_analysis.pdf\n")
+}
 
 cat("\n=== HOÀN TẤT ===\n")
