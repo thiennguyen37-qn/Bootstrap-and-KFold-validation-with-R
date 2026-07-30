@@ -52,8 +52,6 @@
 
 \usepackage{fontspec}
 \setmainfont{Times New Roman}
-% Font mono phải phủ được tiếng Việt: kết quả in ra từ R có dấu, mà Latin
-% Modern Mono (mặc định) thiếu glyph nên sẽ hiện ô vuông trong khối verbatim.
 \setmonofont[Scale=0.88]{Consolas}
 \usepackage{geometry}
 \geometry{margin=2.5cm}
@@ -61,15 +59,11 @@
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{microtype}
-\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage[colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black]{hyperref}
 
-% Tiếng Việt không có luật ngắt từ trong LaTeX; cho phép giãn nhẹ khoảng
-% cách để tránh chữ tràn ra lề (thay vì để dòng bị overfull).
 \tolerance=2000
 \emergencystretch=3em
 
-% Không nạp babel (tiếng Việt không có bộ luật ngắt từ để tận dụng), nên đổi
-% thẳng các chuỗi cố định của lớp tài liệu sang tiếng Việt.
 \renewcommand{\contentsname}{Mục lục}
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
@@ -89,268 +83,246 @@
 
 \section{Đặt vấn đề}
 
-Bệnh gan thường tiến triển âm thầm: tổn thương tích luỹ trong nhiều năm
-trước khi xuất hiện triệu chứng rõ rệt, và tới lúc đó khả năng can thiệp
-đã hẹp đi đáng kể. Vì vậy việc sàng lọc sớm dựa trên các chỉ số sinh hoá
-thường quy --- bilirubin, các men gan, albumin --- có giá trị thực tiễn
-lớn. Bộ dữ liệu \emph{Indian Liver Patient Dataset} (ILPD) ghi lại đúng
-những chỉ số này cùng với chẩn đoán cuối cùng của 583 bệnh nhân, và bài
-toán đặt ra là một bài toán phân loại nhị phân quen thuộc: từ hồ sơ xét
-nghiệm, dự đoán bệnh nhân có mắc bệnh gan hay không.
+Bệnh gan tiến triển âm thầm trong nhiều năm trước khi xuất hiện triệu chứng
+rõ rệt, và đến khi đó khả năng can thiệp đã thu hẹp đáng kể. Việc sàng lọc
+sớm dựa trên các chỉ số sinh hoá thường quy như bilirubin, men gan và
+albumin vì vậy mang ý nghĩa thực tiễn lớn. Bộ dữ liệu \emph{Indian Liver
+Patient Dataset} (ILPD) ghi lại những chỉ số này cùng chẩn đoán xác định
+của 583 bệnh nhân, đặt ra một bài toán phân loại nhị phân: dự đoán tình
+trạng mắc bệnh gan từ kết quả xét nghiệm.
 
-Tuy nhiên, nếu chỉ dừng ở việc khớp một mô hình rồi báo cáo một con số độ
-chính xác thì bài toán chưa được giải quyết trọn vẹn. Con số đó được tính
-trên \emph{một} tập dữ liệu hữu hạn; rút một mẫu bệnh nhân khác thì nó sẽ
-khác đi. Hai câu hỏi thực sự cần trả lời là:
+Nếu chỉ dừng ở việc khớp một mô hình rồi công bố một giá trị độ chính xác,
+bài toán chưa được giải quyết trọn vẹn. Giá trị ấy được tính trên một mẫu
+hữu hạn và sẽ thay đổi nếu quan sát một nhóm bệnh nhân khác. Hai câu hỏi
+cần được trả lời là:
 
 \begin{enumerate}
-  \item \textbf{Trong các cấu hình mô hình có thể xây dựng, cấu hình nào
-        dự đoán tốt nhất trên dữ liệu chưa từng thấy?} Trả lời câu này
-        đòi hỏi một cơ chế đánh giá khách quan, không cho mô hình
-        ``nhìn trộm'' dữ liệu kiểm tra trong quá trình được chọn --- đó
-        là vai trò của K-fold Cross-Validation.
-  \item \textbf{Mô hình cuối cùng đáng tin cậy tới mức nào?} Hiệu năng
-        báo cáo là một điểm ước lượng; cần biết nó dao động trong khoảng
-        nào nếu ta gặp một nhóm bệnh nhân khác --- đó là vai trò của
-        Bootstrap.
+  \item Trong các cấu hình mô hình có thể xây dựng, cấu hình nào cho khả
+        năng dự đoán tốt nhất trên dữ liệu chưa từng quan sát? Câu hỏi này
+        đòi hỏi một cơ chế đánh giá khách quan, bảo đảm dữ liệu kiểm tra
+        không tham gia vào quá trình lựa chọn. Đó là vai trò của K-fold
+        Cross-Validation.
+  \item Mô hình được chọn có độ tin cậy đến đâu? Hiệu năng công bố là một
+        ước lượng điểm, cần được bổ sung khoảng tin cậy để phản ánh mức dao
+        động của nó. Đó là vai trò của Bootstrap.
 \end{enumerate}
 
-Nói gọn: \textbf{K-fold Cross-Validation giúp CHỌN mô hình một cách đúng
-đắn, còn Bootstrap giúp TRẢ LỜI mô hình đó có đáng tin hay không.} Tiểu
-luận này trình bày cơ sở lý thuyết của hai phương pháp, rồi áp dụng chúng
-vào một quy trình hoàn chỉnh trên ILPD, từ tiền xử lý và chọn biến cho
-tới tinh chỉnh siêu tham số, chọn ngưỡng phân loại và ước lượng khoảng
-tin cậy cho hiệu năng cuối cùng.
-
-Một điểm cần nói rõ về cách cài đặt: toàn bộ phần thực hành chỉ dùng
-\textbf{base R và gói \texttt{stats}}. Các thuật toán SMOTE, VIF, chia
-fold phân tầng, vòng lặp bootstrap và hồi quy logistic có điều chuẩn
-ridge đều được viết lại từ đầu thay vì gọi \texttt{caret},
-\texttt{glmnet} hay \texttt{DMwR}. Lựa chọn này ban đầu xuất phát từ một
-ràng buộc kỹ thuật của môi trường máy tính sử dụng, nhưng giữ lại được vì
-nó phục vụ đúng mục tiêu của tiểu luận: khi mỗi bước resampling được viết
-tường minh, cơ chế bên trong của nó --- vốn là chủ đề chính ở đây --- trở
-nên rõ ràng hơn nhiều so với việc gọi một hàm đóng gói sẵn.
+Nói ngắn gọn, K-fold Cross-Validation phục vụ việc lựa chọn mô hình, còn
+Bootstrap phục vụ việc định lượng độ tin cậy của mô hình đã chọn. Báo cáo
+trình bày cơ sở lý thuyết của hai phương pháp, sau đó áp dụng chúng vào một
+quy trình hoàn chỉnh trên bộ dữ liệu ILPD, từ tiền xử lý và lựa chọn biến
+cho tới tinh chỉnh siêu tham số, lựa chọn ngưỡng phân loại và ước lượng
+khoảng tin cậy cho hiệu năng cuối cùng.
 
 \section{Cơ sở lý thuyết}
 
-Hai phương pháp được trình bày trong chương này --- Bootstrap và K-fold
-Cross-Validation --- đều thuộc nhóm kỹ thuật \emph{resampling} (lấy mẫu
-lại) và cùng xuất phát từ một khó khăn nền tảng của thống kê ứng dụng:
-nhà nghiên cứu chỉ quan sát được \emph{một} mẫu hữu hạn rút ra từ tổng
-thể, trong khi mọi đại lượng tính từ mẫu đó --- giá trị trung bình, hệ số
-hồi quy, hay độ chính xác của một mô hình --- đều là biến ngẫu nhiên và
-sẽ nhận giá trị khác đi nếu ta rút được một mẫu khác. Câu hỏi cốt lõi vì
-thế không dừng ở ``giá trị ước lượng bằng bao nhiêu'' mà là ``ước lượng
-đó dao động đến mức nào và có thể tin cậy tới đâu''. Khi công thức lý
-thuyết cho phân phối lấy mẫu không tồn tại hoặc quá phức tạp, các phương
-pháp resampling cho phép \emph{mô phỏng} lại chính sự biến thiên đó từ dữ
-liệu sẵn có, bằng cách sinh ra nhiều mẫu con và quan sát đại lượng quan
-tâm thay đổi ra sao qua các mẫu con ấy.
+Bootstrap và K-fold Cross-Validation đều thuộc nhóm kỹ thuật
+\emph{resampling} (lấy mẫu lại), cùng xuất phát từ một khó khăn nền tảng
+của thống kê ứng dụng. Nhà nghiên cứu chỉ quan sát được một mẫu hữu hạn rút
+ra từ tổng thể, trong khi mọi đại lượng tính từ mẫu đó, dù là giá trị trung
+bình, hệ số hồi quy hay độ chính xác của một mô hình, đều là biến ngẫu
+nhiên và sẽ nhận giá trị khác nếu rút được một mẫu khác. Câu hỏi cốt lõi vì
+thế không dừng ở giá trị ước lượng bằng bao nhiêu, mà là ước lượng đó dao
+động đến mức nào. Khi công thức lý thuyết cho phân phối lấy mẫu không tồn
+tại hoặc quá phức tạp, các phương pháp resampling cho phép mô phỏng chính
+sự biến thiên ấy từ dữ liệu sẵn có, bằng cách sinh ra nhiều mẫu con và quan
+sát đại lượng quan tâm thay đổi ra sao qua các mẫu con đó.
 
 \subsection{Phương pháp Bootstrap}
 
 Bootstrap là phương pháp resampling do Bradley Efron giới thiệu năm 1979,
-dùng để ước lượng độ chính xác --- sai số chuẩn, độ chệch, khoảng tin cậy
---- của một đại lượng thống kê mà không cần giả định về dạng phân phối của
-tổng thể và không cần thu thập thêm dữ liệu.
+dùng để ước lượng độ chính xác của một đại lượng thống kê, bao gồm sai số
+chuẩn và khoảng tin cậy, mà không cần giả định về dạng phân phối của tổng
+thể và không cần thu thập thêm dữ liệu.
 
-\textbf{Nền tảng lý thuyết.} Giả sử ta quan tâm tới một tham số tổng thể
-$\theta = \theta(F)$, trong đó $F$ là hàm phân phối chưa biết của tổng
-thể; từ mẫu quan sát $x_1, \ldots, x_n$ ta tính được ước lượng
-$\hat{\theta} = \theta(\hat{F})$. Để đánh giá độ chính xác của
-$\hat{\theta}$, về mặt lý tưởng ta cần biết \emph{phân phối lấy mẫu}
-(sampling distribution) của nó --- tức tập hợp các giá trị mà
-$\hat{\theta}$ có thể nhận nếu quá trình rút mẫu kích thước $n$ từ $F$
-được lặp lại vô số lần. Trong thực tế điều này bất khả thi, bởi $F$ không
-biết và ta chỉ có duy nhất một mẫu. Ý tưởng then chốt của Efron là thay
-tổng thể chưa biết $F$ bằng \emph{phân phối thực nghiệm} $\hat{F}$ ---
-phân phối rời rạc gán xác suất $1/n$ cho mỗi quan sát đã có. Theo định lý
-Glivenko--Cantelli, $\hat{F}$ hội tụ đều về $F$ khi cỡ mẫu tăng, nên với
-$n$ đủ lớn $\hat{F}$ là một thay thế hợp lý cho $F$. Việc rút một mẫu kích
-thước $n$ từ $\hat{F}$ chính là lấy mẫu ngẫu nhiên \textbf{có hoàn lại} từ
-dữ liệu gốc. Đây là nội dung của \emph{nguyên lý plug-in}: phân phối lấy
-mẫu của $\hat{\theta}$ dưới $F$ được xấp xỉ bằng phân phối của các ước
-lượng bootstrap $\hat{\theta}^{*}$ tính dưới $\hat{F}$.
+\textbf{Nền tảng lý thuyết.} Xét tham số tổng thể $\theta = \theta(F)$,
+trong đó $F$ là hàm phân phối chưa biết. Từ mẫu quan sát
+$x_1, \ldots, x_n$ ta thu được ước lượng $\hat{\theta} = \theta(\hat{F})$.
+Muốn đánh giá độ chính xác của $\hat{\theta}$ thì cần biết \emph{phân phối
+lấy mẫu} của nó, tức tập hợp các giá trị mà $\hat{\theta}$ có thể nhận nếu
+quá trình rút mẫu kích thước $n$ từ $F$ được lặp lại vô hạn lần. Điều này
+bất khả thi trên thực tế, bởi $F$ không biết và ta chỉ có duy nhất một mẫu.
+Ý tưởng của Efron là thay tổng thể chưa biết $F$ bằng \emph{phân phối thực
+nghiệm} $\hat{F}$, tức phân phối rời rạc gán xác suất $1/n$ cho mỗi quan
+sát đã có. Theo định lý Glivenko--Cantelli, $\hat{F}$ hội tụ đều về $F$ khi
+cỡ mẫu tăng, nên với $n$ đủ lớn thì $\hat{F}$ là một thay thế hợp lý cho
+$F$. Rút một mẫu kích thước $n$ từ $\hat{F}$ chính là lấy mẫu ngẫu nhiên
+\textbf{có hoàn lại} từ dữ liệu gốc. Đây là nội dung của \emph{nguyên lý
+plug-in}: phân phối lấy mẫu của $\hat{\theta}$ dưới $F$ được xấp xỉ bằng
+phân phối của các ước lượng bootstrap $\hat{\theta}^{*}$ tính dưới
+$\hat{F}$.
 
 \textbf{Thuật toán.}
 \begin{enumerate}
-  \item Từ mẫu gốc kích thước $n$, lấy mẫu ngẫu nhiên \textbf{có hoàn lại}
-        kích thước $n$, gọi là mẫu bootstrap thứ $b$.
-  \item Tính thống kê quan tâm $\hat{\theta}^{*}_{b}$ (trung bình, trung
-        vị, hệ số hồi quy, recall, \ldots) trên mẫu bootstrap này.
-  \item Lặp lại bước 1--2 $B$ lần ($B$ thường từ 500 đến vài nghìn), thu
-        được $\hat{\theta}^{*}_{1}, \ldots, \hat{\theta}^{*}_{B}$.
+  \item Từ mẫu gốc kích thước $n$, lấy mẫu ngẫu nhiên có hoàn lại kích
+        thước $n$, thu được mẫu bootstrap thứ $b$.
+  \item Tính thống kê quan tâm $\hat{\theta}^{*}_{b}$ trên mẫu bootstrap
+        đó.
+  \item Lặp lại hai bước trên $B$ lần, với $B$ thường từ 500 đến vài nghìn,
+        thu được $\hat{\theta}^{*}_{1}, \ldots, \hat{\theta}^{*}_{B}$.
   \item Dùng phân phối thực nghiệm của $B$ giá trị này để ước lượng sai số
         chuẩn và khoảng tin cậy của $\hat{\theta}$.
 \end{enumerate}
 
-\textbf{Ước lượng sai số chuẩn và khoảng tin cậy.} Sai số chuẩn bootstrap
-được ước lượng bằng độ lệch chuẩn của $B$ giá trị thống kê:
+\textbf{Sai số chuẩn và khoảng tin cậy.} Sai số chuẩn bootstrap là độ lệch
+chuẩn của $B$ giá trị thống kê:
 \[
   \widehat{SE}_{boot} = \sqrt{\frac{1}{B-1}\sum_{b=1}^{B}
   \left(\hat{\theta}^{*}_{b} - \bar{\theta}^{*}\right)^2}, \qquad
   \bar{\theta}^{*} = \frac{1}{B}\sum_{b=1}^{B}\hat{\theta}^{*}_{b}.
 \]
-Khoảng tin cậy theo \emph{phương pháp phân vị} (percentile) ở mức tin cậy
-$1-\alpha$ là $\big[\hat{\theta}^{*}_{(\alpha/2)},\,
-\hat{\theta}^{*}_{(1-\alpha/2)}\big]$, với $\hat{\theta}^{*}_{(q)}$ là
-phân vị mức $q$ của tập $B$ giá trị bootstrap; chẳng hạn ở mức 95\% ta lấy
-phân vị 2,5\% và 97,5\%. Một cách tinh vi hơn là \emph{BCa
-(bias-corrected and accelerated)}, hiệu chỉnh thêm độ chệch và độ xiên
-của phân phối bootstrap để cho khoảng tin cậy chính xác hơn khi phân phối
-không đối xứng. Trong tiểu luận này phương pháp phân vị được sử dụng, vì
-phân phối bootstrap thu được (Hình~\ref{fig:boot-hist}) khá cân đối và
-không nằm sát biên $[0, 1]$ --- hai tình huống mà BCa mới thực sự cần
-thiết.
+Khoảng tin cậy được dựng theo \emph{phương pháp phân vị}. Ở mức tin cậy
+$1-\alpha$, hai đầu mút là phân vị mức $\alpha/2$ và $1-\alpha/2$ của tập
+$B$ giá trị bootstrap. Chẳng hạn ở mức 95\%, khoảng tin cậy trải từ phân vị
+2,5\% đến phân vị 97,5\%.
 
-\textbf{Một biến thể phổ biến: .632 bootstrap.} Trong mỗi mẫu bootstrap
-kích thước $n$, xác suất một quan sát cụ thể không được chọn ở một lần rút
-là $1 - 1/n$; sau $n$ lần rút, xác suất nó hoàn toàn vắng mặt là
-$(1 - 1/n)^{n} \to e^{-1} \approx 0{,}368$. Do đó trung bình mỗi mẫu
-bootstrap chỉ chứa khoảng 63,2\% số quan sát khác nhau, còn 36,8\% quan
-sát còn lại (\emph{out-of-bag}, OOB) không tham gia huấn luyện và có thể
-dùng làm tập kiểm tra độc lập. Biến thể \textbf{.632 bootstrap} khai thác
-tính chất này để ước lượng sai số dự đoán của mô hình, bằng cách kết hợp
-sai số huấn luyện (thường quá lạc quan) với sai số trên phần out-of-bag
-theo trọng số cố định:
-\[
-  \widehat{Err}_{.632} = 0{,}368 \cdot \overline{err}
-  + 0{,}632 \cdot \widehat{Err}_{OOB},
-\]
-trong đó $\overline{err}$ là sai số trên tập huấn luyện và
-$\widehat{Err}_{OOB}$ là sai số trung bình trên các quan sát OOB; trọng
-số $0{,}632$ phản ánh đúng tỉ lệ quan sát trung bình có mặt trong
-mẫu bootstrap. Phiên bản cải tiến \emph{.632+} còn điều chỉnh trọng số này
-theo mức độ overfitting của mô hình. Biến thể này \emph{không} được dùng ở
-phần thực hành, vì vai trò ước lượng sai số dự đoán ở đây đã do K-fold CV
-đảm nhiệm; bootstrap được dành riêng cho nhiệm vụ mà nó mạnh hơn --- dựng
-khoảng tin cậy cho các chỉ số đo trên tập kiểm tra độc lập.
+\textbf{Ưu điểm.}
+\begin{enumerate}
+  \item \emph{Không đòi hỏi giả định về phân phối tổng thể.} Các công thức
+        khoảng tin cậy cổ điển thường dựa trên giả định phân phối chuẩn
+        hoặc trên xấp xỉ tiệm cận khi cỡ mẫu lớn. Bootstrap không cần điều
+        kiện nào trong số đó, nên đặc biệt phù hợp với dữ liệu lệch nặng
+        hoặc cỡ mẫu vừa phải, đúng như tình huống của bộ dữ liệu ILPD.
+  \item \emph{Áp dụng được cho hầu như mọi thống kê.} Nhiều đại lượng quan
+        trọng trong học máy, chẳng hạn recall, precision hay macro F1, không
+        có công thức sai số chuẩn lý thuyết vì chúng là hàm phi tuyến của
+        các tần số đếm được. Bootstrap chỉ cần tính lại đại lượng đó trên
+        mỗi mẫu con, nên xử lý được tất cả các trường hợp này bằng cùng một
+        quy trình.
+  \item \emph{Không cần thu thập thêm dữ liệu.} Toàn bộ thông tin về mức
+        dao động được khai thác từ chính mẫu đã có. Đây là ưu thế quyết
+        định trong các nghiên cứu y sinh, nơi việc mở rộng cỡ mẫu tốn kém
+        cả về chi phí lẫn thời gian.
+  \item \emph{Cho biết cả hình dạng phân phối.} Kết quả của bootstrap không
+        chỉ là một cặp đầu mút, mà là toàn bộ tập $B$ giá trị. Nhờ vậy có
+        thể quan sát trực tiếp phân phối lấy mẫu, kiểm tra tính đối xứng
+        cũng như mức độ tập trung của ước lượng.
+\end{enumerate}
 
-\textbf{Ưu điểm.} Không đòi hỏi giả định về phân phối tổng thể; áp dụng
-được cho hầu như mọi thống kê, kể cả những thống kê không có công thức sai
-số chuẩn lý thuyết (trung vị, hệ số trong mô hình phi tuyến, recall,
-macro F1, \ldots).
-
-\textbf{Nhược điểm.} Tốn chi phí tính toán do phải lặp lại hàng trăm đến
-hàng nghìn lần; có thể cho kết quả chệch với cỡ mẫu nhỏ; đồng thời giả
-định ngầm rằng dữ liệu độc lập và cùng phân phối (i.i.d.), nên không áp
-dụng trực tiếp được cho dữ liệu có cấu trúc phụ thuộc như chuỗi thời gian
-(khi đó cần dùng biến thể \emph{block bootstrap}).
+\textbf{Hạn chế.}
+\begin{enumerate}
+  \item \emph{Chi phí tính toán cao.} Toàn bộ quá trình tính thống kê phải
+        lặp lại hàng nghìn lần. Chi phí này còn tăng bội nếu mỗi lần lặp
+        đòi hỏi huấn luyện lại mô hình thay vì chỉ tính lại chỉ số trên các
+        dự đoán có sẵn.
+  \item \emph{Có thể bị chệch với cỡ mẫu nhỏ.} Phân phối thực nghiệm
+        $\hat{F}$ chỉ xấp xỉ tốt $F$ khi $n$ đủ lớn. Với mẫu nhỏ, mỗi mẫu
+        bootstrap chỉ chứa lại đúng những giá trị đã có, nên khoảng tin cậy
+        thu được có xu hướng hẹp hơn thực tế.
+  \item \emph{Giả định dữ liệu độc lập và cùng phân phối.} Việc rút mẫu có
+        hoàn lại phá vỡ mọi cấu trúc phụ thuộc giữa các quan sát. Vì vậy
+        phương pháp không áp dụng trực tiếp được cho dữ liệu chuỗi thời
+        gian hay dữ liệu phân cụm theo bệnh viện, theo vùng.
+  \item \emph{Không tạo ra thông tin mới.} Bootstrap chỉ khai thác lại
+        thông tin có sẵn trong mẫu gốc. Nếu bản thân mẫu gốc không đại diện
+        cho tổng thể, chẳng hạn do sai lệch chọn mẫu, thì khoảng tin cậy
+        thu được vẫn có thể hẹp mà vẫn lệch khỏi giá trị thật.
+\end{enumerate}
 
 \subsection{Phương pháp K-fold Cross-Validation}
 
-K-fold Cross-Validation (kiểm định chéo $k$ phần) là kỹ thuật resampling
-\textbf{không hoàn lại}, dùng để ước lượng sai số dự đoán của một mô hình
-trên dữ liệu chưa từng thấy (generalization error), qua đó tránh việc
-đánh giá mô hình ngay trên chính dữ liệu đã dùng để huấn luyện nó.
+K-fold Cross-Validation, hay kiểm định chéo $k$ phần, là kỹ thuật
+resampling \textbf{không hoàn lại}, dùng để ước lượng sai số dự đoán của
+một mô hình trên dữ liệu chưa từng quan sát, qua đó tránh việc đánh giá mô
+hình ngay trên chính dữ liệu đã dùng để huấn luyện nó.
 
-\textbf{Nền tảng lý thuyết.} Khi xây dựng một mô hình dự đoán, mục tiêu
-không phải là mô tả thật khớp dữ liệu đã có mà là dự đoán chính xác trên
-dữ liệu \emph{mới}. Nếu đánh giá mô hình ngay trên dữ liệu huấn luyện, ta
-sẽ thu được ước lượng quá lạc quan, bởi mô hình đã ``học thuộc'' cả những
-dao động ngẫu nhiên riêng của mẫu --- hiện tượng \emph{overfitting}. Cách
-khắc phục đơn giản nhất là tách riêng một phần dữ liệu làm tập kiểm tra
-(holdout), nhưng cách này vừa lãng phí dữ liệu, vừa cho kết quả phụ thuộc
-mạnh vào một lần chia ngẫu nhiên duy nhất, khiến ước lượng có phương sai
-lớn khi mẫu nhỏ. K-fold Cross-Validation khắc phục đồng thời cả hai hạn
-chế bằng cách luân phiên vai trò huấn luyện/kiểm tra qua $k$ lần chia, sao
-cho mọi quan sát đều được dùng để kiểm tra đúng một lần và dùng để huấn
-luyện $k-1$ lần.
+\textbf{Nền tảng lý thuyết.} Mục tiêu của một mô hình dự đoán là dự đoán
+chính xác trên dữ liệu mới, chứ không phải mô tả thật khớp dữ liệu đã có.
+Nếu đánh giá mô hình ngay trên dữ liệu huấn luyện, ta sẽ thu được ước lượng
+quá lạc quan, bởi mô hình đã học cả những dao động ngẫu nhiên riêng của
+mẫu. Đây là hiện tượng \emph{overfitting}. Cách khắc phục đơn giản nhất là
+tách riêng một phần dữ liệu làm tập kiểm tra, nhưng cách này vừa lãng phí
+dữ liệu, vừa cho kết quả phụ thuộc mạnh vào một lần chia ngẫu nhiên duy
+nhất, khiến ước lượng có phương sai lớn khi mẫu nhỏ. K-fold
+Cross-Validation khắc phục đồng thời cả hai hạn chế bằng cách luân phiên
+vai trò huấn luyện và kiểm tra qua $k$ lần chia, sao cho mọi quan sát đều
+được dùng để kiểm tra đúng một lần và dùng để huấn luyện $k-1$ lần.
 
 \textbf{Thuật toán.}
 \begin{enumerate}
-  \item Chia ngẫu nhiên dữ liệu thành $k$ phần (fold) rời nhau, kích
-        thước xấp xỉ bằng nhau.
-  \item Với mỗi $i = 1, \ldots, k$: dùng $k-1$ phần còn lại để huấn luyện
-        mô hình, phần thứ $i$ dùng để kiểm tra.
-  \item Tính sai số dự đoán trên từng fold, sau đó lấy trung bình:
+  \item Chia ngẫu nhiên dữ liệu thành $k$ phần rời nhau, kích thước xấp xỉ
+        bằng nhau, gọi là các fold.
+  \item Với mỗi $i = 1, \ldots, k$: huấn luyện mô hình trên $k-1$ phần còn
+        lại và kiểm tra trên phần thứ $i$.
+  \item Tính sai số dự đoán trên từng fold rồi lấy trung bình:
 \[
   CV_{(k)} = \frac{1}{k}\sum_{i=1}^{k}
   L\!\left(y_i,\, \hat{f}^{(-i)}(x_i)\right),
 \]
-        với $L$ là hàm mất mát (tỉ lệ phân loại sai, MSE, \ldots) và
-        $\hat{f}^{(-i)}$ là mô hình được huấn luyện mà không dùng fold thứ
-        $i$.
+        với $L$ là hàm mất mát và $\hat{f}^{(-i)}$ là mô hình được huấn
+        luyện mà không dùng fold thứ $i$.
 \end{enumerate}
 
 \textbf{Ví dụ minh hoạ.} Xét bài toán phân loại bệnh gan trên ILPD với
 $n = 583$ quan sát và mô hình hồi quy logistic. Với $k = 5$, dữ liệu được
-chia thành 5 phần, mỗi phần khoảng 117 quan sát. Ở lần lặp thứ nhất, 4
-phần (khoảng 466 quan sát) được dùng để ước lượng các hệ số của mô hình,
-phần còn lại dùng để dự đoán và tính sai số phân loại; quá trình lặp lại 5
-lần, mỗi phần lần lượt đóng vai tập kiểm tra. Trung bình 5 sai số này là
-ước lượng sai số dự đoán của mô hình, còn độ lệch chuẩn giữa chúng phản
-ánh mức độ ổn định của mô hình qua các cách chia dữ liệu khác nhau.
+chia thành 5 phần, mỗi phần khoảng 117 quan sát. Ở lần lặp thứ nhất, 4 phần
+tương ứng khoảng 466 quan sát được dùng để ước lượng các hệ số của mô hình,
+phần còn lại dùng để dự đoán và tính sai số phân loại. Quá trình lặp lại 5
+lần, mỗi phần lần lượt đóng vai tập kiểm tra. Trung bình của 5 sai số này
+là ước lượng sai số dự đoán, còn độ lệch chuẩn giữa chúng phản ánh mức độ
+ổn định của mô hình qua các cách chia dữ liệu khác nhau.
 
-\textbf{Một biến thể phổ biến: Stratified k-fold.} Khi biến mục tiêu mất
-cân bằng lớp, việc chia fold hoàn toàn ngẫu nhiên có thể tạo ra những fold
-có tỉ lệ lớp lệch hẳn so với tổng thể, thậm chí thiếu vắng lớp thiểu số,
-làm cho ước lượng sai số bị nhiễu. \textbf{Stratified k-fold} (kiểm định
-chéo phân tầng) khắc phục bằng cách chia sao cho \emph{mỗi fold giữ nguyên
-tỉ lệ các lớp} như trong toàn bộ dữ liệu. Với ILPD --- nơi tỉ lệ giữa
-nhóm mắc bệnh và không mắc bệnh xấp xỉ 71\%/29\% --- mỗi fold được ràng
-buộc để duy trì đúng tỉ lệ đó, nhờ vậy mỗi lần kiểm tra đều phản ánh đúng
-cơ cấu lớp thực tế và cho ước lượng ổn định hơn. Đây là biến thể được áp
-dụng trong toàn bộ phần thực hành. Ngoài ra còn hai biến thể đáng chú ý
-khác: \emph{Leave-One-Out CV} (trường hợp đặc biệt khi $k = n$) và
-\emph{Repeated k-fold} (lặp lại toàn bộ quy trình nhiều lần với các cách
-chia khác nhau để giảm thêm phương sai của ước lượng).
+\textbf{Biến thể Stratified k-fold.} Khi biến mục tiêu mất cân bằng lớp,
+việc chia fold hoàn toàn ngẫu nhiên có thể tạo ra những fold có tỉ lệ lớp
+lệch hẳn so với tổng thể, thậm chí thiếu vắng lớp thiểu số, làm cho ước
+lượng sai số bị nhiễu. \textbf{Stratified k-fold}, hay kiểm định chéo phân
+tầng, khắc phục bằng cách chia sao cho mỗi fold giữ nguyên tỉ lệ các lớp
+như trong toàn bộ dữ liệu. Với ILPD, nơi tỉ lệ giữa nhóm mắc bệnh và không
+mắc bệnh xấp xỉ 71\% và 29\%, mỗi fold được ràng buộc để duy trì đúng tỉ lệ
+đó. Nhờ vậy mỗi lần kiểm tra đều phản ánh đúng cơ cấu lớp thực tế và cho
+ước lượng ổn định hơn. Đây là biến thể được áp dụng trong toàn bộ phần thực
+nghiệm.
 
-\textbf{Vai trò trong quy trình Data Science.} K-fold CV không chỉ dùng để
-\emph{đánh giá} một mô hình đơn lẻ, mà còn là công cụ khách quan để
-\emph{so sánh nhiều cấu hình} với nhau và \emph{tinh chỉnh siêu tham số}
-(hyperparameter tuning). Điều kiện tiên quyết là mọi bước có học tham số
-từ dữ liệu phải được thực hiện hoàn toàn bên trong vòng lặp CV, nhằm tránh
-hiện tượng ``nhìn trộm'' tập kiểm tra (data leakage) khi lựa chọn mô hình
---- một yêu cầu được thảo luận kỹ ở Mục~\ref{sec:pipeline}.
+\textbf{Ưu điểm.}
+\begin{enumerate}
+  \item \emph{Ước lượng ít lạc quan hơn.} Mọi quan sát đều được dự đoán bởi
+        một mô hình chưa từng sử dụng nó trong huấn luyện. Kết quả thu được
+        vì thế phản ánh khả năng tổng quát hoá chứ không phải mức độ khớp
+        với dữ liệu đã có.
+  \item \emph{Sử dụng dữ liệu hiệu quả.} Khác với cách tách riêng một tập
+        kiểm tra cố định, ở đây toàn bộ quan sát đều lần lượt tham gia cả
+        vai trò huấn luyện lẫn vai trò kiểm tra. Đây là ưu thế quan trọng
+        khi cỡ mẫu hạn chế.
+  \item \emph{Cung cấp thước đo độ ổn định.} Ngoài giá trị trung bình, kiểm
+        định chéo còn cho $k$ kết quả riêng lẻ. Độ lệch chuẩn giữa chúng
+        cho biết hiệu năng dao động ra sao khi thay đổi cách chia dữ liệu,
+        một thông tin mà một lần chia train/test đơn lẻ không thể cung cấp.
+  \item \emph{Không phụ thuộc vào thuật toán cụ thể.} Quy trình chỉ yêu cầu
+        mô hình có thể huấn luyện và dự đoán, nên áp dụng được cho mọi họ
+        mô hình và cho phép so sánh chúng trên cùng một cơ sở.
+\end{enumerate}
 
-\textbf{Ưu điểm.} Mọi quan sát đều được dùng để kiểm tra đúng một lần nên
-ước lượng sai số ít lạc quan hơn so với chỉ chia train/test một lần; áp
-dụng được cho bất kỳ thuật toán học máy nào.
-
-\textbf{Nhược điểm.} Chi phí tính toán tăng tuyến tính theo $k$ (hoặc theo
-$n$ với LOOCV); kết quả có thể có phương sai cao khi $k$ nhỏ, vì mỗi lần
-chỉ ước lượng trên một phần nhỏ dữ liệu.
-
-\subsection{So sánh và vai trò bổ sung của hai phương pháp}
-
-Hai phương pháp có chung bản chất resampling nhưng phục vụ hai mục tiêu
-khác nhau và đánh đổi bias--variance theo hai hướng ngược nhau:
-
-\begin{center}
-\small
-\begin{tabular}{@{}p{2.6cm}p{5.9cm}p{5.9cm}@{}}
-\toprule
- & \textbf{Bootstrap} & \textbf{K-fold CV} \\
-\midrule
-Cách lấy mẫu & Có hoàn lại & Không hoàn lại \\
-Mục tiêu chính & Ước lượng độ tin cậy (SE, CI) của một thống kê & Ước lượng sai số dự đoán, chọn/so sánh mô hình \\
-Xu hướng bias & Có thể lạc quan nếu không hiệu chỉnh (.632+) & Xấp xỉ không chệch với sai số dự đoán thật \\
-Xu hướng variance & Thấp hơn (nhiều mẫu, chồng lấp nhiều) & Cao hơn khi $k$ nhỏ (mỗi fold độc lập hơn) \\
-Chi phí tính toán & Cao ($B$ thường 500--10000 lần lặp) & Vừa phải ($k$ thường 5--10 lần lặp) \\
-\bottomrule
-\end{tabular}
-\end{center}
-
-Nói cách khác: \textbf{K-fold CV giúp CHỌN mô hình đúng đắn} (dựa trên ước
-lượng khách quan về khả năng tổng quát hoá), còn \textbf{Bootstrap giúp
-TRẢ LỜI mô hình đã chọn đó có đáng tin cậy hay không} (thông qua khoảng
-tin cậy cho hiệu năng). Đây chính là trình tự được áp dụng trong phần thực
-hành: K-fold CV chạy trên tập huấn luyện để tinh chỉnh siêu tham số và
-chọn ngưỡng phân loại, trong khi tập kiểm tra được niêm phong tới bước
-cuối và chỉ được dùng một lần duy nhất, với Bootstrap dựng khoảng tin cậy
-quanh các chỉ số đo trên đó.
+\textbf{Hạn chế.}
+\begin{enumerate}
+  \item \emph{Chi phí tính toán tăng theo $k$.} Mô hình phải được huấn
+        luyện $k$ lần thay vì một lần. Chi phí này nhân lên khi kiểm định
+        chéo được lồng bên trong một vòng dò siêu tham số, như trong phần
+        thực nghiệm của báo cáo.
+  \item \emph{Đánh đổi giữa bias và variance theo $k$.} Với $k$ nhỏ, mỗi mô
+        hình chỉ được huấn luyện trên một phần nhỏ dữ liệu nên ước lượng
+        sai số có xu hướng bi quan. Với $k$ lớn, các tập huấn luyện chồng
+        lấp gần như hoàn toàn nên các kết quả tương quan mạnh với nhau và
+        phương sai của ước lượng trung bình tăng lên.
+  \item \emph{Các fold không độc lập.} Những tập huấn luyện dùng ở các lần
+        lặp khác nhau chia sẻ phần lớn quan sát. Do đó độ lệch chuẩn giữa
+        các fold không phải là sai số chuẩn đúng nghĩa của ước lượng trung
+        bình, mà chỉ nên hiểu là một chỉ báo về mức độ ổn định.
+  \item \emph{Có thể bị overfit nếu dùng lặp lại quá nhiều.} Khi cùng một
+        cách chia fold được dùng để so sánh hàng chục cấu hình, cấu hình
+        thắng cuộc có thể chỉ đơn thuần phù hợp với cách chia đó. Kết quả
+        kiểm định chéo khi ấy trở nên lạc quan so với hiệu năng thật trên
+        dữ liệu mới.
+\end{enumerate}
 
 \section{Dữ liệu và tiền xử lý}
 
 \subsection{Nguồn dữ liệu và cấu trúc}
 
-ILPD được thu thập tại vùng đông bắc bang Andhra Pradesh, Ấn Độ, gồm 583
-hồ sơ bệnh nhân với 10 biến giải thích: tuổi, giới tính và tám chỉ số sinh
-hoá. Tệp CSV gốc không có dòng tiêu đề nên tên cột được gán thủ công. Nhãn
-gốc mã hoá $1 =$ có bệnh và $2 =$ không bệnh; ta đổi về quy ước $1/0$ quen
-thuộc để các công thức đếm TP/FP/TN/FN ở phần sau viết được gọn.
+Bộ dữ liệu ILPD được thu thập tại vùng đông bắc bang Andhra Pradesh, Ấn Độ,
+gồm 583 hồ sơ bệnh nhân với 10 biến giải thích là tuổi, giới tính và tám
+chỉ số sinh hoá. Nhãn gốc mã hoá giá trị 1 cho trường hợp có bệnh và giá
+trị 2 cho trường hợp không bệnh; nhãn này được đổi về quy ước 1 và 0 để
+thuận tiện cho các công thức đếm ở phần sau.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -366,7 +338,7 @@ thuộc để các công thức đếm TP/FP/TN/FN ở phần sau viết đượ
                \hlkwc{header} \hldef{=} \hlnum{FALSE}\hldef{,} \hlkwc{col.names} \hldef{= col_names,}
                \hlkwc{stringsAsFactors} \hldef{=} \hlnum{FALSE}\hldef{)}
 
-\hlcom{# Nhãn gốc: 1 = có bệnh, 2 = không bệnh. Đổi về 1 / 0 cho tiện tính toán.}
+\hlcom{# Nhãn gốc: 1 = có bệnh, 2 = không bệnh. Đổi về 1 / 0.}
 \hldef{df}\hlopt{$}\hldef{target} \hlkwb{<-} \hlkwd{ifelse}\hldef{(df}\hlopt{$}\hldef{target} \hlopt{==} \hlnum{2}\hldef{,} \hlnum{0}\hldef{,} \hlnum{1}\hldef{)}
 
 \hlkwd{cat}\hldef{(}\hlsng{"Kích thước dữ liệu:"}\hldef{,} \hlkwd{nrow}\hldef{(df),} \hlsng{"dòng x"}\hldef{,} \hlkwd{ncol}\hldef{(df),} \hlsng{"cột\textbackslash{}n"}\hldef{)}
@@ -467,15 +439,15 @@ thuộc để các công thức đếm TP/FP/TN/FN ở phần sau viết đượ
 \end{kframe}
 \end{knitrout}
 
-Chỉ có 4 giá trị khuyết, toàn bộ nằm ở cột
-\texttt{Albumin\_and\_Globulin\_Ratio}. Con số này rất nhỏ so với 583
-quan sát nên cách xử lý gần như không ảnh hưởng tới kết quả; tuy vậy ta
-vẫn điền khuyết bằng trung vị chứ không xoá dòng, và --- điểm quan trọng
-hơn nhiều --- việc điền khuyết được đặt \emph{bên trong} quy trình huấn
-luyện để trung vị chỉ được tính từ tập huấn luyện. Lý do được trình bày ở
-Mục~\ref{sec:pipeline}.
+Toàn bộ dữ liệu chỉ có 4 giá trị khuyết, đều nằm ở biến
+\texttt{Albumin\_and\_Globulin\_Ratio}. Con số này rất nhỏ so với 583 quan
+sát nên cách xử lý gần như không ảnh hưởng tới kết quả. Dù vậy, các giá trị
+khuyết vẫn được điền bằng trung vị thay vì loại bỏ quan sát, và điều quan
+trọng hơn là việc điền khuyết được đặt bên trong quy trình huấn luyện để
+trung vị chỉ được tính từ tập huấn luyện. Lý do của yêu cầu này được trình
+bày ở Mục~\ref{sec:pipeline}.
 
-\section{Phân tích khám phá dữ liệu (EDA)}
+\section{Phân tích khám phá dữ liệu}
 
 \subsection{Phân bố biến mục tiêu}
 
@@ -488,7 +460,7 @@ Mục~\ref{sec:pipeline}.
 \hldef{bp} \hlkwb{<-} \hlkwd{barplot}\hldef{(counts,}
               \hlkwc{names.arg} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Không bệnh (0)"}\hldef{,} \hlsng{"Có bệnh (1)"}\hldef{),}
               \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#66c2a5"}\hldef{,} \hlsng{"#fc8d62"}\hldef{),}
-              \hlkwc{main} \hldef{=} \hlsng{"Phân bố target"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Số lượng"}\hldef{,}
+              \hlkwc{main} \hldef{=} \hlsng{"Phân bố biến mục tiêu"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Số lượng"}\hldef{,}
               \hlkwc{ylim} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,} \hlkwd{max}\hldef{(counts)} \hlopt{*} \hlnum{1.15}\hldef{))}
 \hlkwd{text}\hldef{(bp, counts,} \hlkwc{labels} \hldef{=} \hlkwd{paste0}\hldef{(counts,} \hlsng{"\textbackslash{}n("}\hldef{, pct,} \hlsng{"%)"}\hldef{),} \hlkwc{pos} \hldef{=} \hlnum{3}\hldef{)}
 \end{alltt}
@@ -498,23 +470,23 @@ Mục~\ref{sec:pipeline}.
 
 }
 
-\caption[Phân bố biến mục tiêu]{Phân bố biến mục tiêu: dữ liệu mất cân bằng lớp theo tỉ lệ xấp xỉ 71/29}\label{fig:target-dist}
+\caption[Phân bố biến mục tiêu]{Phân bố biến mục tiêu}\label{fig:target-dist}
 \end{figure}
 
 \end{knitrout}
 
-Tỉ lệ 71,4\% / 28,6\% cho thấy dữ liệu mất cân bằng ở mức trung bình. Hệ
-quả trực tiếp: \emph{độ chính xác tổng thể} (accuracy) là chỉ số gây hiểu
-nhầm --- một mô hình dự đoán tất cả bệnh nhân đều mắc bệnh đã đạt accuracy
-$0{,}714$ mà không học được gì. Vì vậy toàn bộ phần đánh giá về sau sẽ báo
-cáo recall và precision của \emph{từng lớp} cùng với macro F1, chứ không
-dựa vào accuracy.
+Tỉ lệ 71,4\% và 28,6\% cho thấy dữ liệu mất cân bằng ở mức trung bình. Hệ
+quả trực tiếp là độ chính xác tổng thể trở thành một chỉ số gây hiểu nhầm,
+bởi một mô hình dự đoán tất cả bệnh nhân đều mắc bệnh đã đạt độ chính xác
+$0{,}714$ mà không mang lại thông tin nào. Vì vậy toàn bộ phần đánh giá về
+sau sử dụng recall và precision của từng lớp cùng với macro F1, thay vì dựa
+vào độ chính xác tổng thể.
 
-\subsection{Giới tính và bệnh gan: kiểm định Chi-square}
+\subsection{Giới tính và tình trạng bệnh}
 
-Trước khi đưa \texttt{Gender} vào mô hình, cần kiểm tra xem biến này có
-thực sự liên hệ với biến mục tiêu hay không. Giả thuyết
-$H_0$: tỉ lệ mắc bệnh không khác nhau giữa hai giới.
+Trước khi đưa biến \texttt{Gender} vào mô hình, cần kiểm tra xem biến này
+có thực sự liên hệ với biến mục tiêu hay không. Giả thuyết $H_0$ được đặt
+ra là tỉ lệ mắc bệnh không khác nhau giữa hai giới.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -556,12 +528,11 @@ $H_0$: tỉ lệ mắc bệnh không khác nhau giữa hai giới.
 \end{knitrout}
 
 Tần số kỳ vọng ở cả bốn ô đều lớn hơn 5 nên kiểm định hợp lệ. Với
-$p = 0{,}0597 > 0{,}05$, ta \emph{không} đủ bằng chứng bác bỏ $H_0$: dữ
-liệu chưa cho thấy khác biệt có ý nghĩa thống kê về tỉ lệ mắc bệnh giữa
-nam và nữ. Cần lưu ý cách diễn đạt --- ``không bác bỏ được $H_0$'' khác
-với ``chứng minh $H_0$ đúng''; giá trị $p$ nằm sát ngưỡng $0{,}05$ nên kết
-luận hợp lý là bằng chứng còn yếu chứ không phải liên hệ chắc chắn không
-tồn tại.
+$p = 0{,}0597$, lớn hơn mức ý nghĩa $0{,}05$, chưa đủ bằng chứng để bác bỏ
+$H_0$: dữ liệu không cho thấy khác biệt có ý nghĩa thống kê về tỉ lệ mắc
+bệnh giữa nam và nữ. Cần lưu ý rằng không bác bỏ được $H_0$ khác với chứng
+minh $H_0$ đúng. Giá trị $p$ ở đây nằm sát ngưỡng, nên kết luận hợp lý là
+bằng chứng còn yếu, chứ không phải mối liên hệ chắc chắn không tồn tại.
 
 \subsection{Tương quan giữa các biến}
 
@@ -576,7 +547,7 @@ tồn tại.
 
 \hldef{corr_mat} \hlkwb{<-} \hlkwd{cor}\hldef{(df[,} \hlkwd{c}\hldef{(numeric_cols,} \hlsng{"target"}\hldef{)],} \hlkwc{use} \hldef{=} \hlsng{"complete.obs"}\hldef{)}
 
-\hlcom{# Rút gọn tên chỉ để in cho vừa khổ giấy; corr_mat gốc giữ nguyên}
+\hlcom{# Rút gọn tên khi in để bảng vừa khổ giấy}
 \hldef{corr_disp} \hlkwb{<-} \hlkwd{round}\hldef{(corr_mat,} \hlnum{2}\hldef{)}
 \hlkwd{dimnames}\hldef{(corr_disp)} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwd{abbreviate}\hldef{(}\hlkwd{rownames}\hldef{(corr_mat),} \hlnum{12}\hldef{),}
                             \hlkwd{abbreviate}\hldef{(}\hlkwd{colnames}\hldef{(corr_mat),} \hlnum{6}\hldef{))}
@@ -637,30 +608,31 @@ tồn tại.
 \end{kframe}
 \end{knitrout}
 
-Ba cặp biến có tương quan rất cao nổi lên rõ rệt:
+Ba cặp biến có tương quan rất cao. Cặp thứ nhất là
 \texttt{Total\_Bilirubin} với \texttt{Direct\_Bilirubin} ($r = 0{,}87$),
-\texttt{Alamine\_Aminotransferase} với
-\texttt{Aspartate\_Aminotransferase} ($r = 0{,}79$), và
-\texttt{Total\_Protiens} với \texttt{Albumin} ($r = 0{,}78$). Điều này dễ
-hiểu về mặt sinh hoá --- bilirubin trực tiếp là một thành phần của
-bilirubin toàn phần, còn albumin là thành phần chính của protein toàn
-phần --- nhưng lại là vấn đề đối với hồi quy logistic, vì các biến gần
-như trùng thông tin làm ma trận thiết kế gần suy biến và hệ số ước lượng
-mất ổn định. Đồng thời, tương quan với \texttt{target} của mọi biến đều
-yếu (giá trị lớn nhất là $0{,}25$), báo trước rằng không có biến đơn lẻ
-nào tách được hai nhóm một cách rõ ràng.
+cặp thứ hai là hai men gan \texttt{Alamine\_Aminotransferase} và
+\texttt{Aspartate\_Aminotransferase} ($r = 0{,}79$), cặp thứ ba là
+\texttt{Total\_Protiens} với \texttt{Albumin} ($r = 0{,}78$). Các quan hệ
+này phù hợp với bản chất sinh hoá của những chỉ số đó, khi bilirubin trực
+tiếp là một thành phần của bilirubin toàn phần và albumin là thành phần
+chính của protein toàn phần. Tuy nhiên chúng lại gây khó khăn cho hồi quy
+logistic, bởi các biến gần như trùng thông tin sẽ làm ma trận thiết kế gần
+suy biến và khiến hệ số ước lượng mất ổn định.
 
-\subsection{Đa cộng tuyến: hệ số VIF}
+Ở chiều ngược lại, tương quan giữa từng biến với biến mục tiêu đều yếu, giá
+trị lớn nhất chỉ đạt $0{,}25$. Điều này cho thấy không có biến đơn lẻ nào
+tách được hai nhóm một cách rõ ràng.
 
-Tương quan từng cặp chỉ phát hiện được quan hệ hai biến. Hệ số phóng đại
-phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
-bởi \emph{toàn bộ} các biến còn lại:
+\subsection{Đa cộng tuyến và hệ số VIF}
+
+Hệ số tương quan chỉ phát hiện được quan hệ giữa từng cặp biến. Hệ số phóng
+đại phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
+bởi toàn bộ các biến còn lại:
 \[
   \mathrm{VIF}_j = \frac{1}{1 - R_j^2},
 \]
 với $R_j^2$ là hệ số xác định của hồi quy biến $j$ lên tất cả các biến
-khác. Hàm dưới đây tự cài đặt công thức đó bằng \texttt{lm()}, không cần
-gói \texttt{car}.
+khác.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -698,10 +670,10 @@ gói \texttt{car}.
 \end{kframe}
 \end{knitrout}
 
-Theo quy ước thường dùng, $\mathrm{VIF} > 5$ là đáng lo và
-$\mathrm{VIF} > 10$ là nghiêm trọng. \texttt{Albumin} vượt ngưỡng 10 và
-\texttt{Total\_Protiens} vượt ngưỡng 5, đúng như cặp tương quan $0{,}78$
-đã gợi ý.
+Theo quy ước thường dùng, giá trị VIF lớn hơn 5 là đáng lo ngại và lớn hơn
+10 là nghiêm trọng. Biến \texttt{Albumin} vượt ngưỡng 10 còn
+\texttt{Total\_Protiens} vượt ngưỡng 5, đúng như cặp tương quan $0{,}78$ đã
+gợi ý.
 
 \subsection{Phân bố các biến sinh hoá theo nhóm}
 
@@ -720,7 +692,7 @@ $\mathrm{VIF} > 10$ là nghiêm trọng. \texttt{Albumin} vượt ngưỡng 10 v
 
 }
 
-\caption[Phân bố 9 biến số theo nhóm bệnh, thang đo gốc]{Phân bố 9 biến số theo nhóm bệnh, thang đo gốc. Các men gan lệch phải rất nặng}\label{fig:boxplot-raw}
+\caption[Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc]{Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc}\label{fig:boxplot-raw}
 \end{figure}
 
 \begin{kframe}\begin{alltt}
@@ -729,19 +701,21 @@ $\mathrm{VIF} > 10$ là nghiêm trọng. \texttt{Albumin} vượt ngưỡng 10 v
 \end{kframe}
 \end{knitrout}
 
-Hình~\ref{fig:boxplot-raw} cho thấy năm biến --- hai loại bilirubin và ba
-men gan --- lệch phải cực nặng: hộp bị nén sát trục còn các điểm ngoại lai
-kéo dài lên trên. Đây là dạng phân bố điển hình của chỉ số men gan.
+Hình~\ref{fig:boxplot-raw} cho thấy năm biến gồm hai chỉ số bilirubin và ba
+men gan đều lệch phải rất nặng, với phần hộp bị nén sát trục còn các quan
+sát cực trị kéo dài lên trên. Đây là dạng phân bố điển hình của các chỉ số
+men gan.
 
-\subsection{Biến đổi log1p cho các biến lệch phải}
+\subsection{Biến đổi log cho các biến lệch phải}
 
-Cách xử lý ngoại lai quen thuộc là winsorization (kẹp giá trị ở phân vị
-1\% và 99\%). Ở đây cách đó \emph{không} phù hợp: các giá trị cực đại là
-tín hiệu lâm sàng thật --- AST khoảng 5000 U/L tương ứng với suy gan cấp
---- và chúng tập trung ở nhóm bệnh, nên kẹp chúng lại chính là xoá đi
-thông tin phân biệt hai lớp. Phép biến đổi $\log(1+x)$ là lựa chọn thích
-hợp hơn: nó nén đuôi phân phối mà vẫn \emph{bảo toàn thứ hạng} của các
-quan sát, do là hàm đơn điệu tăng.
+Phép biến đổi $\log(1+x)$ được áp dụng cho năm biến lệch phải nặng nói
+trên. Phép biến đổi này nén đuôi phân phối nhưng vẫn bảo toàn thứ hạng của
+các quan sát, do là hàm đơn điệu tăng. Việc bảo toàn thứ hạng có hai ý
+nghĩa. Thứ nhất, các giá trị cực đại vẫn giữ được vai trò tín hiệu lâm sàng
+của chúng, chẳng hạn nồng độ men gan AST khoảng 5000 U/L tương ứng với suy
+gan cấp, thay vì bị kẹp lại và mất đi khả năng phân biệt hai nhóm. Thứ hai,
+kết quả của các kiểm định dựa trên thứ hạng ở phần sau không bị thay đổi
+bởi phép biến đổi.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -753,7 +727,7 @@ quan sát, do là hàm đơn điệu tăng.
 \hldef{df_raw} \hlkwb{<-} \hldef{df}                       \hlcom{# giữ bản gốc để tra thang đo lâm sàng}
 \hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{skewed_cols) df[[col]]} \hlkwb{<-} \hlkwd{log1p}\hldef{(df[[col]])}
 
-\hlcom{# Hệ số bất đối xứng, tự tính vì base R không có hàm skewness}
+\hlcom{# Hệ số bất đối xứng (skewness)}
 \hldef{skewness} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) \{}
   \hldef{x} \hlkwb{<-} \hldef{x[}\hlopt{!}\hlkwd{is.na}\hldef{(x)]}
   \hlkwd{mean}\hldef{((x} \hlopt{-} \hlkwd{mean}\hldef{(x))}\hlopt{^}\hlnum{3}\hldef{)} \hlopt{/} \hldef{(}\hlkwd{mean}\hldef{((x} \hlopt{-} \hlkwd{mean}\hldef{(x))}\hlopt{^}\hlnum{2}\hldef{))}\hlopt{^}\hlnum{1.5}
@@ -775,9 +749,12 @@ quan sát, do là hàm đơn điệu tăng.
 \end{kframe}
 \end{knitrout}
 
-Hiệu quả rất rõ: \texttt{Aspartate\_Aminotransferase} giảm hệ số bất đối
-xứng từ $10{,}52$ xuống $1{,}23$, \texttt{Alamine\_Aminotransferase} từ
-$6{,}53$ xuống $1{,}47$. Cả năm biến đều về mức bất đối xứng nhẹ.
+Hiệu quả của phép biến đổi rất rõ rệt. Biến
+\texttt{Aspartate\_Aminotransferase} giảm hệ số bất đối xứng từ $10{,}52$
+xuống $1{,}23$, biến \texttt{Alamine\_Aminotransferase} giảm từ $6{,}53$
+xuống $1{,}47$. Cả năm biến đều trở về mức bất đối xứng nhẹ, và khác biệt
+giữa hai nhóm trở nên quan sát được rõ ràng hơn
+(Hình~\ref{fig:boxplot-log}).
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -795,7 +772,7 @@ $6{,}53$ xuống $1{,}47$. Cả năm biến đều về mức bất đối xứn
 
 }
 
-\caption[Phân bố sau khi biến đổi log1p]{Phân bố sau khi biến đổi log1p. Khác biệt giữa hai nhóm trở nên nhìn được}\label{fig:boxplot-log}
+\caption[Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log]{Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log}\label{fig:boxplot-log}
 \end{figure}
 
 \begin{kframe}\begin{alltt}
@@ -804,12 +781,12 @@ $6{,}53$ xuống $1{,}47$. Cả năm biến đều về mức bất đối xứn
 \end{kframe}
 \end{knitrout}
 
-\subsection{VIF tính lại trên thang log}
+\subsection{Hệ số VIF trên thang log}
 
-Một điểm dễ bị bỏ qua: hệ số tương quan Pearson và VIF \emph{không} bất
-biến với phép biến đổi log (khác với các kiểm định dựa trên thứ hạng). Ma
-trận thiết kế mà mô hình thực sự sử dụng là ma trận trên thang log, nên
-VIF phải được tính lại trên đúng thang đó.
+Một điểm dễ bị bỏ qua là hệ số tương quan Pearson và hệ số VIF không bất
+biến với phép biến đổi log, khác với các kiểm định dựa trên thứ hạng. Ma
+trận thiết kế mà mô hình thực sự sử dụng là ma trận trên thang log, nên VIF
+cần được tính lại trên đúng thang đo đó.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -840,19 +817,19 @@ VIF phải được tính lại trên đúng thang đó.
 \end{kframe}
 \end{knitrout}
 
-Kết quả thay đổi hẳn bức tranh. Trên thang gốc, hai biến bilirubin có VIF
-chỉ khoảng $4{,}3$--$4{,}5$; trên thang log chúng vọt lên trên $20$ ---
-mức nghiêm trọng. Nguyên nhân là quan hệ giữa hai biến này vốn có dạng
-nhân tính, và phép lấy log đã biến nó thành quan hệ tuyến tính gần như
-hoàn hảo. Nếu chỉ nhìn VIF trên thang gốc, ta sẽ kết luận sai rằng cặp
-bilirubin không có vấn đề. Đây là căn cứ trực tiếp để loại
-\texttt{Direct\_Bilirubin} khỏi mô hình.
+Kết quả thay đổi hẳn nhận định ban đầu. Trên thang gốc, hai biến bilirubin
+có VIF chỉ khoảng $4{,}3$ đến $4{,}5$, tức dưới ngưỡng cảnh báo. Trên thang
+log, giá trị này tăng lên trên $20$, tức mức nghiêm trọng. Nguyên nhân là
+quan hệ giữa hai biến vốn có dạng nhân tính, và phép lấy log đã chuyển nó
+thành quan hệ tuyến tính gần như hoàn hảo. Nếu chỉ căn cứ vào VIF trên
+thang gốc, ta sẽ kết luận sai rằng cặp bilirubin không có vấn đề. Đây là cơ
+sở trực tiếp để loại biến \texttt{Direct\_Bilirubin} khỏi mô hình.
 
 \subsection{Thống kê mô tả theo nhóm}
 
-Bảng dưới đây được tính trên \texttt{df\_raw} --- thang đo gốc --- để các
-con số còn giữ nguyên đơn vị lâm sàng và có thể đối chiếu với khoảng tham
-chiếu xét nghiệm.
+Bảng thống kê dưới đây được tính trên thang đo gốc, để các con số giữ
+nguyên đơn vị lâm sàng và có thể đối chiếu với khoảng tham chiếu xét
+nghiệm.
 
 \begin{knitrout}\tiny
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -917,30 +894,25 @@ chiếu xét nghiệm.
 \end{kframe}
 \end{knitrout}
 
-Chênh lệch giữa trung bình và trung vị ở nhóm bệnh rất lớn --- chẳng hạn
-\texttt{Aspartate\_Aminotransferase} có trung bình $137{,}7$ nhưng trung
-vị chỉ $52{,}5$ --- một lần nữa khẳng định phân phối lệch nặng và củng cố
-lựa chọn dùng kiểm định phi tham số ở bước tiếp theo.
+Chênh lệch giữa trung bình và trung vị ở nhóm bệnh rất lớn. Chẳng hạn men
+gan AST có trung bình $137{,}70$ trong khi trung vị chỉ $52{,}50$. Điều này
+một lần nữa khẳng định phân phối lệch nặng và củng cố lựa chọn sử dụng kiểm
+định phi tham số ở bước tiếp theo.
 
-\subsection{Chọn biến: Mann-Whitney U và hiệu chỉnh FDR}
+\subsection{Lựa chọn biến}
 
-Vì phần lớn biến lệch phải nặng, kiểm định $t$ (giả định phân phối chuẩn)
-không phù hợp. Ta dùng kiểm định Mann-Whitney U, dựa trên thứ hạng nên
-không đòi hỏi giả định về dạng phân phối --- và cũng vì thế, giá trị $p$
-của nó \emph{không đổi} sau phép biến đổi log1p ở trên.
+Do phần lớn biến lệch phải nặng, việc so sánh hai nhóm được thực hiện bằng
+kiểm định phi tham số Mann-Whitney U, không đòi hỏi giả định về dạng phân
+phối. Kích thước ảnh hưởng đi kèm là hệ số tương quan
+\emph{rank-biserial}, nhận giá trị trong đoạn $[-1, 1]$, với giá trị tuyệt
+đối càng lớn thì mức tách biệt giữa hai nhóm càng rõ. Riêng biến
+\texttt{Gender} là biến phân loại nên sử dụng kết quả kiểm định Chi-square
+ở trên, với kích thước ảnh hưởng là hệ số Cramér's V.
 
-Kích thước ảnh hưởng đi kèm là hệ số tương quan \emph{rank-biserial}, nằm
-trong $[-1, 1]$:
-\[
-  r_{rb} = 1 - \frac{2U}{n_0 n_1}.
-\]
-Riêng biến \texttt{Gender} là biến phân loại nên dùng kết quả Chi-square ở
-trên với kích thước ảnh hưởng Cramér's V.
-
-Một vấn đề nữa cần xử lý: ta chạy 10 kiểm định cùng lúc ở mức $\alpha =
-0{,}05$. Xác suất có ít nhất một kết quả dương tính giả khi đó không còn
-là 5\% nữa. Thủ tục Benjamini--Hochberg hiệu chỉnh giá trị $p$ để kiểm
-soát \emph{tỉ lệ phát hiện sai} (False Discovery Rate).
+Vì mười kiểm định được thực hiện đồng thời ở mức $\alpha = 0{,}05$, xác
+suất có ít nhất một kết quả dương tính giả không còn là 5\%. Thủ tục
+Benjamini--Hochberg được áp dụng để hiệu chỉnh giá trị $p$, qua đó kiểm
+soát tỉ lệ phát hiện sai (False Discovery Rate).
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -991,21 +963,23 @@ soát \emph{tỉ lệ phát hiện sai} (False Discovery Rate).
 \end{kframe}
 \end{knitrout}
 
-Tám trên mười biến có ý nghĩa thống kê sau hiệu chỉnh FDR. Hai biến bị
-loại là \texttt{Gender} ($p_{FDR} = 0{,}066$) và \texttt{Total\_Protiens}
-($p_{FDR} = 0{,}437$). Nhóm men gan và bilirubin có kích thước ảnh hưởng
-lớn nhất (khoảng $0{,}35$--$0{,}39$), trong khi \texttt{Age} tuy có ý
-nghĩa thống kê nhưng kích thước ảnh hưởng chỉ $0{,}17$ --- một lời nhắc
-rằng ý nghĩa thống kê và ý nghĩa thực tiễn là hai chuyện khác nhau.
+Tám trên mười biến đạt ý nghĩa thống kê sau hiệu chỉnh FDR. Hai biến bị
+loại là \texttt{Gender} với $p_{FDR} = 0{,}066$ và
+\texttt{Total\_Protiens} với $p_{FDR} = 0{,}437$. Nhóm men gan và bilirubin
+có kích thước ảnh hưởng lớn nhất, trong khoảng $0{,}35$ đến $0{,}39$. Biến
+\texttt{Age} tuy đạt ý nghĩa thống kê nhưng kích thước ảnh hưởng chỉ
+$0{,}17$, cho thấy ý nghĩa thống kê và mức độ quan trọng thực tế là hai
+khía cạnh khác nhau.
 
 \section{Thiết kế quy trình mô hình hoá}
 
 \subsection{Tập biến đưa vào mô hình}
 
-Từ 10 biến ban đầu, ba biến bị loại với lý do khác nhau:
-\texttt{Direct\_Bilirubin} vì trùng thông tin với \texttt{Total\_Bilirubin}
-($r = 0{,}87$, VIF trên thang log khoảng 20); \texttt{Gender} và
-\texttt{Total\_Protiens} vì không đạt ngưỡng FDR.
+Từ 10 biến ban đầu, ba biến bị loại với lý do khác nhau.
+\texttt{Direct\_Bilirubin} bị loại do trùng thông tin với
+\texttt{Total\_Bilirubin}, thể hiện qua hệ số tương quan $0{,}87$ và VIF
+trên thang log khoảng 20. \texttt{Gender} và \texttt{Total\_Protiens} bị
+loại do không đạt ngưỡng ý nghĩa sau hiệu chỉnh FDR.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1020,18 +994,16 @@ Từ 10 biến ban đầu, ba biến bị loại với lý do khác nhau:
 \end{kframe}
 \end{knitrout}
 
-Cần thừa nhận rằng đa cộng tuyến chưa được loại bỏ hoàn toàn:
+Cần thừa nhận rằng đa cộng tuyến chưa được loại bỏ hoàn toàn. Hai biến
 \texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn liên quan
-chặt về mặt định nghĩa, và cặp men gan ALT/AST vẫn còn tương quan
-$0{,}79$. Đây là một lý do nữa để dùng hồi quy có điều chuẩn ridge ở
-Mục~\ref{sec:ridge} --- ridge xử lý được đa cộng tuyến còn lại bằng cách
-co các hệ số tương quan về phía nhau thay vì để chúng dao động ngược
-chiều.
+chặt về mặt định nghĩa, còn cặp men gan ALT và AST vẫn giữ mức tương quan
+$0{,}79$. Đây là một lý do nữa để sử dụng hồi quy có điều chuẩn ridge ở
+Mục~\ref{sec:ridge}.
 
 \subsection{Chia phân tầng và gán fold}
 
-Cả hai hàm dưới đây đều xáo trộn \emph{trong nội bộ từng lớp} rồi mới
-chia, nhờ vậy tỉ lệ 71/29 được giữ nguyên ở mọi tập con.
+Hai thủ tục dưới đây đều xáo trộn trong nội bộ từng lớp trước khi chia, nhờ
+vậy tỉ lệ 71 trên 29 được giữ nguyên ở mọi tập con.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1059,13 +1031,13 @@ chia, nhờ vậy tỉ lệ 71/29 được giữ nguyên ở mọi tập con.
 \end{kframe}
 \end{knitrout}
 
-\subsection{SMOTE: sinh mẫu tổng hợp cho lớp thiểu số}
+\subsection{Xử lý mất cân bằng lớp bằng SMOTE}
 
-Với tỉ lệ lớp 71/29, mô hình huấn luyện trực tiếp sẽ thiên vị lớp đa số.
-SMOTE (Synthetic Minority Over-sampling Technique) cân bằng lại bằng cách
-sinh thêm mẫu \emph{tổng hợp} cho lớp thiểu số, thay vì nhân bản mẫu có
-sẵn --- nhân bản chỉ làm tăng trọng số của đúng những điểm đã có và dễ dẫn
-tới overfitting. Mỗi mẫu mới được nội suy tuyến tính giữa một quan sát
+Với tỉ lệ lớp 71 trên 29, mô hình huấn luyện trực tiếp sẽ thiên vị lớp đa
+số. Kỹ thuật SMOTE (Synthetic Minority Over-sampling Technique) cân bằng
+lại bằng cách sinh thêm mẫu tổng hợp cho lớp thiểu số, thay vì nhân bản mẫu
+sẵn có. Nhân bản chỉ làm tăng trọng số của đúng những điểm đã tồn tại và dễ
+dẫn tới overfitting. Mỗi mẫu mới được nội suy tuyến tính giữa một quan sát
 thiểu số $x_a$ và một trong $k$ láng giềng gần nhất cùng lớp của nó:
 \[
   x_{new} = x_a + u \cdot (x_b - x_a), \qquad u \sim \mathcal{U}(0,1),
@@ -1107,24 +1079,24 @@ tức là một điểm ngẫu nhiên nằm trên đoạn thẳng nối hai quan
 \subsection{Hồi quy logistic có điều chuẩn ridge}
 \label{sec:ridge}
 
-Hàm \texttt{glm()} của base R không hỗ trợ phạt $L_2$, còn \texttt{glmnet}
-là gói biên dịch nằm ngoài phạm vi cài đặt đã chọn. Ta tự cài thuật toán
-IRLS (Iteratively Reweighted Least Squares). Bài toán cần giải là cực đại
-hoá log-likelihood có phạt:
-\[
-  \ell_{\lambda}(\beta) = \sum_{i=1}^{n}
-  \Big[ y_i\, \eta_i - \log\!\left(1 + e^{\eta_i}\right) \Big]
-  - \frac{\lambda}{2}\sum_{j=1}^{p}\beta_j^2,
-  \qquad \eta_i = x_i^{\top}\beta,
-\]
-trong đó hệ số chặn $\beta_0$ \emph{không} bị phạt. Mỗi vòng lặp IRLS quy
-bài toán về một bài toán bình phương tối thiểu có trọng số:
-\[
-  \beta^{(t+1)} = \left(X^{\top} W X + P\right)^{-1} X^{\top} W z,
-\]
-với $\mu_i = \sigma(\eta_i)$, trọng số $W = \mathrm{diag}\!\left(\mu_i(1
-- \mu_i)\right)$, biến phản hồi hiệu chỉnh $z = \eta + W^{-1}(y - \mu)$,
-và $P = \lambda I$ với phần tử $P_{11}$ đặt bằng 0.
+Mô hình phân loại được sử dụng là hồi quy logistic có bổ sung phạt $L_2$,
+còn gọi là điều chuẩn ridge. So với hồi quy logistic thông thường, hàm mục
+tiêu được cộng thêm một lượng phạt tỉ lệ với tổng bình phương các hệ số,
+với cường độ do tham số $\lambda$ điều khiển. Hệ số chặn không bị phạt.
+
+Vai trò của lượng phạt này là ổn định hoá nghiệm khi các biến giải thích
+còn tương quan với nhau. Trong trường hợp đó, mô hình không có điều chuẩn
+có thể gán cho hai biến tương quan hai hệ số rất lớn và ngược dấu, gần như
+triệt tiêu lẫn nhau; kết quả khớp dữ liệu vẫn tốt nhưng các hệ số dao động
+mạnh theo từng mẫu. Phạt $L_2$ khiến nghiệm co các hệ số này về phía nhau
+và về phía 0, đổi một chút độ chệch lấy mức giảm đáng kể của phương sai.
+
+Giá trị $\lambda$ càng lớn thì các hệ số càng bị co mạnh, kéo theo xác suất
+dự đoán tập trung quanh $0{,}5$. Đây là điểm cần lưu ý vì nó ảnh hưởng trực
+tiếp tới bước lựa chọn ngưỡng phân loại ở Mục~\ref{sec:threshold}. Nghiệm
+được tìm bằng thuật toán IRLS (Iteratively Reweighted Least Squares), một
+quy trình lặp trong đó mỗi vòng lặp giải một bài toán bình phương tối thiểu
+có trọng số.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1161,31 +1133,30 @@ và $P = \lambda I$ với phần tử $P_{11}$ đặt bằng 0.
 \end{kframe}
 \end{knitrout}
 
-\subsection{Đóng gói quy trình: phòng rò rỉ dữ liệu}
+\subsection{Phòng ngừa rò rỉ dữ liệu}
 \label{sec:pipeline}
 
-Đây là mục quan trọng nhất về mặt phương pháp luận. Quy trình huấn luyện
-gồm bốn bước, trong đó \emph{ba bước đầu đều học tham số từ dữ liệu}:
+Đây là nội dung quan trọng nhất về mặt phương pháp luận. Quy trình huấn
+luyện gồm bốn bước, trong đó ba bước đầu đều ước lượng tham số từ dữ liệu:
 
 \begin{enumerate}
-  \item điền khuyết --- học trung vị của từng cột;
-  \item chuẩn hoá --- học trung bình và độ lệch chuẩn của từng cột;
-  \item SMOTE --- sinh mẫu mới dựa trên cấu trúc láng giềng của dữ liệu;
-  \item khớp mô hình ridge.
+  \item điền khuyết, cần ước lượng trung vị của từng biến;
+  \item chuẩn hoá, cần ước lượng trung bình và độ lệch chuẩn của từng biến;
+  \item SMOTE, sinh mẫu mới dựa trên cấu trúc láng giềng của dữ liệu;
+  \item khớp mô hình hồi quy ridge.
 \end{enumerate}
 
-Nếu ba bước đầu được chạy trên \emph{toàn bộ} dữ liệu trước khi chia
-fold --- cách làm rất phổ biến vì tiện --- thì thông tin từ tập kiểm tra
-đã rò rỉ vào quá trình huấn luyện: trung vị và độ lệch chuẩn dùng để biến
-đổi tập huấn luyện đã được tính có sự đóng góp của chính những quan sát mà
-sau đó ta dùng để đánh giá. Kết quả báo cáo khi ấy lạc quan giả tạo. Riêng
-với SMOTE, hậu quả còn nặng hơn nhiều: nếu chạy trước khi chia, các mẫu
-tổng hợp nội suy từ quan sát nằm trong tập kiểm tra sẽ lọt vào tập huấn
-luyện, khiến mô hình gần như được xem trước đáp án.
+Nếu ba bước đầu được thực hiện trên toàn bộ dữ liệu trước khi chia fold,
+một cách làm khá phổ biến vì tiện lợi, thì thông tin từ tập kiểm tra đã rò
+rỉ vào quá trình huấn luyện. Cụ thể, trung vị và độ lệch chuẩn dùng để biến
+đổi tập huấn luyện đã được tính với sự đóng góp của chính những quan sát
+sau đó dùng để đánh giá, khiến kết quả công bố lạc quan giả tạo. Với SMOTE,
+hậu quả còn nặng hơn: các mẫu tổng hợp nội suy từ quan sát nằm trong tập
+kiểm tra sẽ lọt vào tập huấn luyện, và mô hình gần như được biết trước đáp
+án.
 
-Cách phòng duy nhất đúng là gói cả bốn bước vào một hàm và \emph{gọi hàm
-đó bên trong mỗi fold}, để nó chỉ nhìn thấy phần dữ liệu huấn luyện của
-fold ấy.
+Cách phòng ngừa đúng đắn là thực hiện lại toàn bộ bốn bước một cách độc lập
+bên trong mỗi fold, chỉ dựa trên phần dữ liệu huấn luyện của fold đó.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1220,11 +1191,11 @@ fold ấy.
 \end{kframe}
 \end{knitrout}
 
-Lưu ý rằng \texttt{fit\_pipeline} trả về cả \texttt{median},
-\texttt{mean}, \texttt{sd} chứ không chỉ hệ số $\beta$: đó chính là các
-tham số đã học, và \texttt{pipeline\_proba} phải áp lại đúng chúng lên dữ
-liệu mới. SMOTE không xuất hiện ở hàm dự đoán --- nó chỉ là kỹ thuật can
-thiệp vào tập huấn luyện, không bao giờ áp lên dữ liệu cần dự đoán.
+Ngoài các hệ số hồi quy, quy trình còn lưu lại trung vị, trung bình và độ
+lệch chuẩn đã ước lượng từ tập huấn luyện. Đó chính là những tham số học
+được, và chúng phải được áp dụng nguyên vẹn khi biến đổi dữ liệu mới. Riêng
+SMOTE không xuất hiện ở bước dự đoán, bởi đây chỉ là kỹ thuật can thiệp vào
+tập huấn luyện và không bao giờ được áp lên dữ liệu cần dự đoán.
 
 \subsection{Bộ chỉ số đánh giá}
 
@@ -1250,7 +1221,7 @@ thiệp vào tập huấn luyện, không bao giờ áp lên dữ liệu cần d
     \hlkwc{macro_f1} \hldef{= (f1_1} \hlopt{+} \hldef{f1_0)} \hlopt{/} \hlnum{2}\hldef{)}
 \hldef{\}}
 
-\hldef{print_confusion} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{y_true}\hldef{,} \hlkwc{y_pred}\hldef{,} \hlkwc{title} \hldef{=} \hlsng{"CONFUSION MATRIX"}\hldef{) \{}
+\hldef{print_confusion} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{y_true}\hldef{,} \hlkwc{y_pred}\hldef{,} \hlkwc{title} \hldef{=} \hlsng{"MA TRAN NHAM LAN"}\hldef{) \{}
   \hldef{tp} \hlkwb{<-} \hlkwd{sum}\hldef{(y_true} \hlopt{==} \hlnum{1} \hlopt{&} \hldef{y_pred} \hlopt{==} \hlnum{1}\hldef{); tn} \hlkwb{<-} \hlkwd{sum}\hldef{(y_true} \hlopt{==} \hlnum{0} \hlopt{&} \hldef{y_pred} \hlopt{==} \hlnum{0}\hldef{)}
   \hldef{fp} \hlkwb{<-} \hlkwd{sum}\hldef{(y_true} \hlopt{==} \hlnum{0} \hlopt{&} \hldef{y_pred} \hlopt{==} \hlnum{1}\hldef{); fn} \hlkwb{<-} \hlkwd{sum}\hldef{(y_true} \hlopt{==} \hlnum{1} \hlopt{&} \hldef{y_pred} \hlopt{==} \hlnum{0}\hldef{)}
 
@@ -1258,32 +1229,32 @@ thiệp vào tập huấn luyện, không bao giờ áp lên dữ liệu cần d
   \hlkwd{print}\hldef{(}\hlkwd{matrix}\hldef{(}\hlkwd{c}\hldef{(tn, fp, fn, tp),} \hlkwc{nrow} \hldef{=} \hlnum{2}\hldef{,} \hlkwc{byrow} \hldef{=} \hlnum{TRUE}\hldef{,}
                \hlkwc{dimnames} \hldef{=} \hlkwd{list}\hldef{(}\hlkwc{`Thực tế`} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Không bệnh"}\hldef{,} \hlsng{"Có bệnh"}\hldef{),}
                                \hlkwc{`Dự đoán`} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Không bệnh"}\hldef{,} \hlsng{"Có bệnh"}\hldef{))))}
-  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  TN = %3d   không bệnh, đoán đúng\textbackslash{}n"}\hldef{, tn))}
-  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  FP = %3d   không bệnh nhưng báo có bệnh\textbackslash{}n"}\hldef{, fp))}
-  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  FN = %3d   CÓ BỆNH nhưng bỏ sót\textbackslash{}n"}\hldef{, fn))}
-  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  TP = %3d   có bệnh, bắt được\textbackslash{}n"}\hldef{, tp))}
+  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  TN = %3d   không bệnh, dự đoán đúng\textbackslash{}n"}\hldef{, tn))}
+  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  FP = %3d   không bệnh, dự đoán nhầm là có bệnh\textbackslash{}n"}\hldef{, fp))}
+  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  FN = %3d   có bệnh, bị bỏ sót\textbackslash{}n"}\hldef{, fn))}
+  \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  TP = %3d   có bệnh, phát hiện được\textbackslash{}n"}\hldef{, tp))}
   \hlkwd{invisible}\hldef{(}\hlkwd{compute_metrics}\hldef{(y_true, y_pred))}
 \hldef{\}}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
 
-\emph{Macro F1} --- trung bình cộng F1 của hai lớp --- được chọn làm chỉ
-số tổng hợp vì nó cho hai lớp trọng số bằng nhau bất kể chênh lệch cỡ,
-đúng với tinh thần của bài toán mất cân bằng.
+Macro F1, tức trung bình cộng chỉ số F1 của hai lớp, được chọn làm chỉ số
+tổng hợp vì nó gán trọng số bằng nhau cho hai lớp bất kể chênh lệch cỡ, phù
+hợp với đặc thù của bài toán mất cân bằng.
 
-\section{Bootstrap: khoảng tin cậy cho Recall}
+\section{Ước lượng khoảng tin cậy bằng Bootstrap}
 
-Recall của lớp có bệnh chỉ là \emph{một} con số tính từ hơn trăm bệnh nhân
-trong tập kiểm tra. Gặp một nhóm bệnh nhân khác thì con số đó sẽ khác.
-Bootstrap ước lượng chính mức dao động ấy.
+Recall của lớp có bệnh chỉ là một con số tính từ hơn một trăm bệnh nhân
+trong tập kiểm tra. Với một nhóm bệnh nhân khác, con số đó sẽ khác đi.
+Bootstrap được dùng để ước lượng chính mức dao động ấy.
 
-Điều cần nói rõ về thiết kế: mô hình được huấn luyện \textbf{một lần} và
-dự đoán \textbf{một lần}; vector \texttt{pred\_test} sau đó cố định suốt
-vòng lặp. Mỗi lần lặp chỉ rút lại \emph{tập kiểm tra} có hoàn lại. Khoảng
-tin cậy thu được vì thế đo độ bất định đến từ việc lấy mẫu bệnh nhân kiểm
-tra, chứ không bao gồm độ bất định do thay đổi tập huấn luyện --- một giới
-hạn được bàn thêm ở phần kết luận.
+Về thiết kế, mô hình được huấn luyện một lần và dự đoán một lần, sau đó kết
+quả dự đoán được giữ cố định trong suốt vòng lặp. Mỗi lần lặp chỉ rút lại
+tập kiểm tra theo cách có hoàn lại. Khoảng tin cậy thu được vì thế phản ánh
+độ bất định đến từ việc lấy mẫu bệnh nhân kiểm tra, chứ không bao gồm độ
+bất định do thay đổi tập huấn luyện. Đây là một giới hạn được bàn thêm ở
+phần kết luận.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1359,13 +1330,13 @@ hạn được bàn thêm ở phần kết luận.
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlkwd{hist}\hldef{(recalls,} \hlkwc{breaks} \hldef{=} \hlnum{40}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"#66c2a5"}\hldef{,} \hlkwc{border} \hldef{=} \hlsng{"white"}\hldef{,}
-     \hlkwc{main} \hldef{=} \hlkwd{sprintf}\hldef{(}\hlsng{"Phân phối bootstrap của Recall (B = %d)"}\hldef{,}
+     \hlkwc{main} \hldef{=} \hlkwd{sprintf}\hldef{(}\hlsng{"Phân phối bootstrap của recall (B = %d)"}\hldef{,}
                     \hlkwd{length}\hldef{(recalls)),}
-     \hlkwc{xlab} \hldef{=} \hlsng{"Recall lớp có bệnh"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Số lần xuất hiện"}\hldef{)}
+     \hlkwc{xlab} \hldef{=} \hlsng{"Recall lớp có bệnh"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Tần số"}\hldef{)}
 \hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{= recall_point,} \hlkwc{col} \hldef{=} \hlsng{"#d53e4f"}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{)}
 \hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{= ci,} \hlkwc{col} \hldef{=} \hlsng{"gray40"}\hldef{,} \hlkwc{lty} \hldef{=} \hlnum{2}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{1.5}\hldef{)}
 \hlkwd{legend}\hldef{(}\hlsng{"topright"}\hldef{,} \hlkwc{bty} \hldef{=} \hlsng{"n"}\hldef{,} \hlkwc{cex} \hldef{=} \hlnum{0.85}\hldef{,}
-       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Điểm ước lượng = %.3f"}\hldef{, recall_point),}
+       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Ước lượng điểm = %.3f"}\hldef{, recall_point),}
                   \hlkwd{sprintf}\hldef{(}\hlsng{"KTC %.0f%%"}\hldef{, CONF} \hlopt{*} \hlnum{100}\hldef{)),}
        \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"gray40"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{2}\hldef{),} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{)}
 \end{alltt}
@@ -1375,30 +1346,30 @@ hạn được bàn thêm ở phần kết luận.
 
 }
 
-\caption[Phân phối bootstrap của Recall lớp có bệnh với B = 10000]{Phân phối bootstrap của Recall lớp có bệnh với B = 10000}\label{fig:boot-hist}
+\caption[Phân phối bootstrap của recall lớp có bệnh]{Phân phối bootstrap của recall lớp có bệnh}\label{fig:boot-hist}
 \end{figure}
 
 \end{knitrout}
 
-Với ngưỡng mặc định $0{,}5$, recall lớp có bệnh là $0{,}614$ và khoảng tin
-cậy 90\% là $[0{,}526;\ 0{,}700]$ --- bề rộng $0{,}174$, tức gần 17 điểm
-phần trăm. Con số này đáng chú ý: nó có nghĩa là nếu chỉ báo cáo
-``recall $= 0{,}61$'' thì ta đã che giấu một mức bất định rất lớn, hoàn
-toàn do cỡ mẫu kiểm tra chỉ có 116 quan sát, trong đó 83 ca bệnh. Đây
-chính là loại thông tin mà một con số điểm ước lượng đơn lẻ không bao giờ
-truyền tải được. Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap
-tương đối cân đối, biện minh cho việc dùng khoảng tin cậy phân vị đơn giản
-thay vì BCa.
+Với ngưỡng mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$ và khoảng
+tin cậy 90\% là $[0{,}526;\ 0{,}700]$, tức bề rộng $0{,}174$ hay gần 17
+điểm phần trăm. Con số này rất đáng lưu ý: nếu chỉ công bố giá trị recall
+bằng $0{,}61$, báo cáo sẽ bỏ qua một mức bất định rất lớn, mà nguyên nhân
+hoàn toàn nằm ở cỡ mẫu kiểm tra chỉ gồm 116 quan sát, trong đó có 83 ca
+bệnh. Đây chính là loại thông tin mà một ước lượng điểm đơn lẻ không thể
+truyền tải. Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối
+cân đối, phù hợp với việc sử dụng khoảng tin cậy phân vị.
 
-\section{Stratified K-fold Cross-Validation}
+\section{Kiểm định chéo phân tầng}
 
-Phần trên đánh giá mô hình trên một lần chia 80/20 duy nhất. K-fold CV
-luân phiên vai trò của cả 5 phần, nhờ đó mọi quan sát đều được dự đoán
-đúng một lần bởi một mô hình chưa từng thấy nó.
+Phần trên đánh giá mô hình trên một lần chia 80:20 duy nhất. Kiểm định chéo
+luân phiên vai trò của cả 5 phần, nhờ đó mọi quan sát đều được dự đoán đúng
+một lần bởi một mô hình chưa từng sử dụng nó trong huấn luyện.
 
-Chọn $k = 5$ có lý do cụ thể: mỗi fold kiểm tra đúng 20\% dữ liệu, trùng
-với tỉ lệ 80:20 ở phần trước, nên hai phần cùng đánh giá mô hình được huấn
-luyện trên khoảng 466 mẫu và có thể so sánh trực tiếp với nhau.
+Giá trị $k = 5$ được chọn với lý do cụ thể: mỗi fold kiểm tra đúng 20\% dữ
+liệu, trùng với tỉ lệ chia 80:20 ở phần trước. Nhờ vậy hai cách đánh giá
+cùng áp dụng cho mô hình huấn luyện trên khoảng 466 quan sát và có thể so
+sánh trực tiếp với nhau.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1448,30 +1419,32 @@ luyện trên khoảng 466 mẫu và có thể so sánh trực tiếp với nhau
 \end{kframe}
 \end{knitrout}
 
-Kết quả được báo cáo dạng \emph{trung bình $\pm$ độ lệch chuẩn giữa các
-fold}, không phải một con số đơn lẻ. Độ lệch chuẩn ở đây có ý nghĩa riêng:
-nó cho biết kết quả dao động bao nhiêu khi đổi sang một cách chia dữ liệu
-khác. Recall dao động mạnh nhất ($0{,}606 \pm 0{,}047$, trải từ $0{,}524$
-ở fold 1 tới $0{,}639$ ở fold 2), trong khi macro F1 ổn định hơn
-($0{,}643 \pm 0{,}031$).
+Kết quả được báo cáo dưới dạng trung bình kèm độ lệch chuẩn giữa các fold,
+thay vì một con số đơn lẻ. Độ lệch chuẩn ở đây mang ý nghĩa riêng, cho biết
+kết quả dao động bao nhiêu khi chuyển sang một cách chia dữ liệu khác.
+Recall dao động mạnh nhất, đạt $0{,}606 \pm 0{,}047$ và trải từ $0{,}524$ ở
+fold thứ nhất tới $0{,}639$ ở fold thứ hai, trong khi macro F1 ổn định hơn
+với $0{,}643 \pm 0{,}031$.
 
-Điểm đáng chú ý là recall trung bình qua 5 fold ($0{,}606$) rất gần với
-recall đo trên một lần chia 80/20 ở phần trước ($0{,}614$), và cả hai đều
-nằm gọn trong khoảng tin cậy bootstrap $[0{,}526;\ 0{,}700]$. Hai phương
-pháp resampling độc lập cho kết quả nhất quán --- một dấu hiệu tốt cho
-thấy ước lượng không phải sản phẩm của một lần chia may mắn.
+Một điểm đáng chú ý là recall trung bình qua 5 fold, bằng $0{,}606$, rất
+gần với recall đo được trên một lần chia 80:20 ở phần trước, bằng $0{,}614$,
+và cả hai đều nằm gọn trong khoảng tin cậy bootstrap $[0{,}526;\ 0{,}700]$.
+Hai phương pháp resampling độc lập cho kết quả nhất quán, cho thấy ước
+lượng không phải sản phẩm của một lần chia dữ liệu thuận lợi.
 
-\section{Tinh chỉnh siêu tham số bằng grid search + K-fold}
+\section{Tinh chỉnh siêu tham số}
 
-Từ đây trở đi, quy trình tuân thủ nghiêm ngặt nguyên tắc phân vai:
-\textbf{K-fold CV chạy trên tập huấn luyện để tinh chỉnh, tập kiểm tra bị
-niêm phong} và chỉ được mở ở phần cuối cùng.
+Từ đây trở đi, quy trình tuân thủ nghiêm ngặt nguyên tắc phân vai: kiểm
+định chéo chạy trên tập huấn luyện để tinh chỉnh, còn tập kiểm tra được giữ
+nguyên vẹn và chỉ sử dụng ở phần cuối cùng.
 
-Hai siêu tham số được dò: cường độ điều chuẩn $\lambda$ của ridge và số
-láng giềng $k$ mà SMOTE dùng để nội suy. Tiêu chí chấm điểm là macro F1
-chứ \emph{không} phải recall thuần --- tối đa hoá recall lớp 1 có một
-nghiệm tầm thường là dự đoán tất cả đều ``có bệnh'', cho recall bằng 1
-nhưng hoàn toàn vô dụng.
+Hai siêu tham số được dò trên lưới là cường độ điều chuẩn $\lambda$ của
+ridge và số láng giềng $k$ mà SMOTE dùng để nội suy, tạo thành 15 cấu hình.
+Mỗi cấu hình được đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện,
+tương ứng 75 lần huấn luyện mô hình. Tiêu chí chấm điểm là macro F1 chứ
+không phải recall của lớp có bệnh. Lý do là việc tối đa hoá recall lớp có
+bệnh có một nghiệm tầm thường, đó là dự đoán tất cả quan sát đều mắc bệnh,
+cho recall bằng 1 nhưng không có giá trị sử dụng.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1496,7 +1469,7 @@ nhưng hoàn toàn vô dụng.
     \hldef{scores[i]} \hlkwb{<-} \hlkwd{compute_metrics}\hldef{(y_train[te], pred_g)[}\hlsng{"macro_f1"}\hldef{]}
   \hldef{\}}
   \hldef{grid_mean[g]} \hlkwb{<-} \hlkwd{mean}\hldef{(scores)}
-  \hldef{grid_sd[g]} \hlkwb{<-} \hlkwd{sd}\hldef{(scores)}     \hlcom{# dao động giữa 5 fold, dùng để đo mức nhiễu}
+  \hldef{grid_sd[g]} \hlkwb{<-} \hlkwd{sd}\hldef{(scores)}     \hlcom{# dao động giữa 5 fold, đo mức ổn định}
 \hldef{\}}
 
 \hldef{param_grid}\hlopt{$}\hldef{macro_f1} \hlkwb{<-} \hldef{grid_mean}
@@ -1515,86 +1488,88 @@ nhưng hoàn toàn vô dụng.
 \end{kframe}
 \end{knitrout}
 
-\subsection{Quy tắc phá thế hoà trong phạm vi một sai số chuẩn}
+Cấu hình đạt điểm cao nhất là $\lambda = 100$ với $k_{SMOTE} = 7$, cho macro
+F1 bằng $0{,}6440$. Tuy nhiên chênh lệch giữa năm cấu hình dẫn đầu chỉ
+khoảng $0{,}004$, trong khi sai số chuẩn của trung bình 5 fold là
+$0{,}0075$. Mức chênh lệch giữa các cấu hình như vậy còn nhỏ hơn sai số của
+chính phép đo, nên thứ hạng này không đủ vững để khẳng định cấu hình dẫn
+đầu thực sự tốt hơn những cấu hình còn lại.
 
-Lấy thẳng \texttt{which.max} là một sai lầm phổ biến khi các bộ tham số
-cho điểm chênh nhau ít hơn chính sai số của phép đo. Ở đây bộ đứng đầu đạt
-macro F1 $= 0{,}6440$ còn bộ thứ năm đạt $0{,}6399$ --- chênh lệch
-$0{,}004$, trong khi sai số chuẩn của trung bình 5 fold là $0{,}0075$.
-Trong tình huống đó, ``bộ thắng'' chỉ đơn giản là bộ gặp may với cách chia
-fold cụ thể này; chọn nó không có cơ sở thống kê nào.
-
-Cách xử lý: coi mọi bộ nằm trong phạm vi \emph{một sai số chuẩn} quanh
-điểm cao nhất là ngang tài nhau, rồi phá hoà bằng một tiêu chí có lý do rõ
-ràng.
+Vì lý do đó, mọi cấu hình nằm trong phạm vi một sai số chuẩn quanh điểm cao
+nhất được xem là tương đương nhau, và có 14 trên 15 cấu hình thoả điều kiện
+này. Trong nhóm tương đương, cấu hình có $\lambda$ nhỏ nhất được chọn, căn
+cứ vào đặc điểm đã nêu ở Mục~\ref{sec:ridge}: giá trị $\lambda$ lớn nén xác
+suất dự đoán quanh $0{,}5$ và làm bước lựa chọn ngưỡng ở phần sau kém hiệu
+quả.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hldef{i_top} \hlkwb{<-} \hlkwd{which.max}\hldef{(param_grid}\hlopt{$}\hldef{macro_f1)}
 \hldef{se_top} \hlkwb{<-} \hldef{param_grid}\hlopt{$}\hldef{sd_fold[i_top]} \hlopt{/} \hlkwd{sqrt}\hldef{(}\hlnum{5}\hldef{)}   \hlcom{# sai số chuẩn của trung bình}
+
+\hlcom{# Nhóm cấu hình tương đương: cách điểm cao nhất không quá một sai số chuẩn}
 \hldef{tied} \hlkwb{<-} \hlkwd{which}\hldef{(param_grid}\hlopt{$}\hldef{macro_f1} \hlopt{>=} \hldef{param_grid}\hlopt{$}\hldef{macro_f1[i_top]} \hlopt{-} \hldef{se_top)}
 
+\hlcom{# Trong nhóm đó, ưu tiên lambda nhỏ nhất}
 \hldef{cand} \hlkwb{<-} \hldef{tied[param_grid}\hlopt{$}\hldef{lambda[tied]} \hlopt{==} \hlkwd{min}\hldef{(param_grid}\hlopt{$}\hldef{lambda[tied])]}
 \hldef{best_idx} \hlkwb{<-} \hldef{cand[}\hlkwd{which.max}\hldef{(param_grid}\hlopt{$}\hldef{macro_f1[cand])]}
 \hldef{best} \hlkwb{<-} \hldef{param_grid[best_idx, ]}
 
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Điểm cao nhất: %.4f (lambda = %g), sai số chuẩn = %.4f\textbackslash{}n"}\hldef{,}
-            \hldef{param_grid}\hlopt{$}\hldef{macro_f1[i_top], param_grid}\hlopt{$}\hldef{lambda[i_top], se_top))}
+\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"\textbackslash{}nSai số chuẩn của trung bình 5 fold: %.4f\textbackslash{}n"}\hldef{, se_top))}
 \end{alltt}
 \begin{verbatim}
-## Điểm cao nhất: 0.6440 (lambda = 100), sai số chuẩn = 0.0075
+## 
+## Sai số chuẩn của trung bình 5 fold: 0.0075
 \end{verbatim}
 \begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Có %d/%d bộ nằm trong phạm vi một sai số chuẩn\textbackslash{}n"}\hldef{,}
+\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Số cấu hình tương đương: %d/%d\textbackslash{}n"}\hldef{,}
             \hlkwd{length}\hldef{(tied),} \hlkwd{nrow}\hldef{(param_grid)))}
 \end{alltt}
 \begin{verbatim}
-## Có 14/15 bộ nằm trong phạm vi một sai số chuẩn
+## Số cấu hình tương đương: 14/15
 \end{verbatim}
 \begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Phá hoà bằng lambda nhỏ nhất -> lambda = %g, smote_k = %g\textbackslash{}n"}\hldef{,}
-            \hldef{best}\hlopt{$}\hldef{lambda, best}\hlopt{$}\hldef{smote_k))}
+\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Cấu hình được chọn: lambda = %g, smote_k = %g (macro F1 = %.4f)\textbackslash{}n"}\hldef{,}
+            \hldef{best}\hlopt{$}\hldef{lambda, best}\hlopt{$}\hldef{smote_k, best}\hlopt{$}\hldef{macro_f1))}
 \end{alltt}
 \begin{verbatim}
-## Phá hoà bằng lambda nhỏ nhất -> lambda = 0.01, smote_k = 3
+## Cấu hình được chọn: lambda = 0.01, smote_k = 3 (macro F1 = 0.6397)
 \end{verbatim}
 \begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Đã thử %d bộ x 5 fold = %d lần khớp mô hình\textbackslash{}n"}\hldef{,}
+\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Đã thử %d cấu hình x 5 fold = %d lần khớp mô hình\textbackslash{}n"}\hldef{,}
             \hlkwd{nrow}\hldef{(param_grid),} \hlkwd{nrow}\hldef{(param_grid)} \hlopt{*} \hlnum{5}\hldef{))}
 \end{alltt}
 \begin{verbatim}
-## Đã thử 15 bộ x 5 fold = 75 lần khớp mô hình
+## Đã thử 15 cấu hình x 5 fold = 75 lần khớp mô hình
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
 
-Kết quả cho thấy 14 trên 15 bộ tham số nằm trong phạm vi một sai số chuẩn
---- nói cách khác, lưới tham số này gần như không phân biệt được các cấu
-hình với nhau, và bất kỳ lựa chọn nào dựa trên chênh lệch điểm số đều là
-lựa chọn dựa trên nhiễu.
-
-Tiêu chí phá hoà được dùng là \textbf{chọn $\lambda$ nhỏ nhất}. Cần nhấn
-mạnh rằng điều này \emph{ngược} với quy tắc 1-SE quen thuộc trong tài
-liệu, vốn ưu tiên mô hình điều chuẩn mạnh hơn cho gọn. Lý do đảo chiều nằm
-ở bước tiếp theo của quy trình: ta sẽ chỉnh ngưỡng phân loại, mà việc đó
-cần xác suất dự đoán trải rộng. $\lambda$ lớn nén các hệ số lại, kéo xác
-suất co về quanh $0{,}5$, khiến ngưỡng trở nên cực kỳ nhạy --- dịch một
-chút là recall của hai lớp đảo lộn. Khi các bộ đã ngang điểm nhau trong
-phạm vi nhiễu, chọn bộ cho xác suất trải rộng hơn là lựa chọn có căn cứ.
-
-\section{Chọn ngưỡng phân loại}
+\section{Lựa chọn ngưỡng phân loại}
+\label{sec:threshold}
 
 Ngưỡng mặc định $0{,}5$ tối ưu cho độ chính xác tổng thể và không ưu tiên
-lớp nào. Bài toán y tế thì khác: bỏ sót một ca bệnh (FN) tốn kém hơn nhiều
-so với báo động nhầm một người khoẻ (FP), vì FP chỉ dẫn tới một xét nghiệm
-bổ sung còn FN có thể khiến bệnh tiến triển không được phát hiện. Vì vậy
-ta hạ ngưỡng xuống để đẩy recall lớp có bệnh lên.
+lớp nào. Bài toán chẩn đoán bệnh lại khác. Bỏ sót một ca bệnh gây hậu quả
+nặng hơn nhiều so với báo động nhầm một người khoẻ mạnh, bởi báo động nhầm
+chỉ dẫn tới một xét nghiệm bổ sung, trong khi bỏ sót có thể khiến bệnh tiến
+triển mà không được phát hiện. Vì vậy ngưỡng được hạ xuống để tăng recall
+của lớp có bệnh.
 
-Ngưỡng \emph{phải} được dò trên tập huấn luyện. Dò trên tập kiểm tra thì
-tập kiểm tra đã tham gia vào một quyết định, và con số báo cáo cuối cùng
-sẽ lạc quan giả tạo. Ta dùng dự đoán \emph{out-of-fold}: mỗi mẫu huấn
-luyện được chấm điểm bởi mô hình chưa từng nhìn thấy nó.
+Tiêu chí lựa chọn là \textbf{tối thiểu hoá tổng số ca phân loại sai}, tức
+tổng của số ca bệnh bị bỏ sót và số người khoẻ bị báo nhầm. Cần nhấn mạnh
+rằng đây là tiêu chí đếm trực tiếp trên số bệnh nhân, khác với các chỉ số
+tỉ lệ như recall hay macro F1. Sự phân biệt này quan trọng vì hai lớp có cỡ
+rất khác nhau: một điểm phần trăm recall của lớp có bệnh tương ứng với
+nhiều bệnh nhân hơn hẳn so với một điểm phần trăm của lớp không bệnh. Tiêu
+chí đếm vì thế tự động đặt trọng số cao hơn cho lớp đông, ở đây chính là
+lớp có bệnh.
+
+Ngưỡng bắt buộc phải được xác định trên tập huấn luyện. Nếu dò trên tập
+kiểm tra thì tập này đã tham gia vào một quyết định của quá trình xây dựng
+mô hình, và con số công bố cuối cùng sẽ lạc quan giả tạo. Ở đây, ngưỡng
+được xác định thông qua dự đoán \emph{out-of-fold}, trong đó mỗi quan sát
+của tập huấn luyện được chấm điểm bởi mô hình chưa từng sử dụng nó.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1608,10 +1583,13 @@ luyện được chấm điểm bởi mô hình chưa từng nhìn thấy nó.
 \hldef{\}}
 
 \hldef{grid_thr} \hlkwb{<-} \hlkwd{seq}\hldef{(}\hlnum{0.05}\hldef{,} \hlnum{0.95}\hldef{,} \hlkwc{by} \hldef{=} \hlnum{0.005}\hldef{)}
-\hldef{rec1} \hlkwb{<-} \hldef{rec0} \hlkwb{<-} \hlkwd{numeric}\hldef{(}\hlkwd{length}\hldef{(grid_thr))}
+\hldef{rec1} \hlkwb{<-} \hldef{rec0} \hlkwb{<-} \hldef{n_fn} \hlkwb{<-} \hldef{n_fp} \hlkwb{<-} \hlkwd{numeric}\hldef{(}\hlkwd{length}\hldef{(grid_thr))}
 \hlkwa{for} \hldef{(i} \hlkwa{in} \hlkwd{seq_along}\hldef{(grid_thr)) \{}
-  \hldef{m} \hlkwb{<-} \hlkwd{compute_metrics}\hldef{(y_train,} \hlkwd{as.integer}\hldef{(oof_proba} \hlopt{>=} \hldef{grid_thr[i]))}
+  \hldef{pred_t} \hlkwb{<-} \hlkwd{as.integer}\hldef{(oof_proba} \hlopt{>=} \hldef{grid_thr[i])}
+  \hldef{m} \hlkwb{<-} \hlkwd{compute_metrics}\hldef{(y_train, pred_t)}
   \hldef{rec1[i]} \hlkwb{<-} \hldef{m[}\hlsng{"recall1"}\hldef{]; rec0[i]} \hlkwb{<-} \hldef{m[}\hlsng{"recall0"}\hldef{]}
+  \hldef{n_fn[i]} \hlkwb{<-} \hlkwd{sum}\hldef{(y_train} \hlopt{==} \hlnum{1} \hlopt{&} \hldef{pred_t} \hlopt{==} \hlnum{0}\hldef{)}   \hlcom{# ca bệnh bị bỏ sót}
+  \hldef{n_fp[i]} \hlkwb{<-} \hlkwd{sum}\hldef{(y_train} \hlopt{==} \hlnum{0} \hlopt{&} \hldef{pred_t} \hlopt{==} \hlnum{1}\hldef{)}   \hlcom{# người khoẻ bị báo nhầm}
 \hldef{\}}
 \end{alltt}
 \end{kframe}
@@ -1627,8 +1605,8 @@ luyện được chấm điểm bởi mô hình chưa từng nhìn thấy nó.
 \hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{=} \hlnum{0.5}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"gray50"}\hldef{,} \hlkwc{lty} \hldef{=} \hlnum{3}\hldef{)}
 \hlkwd{grid}\hldef{(}\hlkwc{col} \hldef{=} \hlsng{"gray90"}\hldef{)}
 \hlkwd{legend}\hldef{(}\hlsng{"right"}\hldef{,} \hlkwc{bty} \hldef{=} \hlsng{"n"}\hldef{,} \hlkwc{cex} \hldef{=} \hlnum{0.85}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{,}
-       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Recall lớp 1 - có bệnh (độ nhạy)"}\hldef{,}
-                  \hlsng{"Recall lớp 0 - không bệnh (độ đặc hiệu)"}\hldef{,}
+       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Recall lớp có bệnh (độ nhạy)"}\hldef{,}
+                  \hlsng{"Recall lớp không bệnh (độ đặc hiệu)"}\hldef{,}
                   \hlsng{"Ngưỡng mặc định 0.5"}\hldef{),}
        \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"#3288bd"}\hldef{,} \hlsng{"gray50"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{3}\hldef{))}
 \end{alltt}
@@ -1643,38 +1621,36 @@ luyện được chấm điểm bởi mô hình chưa từng nhìn thấy nó.
 
 \end{knitrout}
 
-Hình~\ref{fig:threshold-plot} thể hiện đúng bản chất đánh đổi: hai đường
-đi ngược chiều nhau, mọi điểm recall lớp 1 tăng thêm đều phải trả bằng
-recall lớp 0 giảm đi. Bảng tra dưới đây lượng hoá cái giá đó.
+Hình~\ref{fig:threshold-plot} thể hiện rõ bản chất đánh đổi giữa hai chỉ
+số: hai đường đi ngược chiều nhau, và mọi mức tăng của recall lớp có bệnh
+đều phải trả bằng mức giảm tương ứng của recall lớp không bệnh. Bảng tra
+dưới đây lượng hoá cái giá đó.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hldef{lookup} \hlkwb{<-} \hlkwd{data.frame}\hldef{()}
-\hlkwa{for} \hldef{(target} \hlkwa{in} \hlkwd{c}\hldef{(}\hlnum{0.70}\hldef{,} \hlnum{0.75}\hldef{,} \hlnum{0.80}\hldef{,} \hlnum{0.85}\hldef{,} \hlnum{0.90}\hldef{,} \hlnum{0.95}\hldef{)) \{}
-  \hldef{ok} \hlkwb{<-} \hlkwd{which}\hldef{(rec1} \hlopt{>=} \hldef{target)}
-  \hlkwa{if} \hldef{(}\hlkwd{length}\hldef{(ok)} \hlopt{==} \hlnum{0}\hldef{)} \hlkwa{next}
-  \hldef{i} \hlkwb{<-} \hldef{ok[}\hlkwd{which.max}\hldef{(grid_thr[ok])]}     \hlcom{# ngưỡng CAO NHẤT vẫn đạt mục tiêu}
-  \hldef{lookup} \hlkwb{<-} \hlkwd{rbind}\hldef{(lookup,} \hlkwd{data.frame}\hldef{(}
-    \hlkwc{recall_muc_tieu} \hldef{= target,} \hlkwc{nguong} \hldef{= grid_thr[i],}
-    \hlkwc{recall_lop1} \hldef{= rec1[i],} \hlkwc{recall_lop0} \hldef{= rec0[i]}
-  \hldef{))}
-\hldef{\}}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(lookup,} \hlnum{3}\hldef{),} \hlkwc{row.names} \hldef{=} \hlnum{FALSE}\hldef{)}
+\hldef{sel} \hlkwb{<-} \hlkwd{which}\hldef{(}\hlkwd{round}\hldef{(grid_thr,} \hlnum{3}\hldef{)} \hlopt{%in%} \hlkwd{c}\hldef{(}\hlnum{0.50}\hldef{,} \hlnum{0.45}\hldef{,} \hlnum{0.40}\hldef{,} \hlnum{0.375}\hldef{,} \hlnum{0.35}\hldef{,}
+                                       \hlnum{0.33}\hldef{,} \hlnum{0.30}\hldef{,} \hlnum{0.25}\hldef{))}
+\hlkwd{print}\hldef{(}\hlkwd{data.frame}\hldef{(}
+  \hlkwc{nguong} \hldef{= grid_thr[sel],} \hlkwc{FN} \hldef{= n_fn[sel],} \hlkwc{FP} \hldef{= n_fp[sel],}
+  \hlkwc{tong_sai} \hldef{= n_fn[sel]} \hlopt{+} \hldef{n_fp[sel],}
+  \hlkwc{recall_lop1} \hldef{=} \hlkwd{round}\hldef{(rec1[sel],} \hlnum{3}\hldef{),} \hlkwc{recall_lop0} \hldef{=} \hlkwd{round}\hldef{(rec0[sel],} \hlnum{3}\hldef{)}
+\hldef{),} \hlkwc{row.names} \hldef{=} \hlnum{FALSE}\hldef{)}
 \end{alltt}
 \begin{verbatim}
-##  recall_muc_tieu nguong recall_lop1 recall_lop0
-##             0.70  0.420       0.706       0.664
-##             0.75  0.385       0.757       0.590
-##             0.80  0.350       0.802       0.530
-##             0.85  0.325       0.853       0.403
-##             0.90  0.285       0.901       0.284
-##             0.95  0.210       0.955       0.082
+##  nguong  FN  FP tong_sai recall_lop1 recall_lop0
+##   0.250  21 115      136       0.937       0.142
+##   0.300  38  94      132       0.886       0.299
+##   0.330  51  72      123       0.847       0.463
+##   0.350  66  63      129       0.802       0.530
+##   0.375  75  58      133       0.775       0.567
+##   0.400  90  51      141       0.730       0.619
+##   0.450 111  40      151       0.667       0.701
+##   0.500 129  31      160       0.613       0.769
 \end{verbatim}
 \begin{alltt}
-\hldef{TARGET_RECALL} \hlkwb{<-} \hlnum{0.70}
-\hldef{ok} \hlkwb{<-} \hlkwd{which}\hldef{(rec1} \hlopt{>=} \hldef{TARGET_RECALL)}
-\hldef{threshold} \hlkwb{<-} \hldef{grid_thr[ok[}\hlkwd{which.max}\hldef{(grid_thr[ok])]]}
+\hldef{threshold} \hlkwb{<-} \hldef{grid_thr[}\hlkwd{which.min}\hldef{(n_fn} \hlopt{+} \hldef{n_fp)]}
+\hldef{i_thr} \hlkwb{<-} \hlkwd{which}\hldef{(grid_thr} \hlopt{==} \hldef{threshold)}
 
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"\textbackslash{}nNgưỡng mặc định : 0.500\textbackslash{}n"}\hldef{))}
 \end{alltt}
@@ -1683,27 +1659,39 @@ recall lớp 0 giảm đi. Bảng tra dưới đây lượng hoá cái giá đó
 ## Ngưỡng mặc định : 0.500
 \end{verbatim}
 \begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Ngưỡng đã chọn  : %.3f  (mục tiêu recall >= %.2f)\textbackslash{}n"}\hldef{,}
-            \hldef{threshold, TARGET_RECALL))}
+\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Ngưỡng đã chọn  : %.3f\textbackslash{}n"}\hldef{, threshold))}
 \end{alltt}
 \begin{verbatim}
-## Ngưỡng đã chọn  : 0.420  (mục tiêu recall >= 0.70)
+## Ngưỡng đã chọn  : 0.330
+\end{verbatim}
+\begin{alltt}
+\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  Trên out-of-fold: FN = %d, FP = %d, tổng = %d\textbackslash{}n"}\hldef{,}
+            \hldef{n_fn[i_thr], n_fp[i_thr], n_fn[i_thr]} \hlopt{+} \hldef{n_fp[i_thr]))}
+\end{alltt}
+\begin{verbatim}
+##   Trên out-of-fold: FN = 51, FP = 72, tổng = 123
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
 
-Bảng tra cho thấy cái giá tăng rất nhanh. Để đạt recall $0{,}70$ ta chỉ
-mất một ít độ đặc hiệu (còn $0{,}664$); nhưng để đạt $0{,}90$ thì độ đặc
-hiệu tụt xuống $0{,}284$, và ở mức $0{,}95$ chỉ còn $0{,}082$ --- lúc đó
-mô hình gần như báo ``có bệnh'' cho tất cả mọi người và mất hết giá trị
-sàng lọc. Mức $0{,}70$ được chọn vì nó nằm ở đoạn đánh đổi còn cân bằng,
-tương ứng ngưỡng $0{,}420$.
+Bảng tra cho thấy tổng số ca sai đạt cực tiểu tại ngưỡng $0{,}330$, với 51
+ca bệnh bị bỏ sót và 72 người khoẻ bị báo nhầm trên tổng 123 ca sai. Ở
+ngưỡng mặc định $0{,}500$, tổng này là 160 ca, trong đó riêng số ca bệnh bị
+bỏ sót đã là 129. Ngưỡng $0{,}330$ do đó vừa giảm tổng sai sót, vừa đảo
+ngược tương quan giữa hai loại lỗi: số ca bệnh bỏ sót trở nên ít hơn số
+người khoẻ bị báo nhầm.
 
-\section{Đánh giá cuối cùng trên tập kiểm tra}
+Hai đầu bảng minh hoạ giới hạn của việc điều chỉnh ngưỡng. Hạ tiếp xuống
+$0{,}250$ thì số ca bệnh bỏ sót giảm còn 21, nhưng số người khoẻ bị báo
+nhầm tăng lên 115 trên tổng 134, tức mô hình xếp gần như toàn bộ người khoẻ
+vào nhóm có bệnh và mất giá trị sàng lọc. Ngược lại, nâng lên $0{,}500$ thì
+độ đặc hiệu đạt $0{,}769$ nhưng phải trả bằng 129 ca bệnh bị bỏ sót.
 
-Đây là lần \textbf{đầu tiên} tập kiểm tra được đụng tới kể từ khi niêm
-phong. Mô hình được khớp lại trên toàn bộ tập huấn luyện với siêu tham số
-đã chọn, rồi áp ngưỡng $0{,}420$.
+\section{Đánh giá trên tập kiểm tra}
+
+Đây là lần đầu tiên tập kiểm tra được sử dụng kể từ đầu quy trình. Mô hình
+được khớp lại trên toàn bộ tập huấn luyện với siêu tham số đã chọn, sau đó
+áp ngưỡng $0{,}330$.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1715,34 +1703,34 @@ phong. Mô hình được khớp lại trên toàn bộ tập huấn luyện v�
 \hldef{pred_05} \hlkwb{<-} \hlkwd{as.integer}\hldef{(proba_final} \hlopt{>=} \hlnum{0.5}\hldef{)}
 
 \hldef{m_final} \hlkwb{<-} \hlkwd{print_confusion}\hldef{(y_test, pred_final,}
-                           \hlkwd{sprintf}\hldef{(}\hlsng{"CONFUSION MATRIX (ngưỡng %.3f)"}\hldef{,}
+                           \hlkwd{sprintf}\hldef{(}\hlsng{"MA TRAN NHAM LAN (nguong %.3f)"}\hldef{,}
                                    \hldef{threshold))}
 \end{alltt}
 \begin{verbatim}
 ## 
-## CONFUSION MATRIX (ngưỡng 0.420)
+## MA TRAN NHAM LAN (nguong 0.330)
 ##             Dự đoán
 ## Thực tế  Không bệnh Có bệnh
-##   Không bệnh         27       6
-##   Có bệnh            25      58
-##   TN =  27   không bệnh, đoán đúng
-##   FP =   6   không bệnh nhưng báo có bệnh
-##   FN =  25   CÓ BỆNH nhưng bỏ sót
-##   TP =  58   có bệnh, bắt được
+##   Không bệnh         14      19
+##   Có bệnh            15      68
+##   TN =  14   không bệnh, dự đoán đúng
+##   FP =  19   không bệnh, dự đoán nhầm là có bệnh
+##   FN =  15   có bệnh, bị bỏ sót
+##   TP =  68   có bệnh, phát hiện được
 \end{verbatim}
 \begin{alltt}
-\hlkwd{cat}\hldef{(}\hlsng{"\textbackslash{}nCác chỉ số trên tập test:\textbackslash{}n"}\hldef{)}
+\hlkwd{cat}\hldef{(}\hlsng{"\textbackslash{}nCác chỉ số trên tập kiểm tra:\textbackslash{}n"}\hldef{)}
 \end{alltt}
 \begin{verbatim}
 ## 
-## Các chỉ số trên tập test:
+## Các chỉ số trên tập kiểm tra:
 \end{verbatim}
 \begin{alltt}
 \hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(m_final,} \hlnum{3}\hldef{))}
 \end{alltt}
 \begin{verbatim}
 ##   accuracy    recall1 precision1    recall0 precision0   macro_f1 
-##      0.733      0.699      0.906      0.818      0.519      0.712
+##      0.707      0.819      0.782      0.424      0.483      0.626
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1759,21 +1747,34 @@ phong. Mô hình được khớp lại trên toàn bộ tập huấn luyện v�
 \begin{verbatim}
 ##                  accuracy recall1 precision1 recall0 precision0
 ## 0.500 (mặc định)    0.681   0.614      0.911   0.848      0.467
-## đã chỉnh            0.733   0.699      0.906   0.818      0.519
+## đã chỉnh            0.707   0.819      0.782   0.424      0.483
 ##                  macro_f1
 ## 0.500 (mặc định)    0.668
-## đã chỉnh            0.712
+## đã chỉnh            0.626
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
 
-Việc hạ ngưỡng từ $0{,}500$ xuống $0{,}420$ đẩy recall lớp có bệnh từ
-$0{,}614$ lên $0{,}699$ --- bắt thêm được 7 ca bệnh --- với cái giá là độ
-đặc hiệu giảm nhẹ từ $0{,}848$ xuống $0{,}818$ (thêm 1 báo động nhầm).
-Điều đáng chú ý là accuracy và macro F1 \emph{cũng} tăng, chứ không giảm
-như thường thấy khi ưu tiên một lớp. Nguyên nhân là ngưỡng $0{,}5$ vốn
-không tối ưu trên dữ liệu mất cân bằng này ngay cả theo tiêu chí tổng hợp;
-mức $0{,}420$ tình cờ tốt hơn ở cả hai phương diện.
+Việc hạ ngưỡng từ $0{,}500$ xuống $0{,}330$ đạt được mục tiêu đặt ra. Số ca
+bệnh bị bỏ sót giảm từ 32 xuống 15, tức phát hiện thêm 17 bệnh nhân, trong
+khi số người khoẻ bị báo nhầm tăng từ 5 lên 19. Quan hệ giữa hai loại lỗi
+đảo chiều: ở ngưỡng mặc định, số ca bỏ sót gấp hơn sáu lần số báo động
+nhầm; ở ngưỡng đã chọn, số ca bỏ sót đã ít hơn số báo động nhầm. Recall của
+lớp có bệnh tăng từ $0{,}614$ lên $0{,}819$, và độ chính xác tổng thể cũng
+nhích từ $0{,}681$ lên $0{,}707$.
+
+Cái giá phải trả nằm ở lớp không bệnh. Độ đặc hiệu giảm mạnh từ $0{,}848$
+xuống $0{,}424$, nghĩa là hơn một nửa số người khoẻ mạnh bị xếp nhầm vào
+nhóm có bệnh. Precision của lớp có bệnh giảm từ $0{,}911$ xuống $0{,}782$,
+và macro F1 giảm từ $0{,}668$ xuống $0{,}626$. Đây là đánh đổi có chủ đích:
+tiêu chí lựa chọn ngưỡng đặt trọng tâm vào việc giảm số ca bệnh bị bỏ sót,
+nên tất yếu phải chấp nhận nhiều báo động nhầm hơn.
+
+Mức đánh đổi này cũng được tái lập khá sát giữa hai tập dữ liệu. Trên dự
+đoán out-of-fold của tập huấn luyện, ngưỡng $0{,}330$ cho recall $0{,}847$
+và độ đặc hiệu $0{,}463$; trên tập kiểm tra, hai giá trị tương ứng là
+$0{,}819$ và $0{,}424$. Sự tương đồng cho thấy ngưỡng chọn được không chỉ
+phù hợp riêng với dữ liệu dùng để dò nó.
 
 \subsection{Khoảng tin cậy bootstrap cho toàn bộ chỉ số}
 
@@ -1803,12 +1804,12 @@ mức $0{,}420$ tình cờ tốt hơn ở cả hai phương diện.
 \end{alltt}
 \begin{verbatim}
 ##            diem_uoc_luong ci_duoi ci_tren sai_so_chuan
-## accuracy           0.7328  0.6552  0.8103       0.0413
-## recall1            0.6988  0.5977  0.8000       0.0512
-## precision1         0.9062  0.8305  0.9701       0.0368
-## recall0            0.8182  0.6774  0.9412       0.0676
-## precision0         0.5192  0.3859  0.6586       0.0693
-## macro_f1           0.7122  0.6230  0.7947       0.0437
+## accuracy           0.7069  0.6207  0.7931       0.0427
+## recall1            0.8193  0.7349  0.9024       0.0432
+## precision1         0.7816  0.6933  0.8675       0.0448
+## recall0            0.4242  0.2500  0.6000       0.0872
+## precision0         0.4828  0.3077  0.6800       0.0941
+## macro_f1           0.6258  0.5279  0.7195       0.0492
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1841,88 +1842,104 @@ mức $0{,}420$ tình cờ tốt hơn ở cả hai phương diện.
 \end{kframe}
 \end{knitrout}
 
-Kết quả chính: \textbf{recall lớp có bệnh $= 0{,}699$, khoảng tin cậy 95\%
-là $[0{,}598;\ 0{,}800]$}. Hình~\ref{fig:forest-plot} cho thấy độ rộng
-khoảng tin cậy khác nhau đáng kể giữa các chỉ số, và sự khác biệt đó phản
-ánh trực tiếp cỡ mẫu dùng để tính từng chỉ số. \texttt{precision1} có
-khoảng hẹp nhất ($\pm 0{,}07$) vì mẫu số của nó gồm 64 dự đoán dương tính;
-ngược lại \texttt{precision0} có khoảng rộng nhất ($[0{,}386;\ 0{,}659]$,
-sai số chuẩn $0{,}069$) vì chỉ tính trên 52 dự đoán âm tính. Nói cách
-khác, ước lượng $0{,}519$ cho \texttt{precision0} gần như không cho biết
-điều gì chắc chắn --- một cảnh báo mà điểm ước lượng đơn lẻ hoàn toàn giấu
-đi.
+Kết quả chính của báo cáo là recall lớp có bệnh đạt $0{,}819$ với khoảng
+tin cậy 95\% là $[0{,}735;\ 0{,}902]$.
+
+Hình~\ref{fig:forest-plot} cho thấy độ rộng khoảng tin cậy khác nhau đáng
+kể giữa các chỉ số, và sự khác biệt đó phản ánh trực tiếp cỡ mẫu dùng để
+tính từng chỉ số. Recall của lớp có bệnh có khoảng hẹp nhất, với sai số
+chuẩn $0{,}043$, vì được tính trên toàn bộ 83 ca bệnh. Ngược lại, hai chỉ
+số của lớp không bệnh có khoảng rộng nhất: độ đặc hiệu bằng
+$[0{,}250;\ 0{,}600]$ và precision bằng $[0{,}308;\ 0{,}680]$, đều với sai
+số chuẩn gần $0{,}09$. Nguyên nhân là chúng chỉ được tính trên 33 người
+khoẻ và 29 dự đoán âm tính. Nói cách khác, các ước lượng $0{,}424$ và
+$0{,}483$ cho hai chỉ số này mang rất ít thông tin xác định, và đó là điều
+mà một ước lượng điểm đơn lẻ hoàn toàn không thể hiện được.
 
 \section{Kết luận}
 
-Tiểu luận đã xây dựng một quy trình phân loại hoàn chỉnh trên dữ liệu ILPD
-và, quan trọng hơn, minh hoạ vai trò phân công rõ ràng giữa hai kỹ thuật
+Báo cáo đã xây dựng một quy trình phân loại hoàn chỉnh trên bộ dữ liệu ILPD
+và, quan trọng hơn, minh hoạ sự phân công vai trò rõ ràng giữa hai kỹ thuật
 resampling.
 
-\textbf{K-fold Cross-Validation trong vai trò chọn mô hình.} Kiểm định
-chéo phân tầng 5 phần được dùng ở ba chỗ khác nhau: đánh giá tổng quát mô
-hình cơ sở ($0{,}643 \pm 0{,}031$ macro F1), dò 15 bộ siêu tham số qua 75
-lần khớp mô hình, và sinh dự đoán out-of-fold để chọn ngưỡng phân loại.
-Điểm rút ra đáng giá nhất không phải bộ tham số thắng cuộc mà là phát hiện
-rằng 14 trên 15 bộ nằm trong phạm vi một sai số chuẩn của nhau --- tức là
-lưới tham số này về cơ bản không phân biệt được các cấu hình, và việc chọn
-bộ có điểm cao nhất sẽ là chọn theo nhiễu. Chính độ lệch chuẩn giữa các
-fold, thứ mà một lần chia train/test đơn lẻ không thể cung cấp, đã cho
-phép nhận ra điều đó.
+\textbf{Vai trò của kiểm định chéo trong lựa chọn mô hình.} Kiểm định chéo
+phân tầng 5 phần được sử dụng ở ba vị trí: đánh giá mô hình cơ sở với macro
+F1 đạt $0{,}643 \pm 0{,}031$, dò 15 cấu hình siêu tham số qua 75 lần khớp
+mô hình, và sinh dự đoán out-of-fold phục vụ lựa chọn ngưỡng phân loại.
+Ngoài giá trị trung bình, kiểm định chéo còn cung cấp độ lệch chuẩn giữa
+các fold. Chính đại lượng này cho thấy 14 trên 15 cấu hình siêu tham số nằm
+trong phạm vi một sai số chuẩn của nhau, nghĩa là lưới tham số về cơ bản
+không phân biệt được chúng, và việc chọn cấu hình có điểm cao nhất sẽ là
+chọn theo nhiễu. Một lần chia train/test đơn lẻ không thể cung cấp thông
+tin này.
 
-\textbf{Bootstrap trong vai trò định lượng độ tin cậy.} Mô hình cuối đạt
-recall $0{,}699$ trên tập kiểm tra, nhưng khoảng tin cậy 95\% trải từ
-$0{,}598$ tới $0{,}800$. Bề rộng hơn 20 điểm phần trăm này là thông tin
-thiết yếu: nó nói rằng với cỡ mẫu hiện có, ta không thể phân biệt được mô
-hình này với một mô hình có recall thật sự là $0{,}62$ hay $0{,}78$. Mọi
-so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều phải đọc qua lăng
-kính đó.
+\textbf{Vai trò của Bootstrap trong định lượng độ tin cậy.} Mô hình cuối
+đạt recall $0{,}819$ trên tập kiểm tra, nhưng khoảng tin cậy 95\% trải từ
+$0{,}735$ tới $0{,}902$. Bề rộng gần 17 điểm phần trăm này là thông tin
+thiết yếu, bởi nó cho thấy với cỡ mẫu hiện có, không thể phân biệt được mô
+hình này với một mô hình có recall thực sự bằng $0{,}74$ hay $0{,}90$. Mọi
+so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều cần được diễn giải
+trong bối cảnh đó.
 
-\textbf{Về mô hình.} Cấu hình cuối là hồi quy logistic ridge với
-$\lambda = 0{,}01$, SMOTE với $k = 3$ láng giềng, ngưỡng phân loại
-$0{,}420$, trên 7 biến còn lại sau khi loại \texttt{Direct\_Bilirubin}
-(đa cộng tuyến), \texttt{Gender} và \texttt{Total\_Protiens} (không đạt
-FDR). Nhóm biến quan trọng nhất là các men gan và bilirubin, với kích
-thước ảnh hưởng rank-biserial khoảng $0{,}35$--$0{,}39$.
+\textbf{Về mô hình và ngưỡng phân loại.} Cấu hình cuối cùng là hồi quy
+logistic có điều chuẩn ridge với $\lambda = 0{,}01$, kết hợp SMOTE với
+$k = 3$ láng giềng và ngưỡng phân loại $0{,}330$, sử dụng 7 biến còn lại
+sau khi loại \texttt{Direct\_Bilirubin} do đa cộng tuyến cùng
+\texttt{Gender} và \texttt{Total\_Protiens} do không đạt ngưỡng ý nghĩa sau
+hiệu chỉnh FDR. Nhóm biến quan trọng nhất là các men gan và bilirubin, với
+kích thước ảnh hưởng rank-biserial trong khoảng $0{,}35$ đến $0{,}39$.
+
+Ngưỡng $0{,}330$ được chọn theo tiêu chí tối thiểu hoá tổng số ca phân loại
+sai, thay vì tối ưu một chỉ số tỉ lệ. Lựa chọn này phản ánh ưu tiên lâm
+sàng của bài toán sàng lọc, khi bỏ sót một ca bệnh gây hậu quả nặng hơn một
+báo động nhầm. Kết quả trên tập kiểm tra là 15 ca bệnh bị bỏ sót so với 19
+người khoẻ bị báo nhầm, tức lỗi tốn kém hơn đã trở thành lỗi ít gặp hơn.
+Đổi lại, độ đặc hiệu chỉ còn $0{,}424$ và macro F1 giảm xuống $0{,}626$;
+đây là cái giá trực tiếp của ưu tiên nói trên, không phải khuyết điểm của
+mô hình.
 
 \subsection{Hạn chế}
 
 \begin{enumerate}
-  \item \textbf{Hiệu năng tuyệt đối còn thấp.} Recall $0{,}699$ nghĩa là
-        vẫn bỏ sót khoảng 30\% ca bệnh (25 trên 83 bệnh nhân trong tập
-        kiểm tra). Đặc biệt \texttt{precision0} chỉ đạt $0{,}519$: trong
-        số những người mô hình kết luận là khoẻ mạnh, gần một nửa thực ra
-        có bệnh. Đây chưa phải mức chấp nhận được cho một công cụ sàng lọc
-        dùng trong thực tế.
-  \item \textbf{Khoảng tin cậy bootstrap chỉ tính một nguồn bất định.} Vì
-        mô hình được cố định trong suốt vòng lặp và chỉ tập kiểm tra được
-        rút lại, khoảng thu được phản ánh biến thiên do lấy mẫu bệnh nhân
-        kiểm tra, chứ không tính tới biến thiên do thay đổi tập huấn
-        luyện. Độ bất định thật sự do đó \emph{rộng hơn} con số báo cáo.
-        Khắc phục đúng cách là dùng bootstrap lồng --- huấn luyện lại mô
-        hình trong mỗi lần lặp --- với chi phí tính toán cao hơn nhiều.
-  \item \textbf{Cỡ mẫu nhỏ.} 583 quan sát, trong đó tập kiểm tra chỉ 116,
-        là nguyên nhân trực tiếp của các khoảng tin cậy rộng.
-  \item \textbf{Tính đại diện.} Dữ liệu thu thập ở một vùng địa lý duy
-        nhất (đông bắc Andhra Pradesh, Ấn Độ) nên kết quả chưa chắc tổng
-        quát hoá được sang quần thể khác.
-  \item \textbf{Đa cộng tuyến còn sót.} \texttt{Albumin} và
-        \texttt{Albumin\_and\_Globulin\_Ratio} vẫn liên quan chặt về định
-        nghĩa; điều chuẩn ridge làm dịu vấn đề này nhưng không loại bỏ
-        được nó, và hệ quả là các hệ số riêng lẻ của mô hình không nên
-        được diễn giải như mức độ quan trọng của từng biến.
+  \item \textbf{Hiệu năng tuyệt đối còn thấp.} Recall $0{,}819$ vẫn đồng
+        nghĩa với việc bỏ sót 15 trên 83 bệnh nhân trong tập kiểm tra. Ở
+        chiều ngược lại, độ đặc hiệu chỉ đạt $0{,}424$ nên 19 trên 33 người
+        khoẻ mạnh bị báo nhầm, kéo theo chi phí xét nghiệm bổ sung đáng kể
+        nếu triển khai thực tế. Precision của lớp không bệnh đạt $0{,}483$,
+        nghĩa là trong số những người mô hình kết luận không mắc bệnh, hơn
+        một nửa thực tế có bệnh.
+  \item \textbf{Khoảng tin cậy chỉ phản ánh một nguồn bất định.} Do mô hình
+        được giữ cố định trong suốt vòng lặp và chỉ tập kiểm tra được lấy
+        mẫu lại, khoảng thu được phản ánh biến thiên do lấy mẫu bệnh nhân
+        kiểm tra, chứ không tính tới biến thiên do thay đổi tập huấn luyện.
+        Độ bất định thực tế vì vậy rộng hơn con số đã công bố.
+  \item \textbf{Cỡ mẫu hạn chế.} Bộ dữ liệu chỉ có 583 quan sát, trong đó
+        tập kiểm tra gồm 116 quan sát. Đây là nguyên nhân trực tiếp của các
+        khoảng tin cậy rộng và của việc nhiều so sánh không đạt mức phân
+        biệt thống kê.
+  \item \textbf{Tính đại diện.} Dữ liệu được thu thập tại một vùng địa lý
+        duy nhất là đông bắc bang Andhra Pradesh, Ấn Độ, nên kết quả chưa
+        chắc tổng quát hoá được sang quần thể khác.
+  \item \textbf{Đa cộng tuyến chưa được loại bỏ hoàn toàn.} Hai biến
+        \texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn liên
+        quan chặt về mặt định nghĩa. Điều chuẩn ridge làm giảm ảnh hưởng
+        của vấn đề này nhưng không loại bỏ được nó, và hệ quả là các hệ số
+        riêng lẻ của mô hình không nên được diễn giải như mức độ quan trọng
+        của từng biến.
 \end{enumerate}
 
 \subsection{Hướng mở rộng}
 
-Ba hướng có triển vọng nhất, xếp theo mức độ ưu tiên. Thứ nhất,
-\emph{bootstrap lồng} để khoảng tin cậy bao gồm cả biến thiên do huấn
-luyện. Thứ hai, \emph{repeated stratified k-fold} --- lặp toàn bộ quy
-trình CV với nhiều seed khác nhau --- để giảm phương sai của ước lượng và
-kiểm tra xem kết luận ``14/15 bộ tham số ngang nhau'' có ổn định không.
-Thứ ba, thử các họ mô hình phi tuyến (random forest, gradient boosting)
-vốn có thể nắm bắt tương tác giữa các men gan mà mô hình tuyến tính bỏ
-qua; khi đó chính khung K-fold đã dựng ở đây sẽ là công cụ so sánh khách
-quan giữa các họ mô hình.
+Ba hướng mở rộng được đề xuất theo thứ tự ưu tiên. Thứ nhất, huấn luyện lại
+mô hình trong từng lần lặp bootstrap để khoảng tin cậy bao gồm cả biến
+thiên do quá trình huấn luyện, đổi lại chi phí tính toán cao hơn nhiều. Thứ
+hai, lặp lại toàn bộ quy trình kiểm định chéo với nhiều cách chia khác nhau
+nhằm giảm phương sai của ước lượng và kiểm tra xem kết luận về sự tương
+đương giữa 14 trên 15 cấu hình có ổn định hay không. Thứ ba, mở rộng sang các họ
+mô hình phi tuyến như random forest hay gradient boosting, vốn có khả năng
+nắm bắt tương tác giữa các chỉ số men gan mà mô hình tuyến tính bỏ qua. Khi
+đó, chính khung kiểm định chéo đã thiết lập trong báo cáo này sẽ là công cụ
+so sánh khách quan giữa các họ mô hình.
 
 \section{Tài liệu tham khảo}
 

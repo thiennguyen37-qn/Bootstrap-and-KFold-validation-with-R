@@ -582,6 +582,10 @@ cat(sprintf("Đã thử %d bộ x 5 fold = %d lần khớp mô hình\n",
 # lớp nào. Bài toán bệnh tật thì bỏ sót ca bệnh (FN) tốn kém hơn báo động nhầm
 # (FP), nên hạ ngưỡng xuống để đẩy recall lớp có bệnh lên.
 #
+# TIÊU CHÍ: tối thiểu hoá TỔNG SỐ CA SAI (FN + FP) trên dự đoán out-of-fold.
+# Đây là tiêu chí đếm trực tiếp trên số bệnh nhân, không phải trên tỉ lệ, nên nó
+# kéo ngưỡng xuống đủ thấp để FN không còn vượt trội so với FP.
+#
 # NGƯỠNG PHẢI DÒ TRÊN TẬP TRAIN. Dò trên tập test thì tập test đã tham gia vào
 # một quyết định, con số báo cáo sẽ lạc quan giả tạo.
 
@@ -600,11 +604,13 @@ for (i in seq_len(5)) {
 #   recall lớp 1 = độ nhạy (sensitivity)    - bắt được bao nhiêu phần ca bệnh
 #   recall lớp 0 = độ đặc hiệu (specificity) - loại đúng bao nhiêu phần người khoẻ
 grid_thr <- seq(0.05, 0.95, by = 0.005)
-rec1 <- rec0 <- numeric(length(grid_thr))
+rec1 <- rec0 <- n_fn <- n_fp <- numeric(length(grid_thr))
 for (i in seq_along(grid_thr)) {
   pred_t <- as.integer(oof_proba >= grid_thr[i])
   m <- compute_metrics(y_train, pred_t)
   rec1[i] <- m["recall1"]; rec0[i] <- m["recall0"]
+  n_fn[i] <- sum(y_train == 1 & pred_t == 0)   # ca bệnh bị bỏ sót
+  n_fp[i] <- sum(y_train == 0 & pred_t == 1)   # người khoẻ bị báo nhầm
 }
 
 plot(grid_thr, rec1, type = "l", col = "#d53e4f", lwd = 2, ylim = c(0, 1),
@@ -619,28 +625,23 @@ legend("right", bty = "n", cex = 0.85, lwd = 2,
                   "Ngưỡng mặc định 0.5"),
        col = c("#d53e4f", "#3288bd", "gray50"), lty = c(1, 1, 3))
 
-# Bảng tra: muốn đạt mức recall lớp 1 nào thì phải hạ ngưỡng tới đâu,
-# và recall lớp 0 phải trả giá bao nhiêu
+# Bảng tra: hạ ngưỡng thì FN giảm, FP tăng. Cột tổng_sai là tiêu chí lựa chọn.
 cat("\nBảng tra ngưỡng (out-of-fold trên tập train):\n")
-lookup <- data.frame()
-for (target in c(0.70, 0.75, 0.80, 0.85, 0.90, 0.95)) {
-  ok <- which(rec1 >= target)
-  if (length(ok) == 0) next
-  i <- ok[which.max(grid_thr[ok])]     # ngưỡng CAO NHẤT vẫn đạt mục tiêu
-  lookup <- rbind(lookup, data.frame(
-    recall_muc_tieu = target, nguong = grid_thr[i],
-    recall_lop1 = rec1[i], recall_lop0 = rec0[i]
-  ))
-}
-print(round(lookup, 3), row.names = FALSE)
+sel <- which(round(grid_thr, 3) %in% c(0.50, 0.45, 0.40, 0.375, 0.35,
+                                       0.33, 0.30, 0.25))
+print(data.frame(
+  nguong = grid_thr[sel], FN = n_fn[sel], FP = n_fp[sel],
+  tong_sai = n_fn[sel] + n_fp[sel],
+  recall_lop1 = round(rec1[sel], 3), recall_lop0 = round(rec0[sel], 3)
+), row.names = FALSE)
 
-TARGET_RECALL <- 0.70        # mốc chọn dựa trên biểu đồ và bảng tra ở trên
-ok <- which(rec1 >= TARGET_RECALL)
-threshold <- grid_thr[ok[which.max(grid_thr[ok])]]
+threshold <- grid_thr[which.min(n_fn + n_fp)]
+i_thr <- which(grid_thr == threshold)
 
 cat(sprintf("\nNgưỡng mặc định                      : 0.500\n"))
-cat(sprintf("Ngưỡng chọn từ out-of-fold trên train: %.3f  (mục tiêu recall >= %.2f)\n",
-            threshold, TARGET_RECALL))
+cat(sprintf("Ngưỡng chọn từ out-of-fold trên train: %.3f\n", threshold))
+cat(sprintf("  Trên out-of-fold: FN = %d, FP = %d, tổng = %d\n",
+            n_fn[i_thr], n_fp[i_thr], n_fn[i_thr] + n_fp[i_thr]))
 
 
 # =============================================================================
