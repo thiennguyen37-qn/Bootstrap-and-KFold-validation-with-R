@@ -25,14 +25,30 @@ BASE <- sub("\\.Rnw$", "", RNW)
 NEED_STREAK <- 3
 MAX_ATTEMPTS <- 40
 
-# Tự dò trong TinyTeX thay vì ghi cứng đường dẫn: thư mục con của bin/ khác nhau
-# theo hệ điều hành (windows, x86_64-darwin, ...). Không dùng "xelatex" trần vì
-# trên máy này PATH vẫn trỏ về bản MiKTeX đã hỏng.
-xelatex <- list.files(file.path(tinytex::tinytex_root(), "bin"),
-                      pattern = "^xelatex(\\.exe)?$",
-                      recursive = TRUE, full.names = TRUE)[1]
-if (is.na(xelatex)) stop("Không tìm thấy xelatex trong TinyTeX. Cài bằng: ",
-                         "tinytex::install_tinytex()")
+# Dò engine xelatex theo thứ tự ưu tiên. TinyTeX trên máy này không dùng được:
+# tlmgr của nó không chạy (thư mục dự án có dấu tiếng Việt khiến perl báo "unable
+# to translate to a wide string"), nên không cài nổi các gói còn thiếu như
+# extarticle.cls. MiKTeX thì compile bình thường, nên ưu tiên MiKTeX; vòng lặp
+# retry bên dưới đã đủ để né các lần MiKTeX crash giữa chừng.
+find_xelatex <- function() {
+  miktex <- file.path(Sys.getenv("LOCALAPPDATA"),
+                      "Programs", "MiKTeX", "miktex", "bin", "x64", "xelatex.exe")
+  if (file.exists(miktex)) return(miktex)
+
+  tt_root <- tryCatch(tinytex::tinytex_root(), error = function(e) "")
+  if (nzchar(tt_root)) {
+    tt <- list.files(file.path(tt_root, "bin"), pattern = "^xelatex(\\.exe)?$",
+                     recursive = TRUE, full.names = TRUE)
+    if (length(tt) && !is.na(tt[1])) return(tt[1])
+  }
+
+  p <- Sys.which("xelatex")
+  if (nzchar(p)) return(unname(p))
+
+  stop("Không tìm thấy xelatex (đã thử MiKTeX, TinyTeX, PATH).")
+}
+xelatex <- find_xelatex()
+message("Dùng engine: ", xelatex)
 
 aux_files <- paste0(BASE, c(".aux", ".toc", ".out"))
 clean_aux <- function() unlink(aux_files)

@@ -79,36 +79,40 @@ set.seed(42)
 
 \section{Đặt vấn đề}
 
-Bệnh gan tiến triển âm thầm trong nhiều năm trước khi xuất hiện triệu chứng
-rõ rệt, và đến khi đó khả năng can thiệp đã thu hẹp đáng kể. Việc sàng lọc
-sớm dựa trên các chỉ số sinh hoá thường quy như bilirubin, men gan và
-albumin vì vậy mang ý nghĩa thực tiễn lớn. Bộ dữ liệu \emph{Indian Liver
-Patient Dataset} (ILPD) ghi lại những chỉ số này cùng chẩn đoán xác định
-của 583 bệnh nhân, đặt ra một bài toán phân loại nhị phân: dự đoán tình
-trạng mắc bệnh gan từ kết quả xét nghiệm.
+Bệnh lý về gan thường tiến triển âm thầm trong nhiều năm trước khi xuất hiện
+các triệu chứng lâm sàng rõ rệt, khiến cơ hội can thiệp y khoa bị thu hẹp đáng
+kể. Do đó, việc sàng lọc sớm dựa trên các chỉ số sinh hóa thường quy như
+bilirubin, men gan và albumin mang ý nghĩa thực tiễn rất lớn. Bộ dữ liệu 
+\emph{Indian Liver Patient Dataset} (ILPD) ghi nhận các chỉ số này cùng chẩn 
+đoán xác định từ 583 bệnh nhân, tạo tiền đề cho một bài toán phân loại nhị 
+phân: dự đoán tình trạng mắc bệnh gan từ kết quả xét nghiệm.
 
-Nếu chỉ dừng ở việc khớp một mô hình rồi công bố một giá trị độ chính xác,
-bài toán chưa được giải quyết trọn vẹn. Giá trị ấy được tính trên một mẫu
-hữu hạn và sẽ thay đổi nếu quan sát một nhóm bệnh nhân khác. Hai câu hỏi
-cần được trả lời là:
+Trong thực hành học máy, việc chỉ huấn luyện một mô hình duy nhất và báo cáo 
+một giá trị độ chính xác đơn lẻ là chưa đủ thuyết phục. Chỉ số này được tính 
+trên một mẫu dữ liệu hữu hạn, do đó sẽ biến động khi áp dụng trên các quần 
+thể bệnh nhân khác. Để đánh giá mô hình một cách toàn diện, hai câu hỏi cốt 
+lõi cần được giải quyết:
 
 \begin{enumerate}
-  \item Trong các cấu hình mô hình có thể xây dựng, cấu hình nào cho khả
-        năng dự đoán tốt nhất trên dữ liệu chưa từng quan sát? Câu hỏi này
-        đòi hỏi một cơ chế đánh giá khách quan, bảo đảm dữ liệu kiểm tra
-        không tham gia vào quá trình lựa chọn. Đó là vai trò của K-fold
-        Cross-Validation.
-  \item Mô hình được chọn có độ tin cậy đến đâu? Hiệu năng công bố là một
-        ước lượng điểm, cần được bổ sung khoảng tin cậy để phản ánh mức dao
-        động của nó. Đó là vai trò của Bootstrap.
+  \item Trong các cấu hình mô hình thử nghiệm, đâu là mô hình cho khả năng 
+        tổng quát hóa tốt nhất trên dữ liệu chưa từng quan sát? Điều này đòi 
+        hỏi một cơ chế đánh giá khách quan, đảm bảo dữ liệu kiểm thử hoàn 
+        toàn độc lập và không tham gia vào quá trình tối ưu hóa. Đó là vai 
+        trò của \emph{K-fold Cross-Validation}.
+  \item Độ tin cậy của mô hình được chọn đạt mức độ nào? Điểm hiệu năng công 
+        bố vốn chỉ là một ước lượng điểm (point estimate), do đó cần được bổ 
+        sung khoảng tin cậy (confidence interval) để phản ánh mức độ biến 
+        động và tính ổn định của nó. Đó là vai trò của \emph{Bootstrap}.
 \end{enumerate}
 
-Nói ngắn gọn, K-fold Cross-Validation phục vụ việc lựa chọn mô hình, còn
-Bootstrap phục vụ việc định lượng độ tin cậy của mô hình đã chọn. Báo cáo
-trình bày cơ sở lý thuyết của hai phương pháp, sau đó áp dụng chúng vào một
-quy trình hoàn chỉnh trên bộ dữ liệu ILPD, từ tiền xử lý và lựa chọn biến
-cho tới tinh chỉnh siêu tham số, lựa chọn ngưỡng phân loại và ước lượng
-khoảng tin cậy cho hiệu năng cuối cùng.
+Tóm lại, \emph{K-fold Cross-Validation} đóng vai trò cốt lõi trong việc tinh 
+chỉnh và lựa chọn mô hình, trong khi \emph{Bootstrap} đảm nhận nhiệm vụ định 
+lượng độ tin cậy của kết quả đánh giá. Báo cáo này trình bày cơ sở lý thuyết 
+của hai phương pháp, đồng thời triển khai một quy trình học máy hoàn chỉnh 
+trên bộ dữ liệu ILPD—từ tiền xử lý, lựa chọn đặc trưng, tinh chỉnh siêu tham 
+số, tối ưu ngưỡng phân loại cho đến ước lượng khoảng tin cậy cho hiệu năng 
+cuối cùng.
+
 
 \section{Cơ sở lý thuyết}
 
