@@ -574,34 +574,7 @@ vào độ chính xác tổng thể.
 
 \subsection{Tương quan giữa các biến}
 
-\begin{knitrout}\tiny
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{verbatim}
-##                Age Ttl_Bl Drct_B Alkl_P Almn_A Aspr_A Ttl_Pr Albumn
-## Age           1.00   0.01   0.01   0.08  -0.09  -0.02  -0.19  -0.26
-## Total_Bilrbn  0.01   1.00   0.87   0.21   0.21   0.24  -0.01  -0.22
-## Direct_Blrbn  0.01   0.87   1.00   0.23   0.23   0.26   0.00  -0.23
-## Alkln_Phspht  0.08   0.21   0.23   1.00   0.12   0.17  -0.03  -0.16
-## Almn_Amntrns -0.09   0.21   0.23   0.12   1.00   0.79  -0.04  -0.03
-## Asprtt_Amntr -0.02   0.24   0.26   0.17   0.79   1.00  -0.03  -0.08
-## Total_Protns -0.19  -0.01   0.00  -0.03  -0.04  -0.03   1.00   0.78
-## Albumin      -0.26  -0.22  -0.23  -0.16  -0.03  -0.08   0.78   1.00
-## Albmn_nd_G_R -0.22  -0.21  -0.20  -0.23   0.00  -0.07   0.23   0.69
-## target        0.13   0.22   0.25   0.18   0.16   0.15  -0.03  -0.16
-##              A__G_R target
-## Age           -0.22   0.13
-## Total_Bilrbn  -0.21   0.22
-## Direct_Blrbn  -0.20   0.25
-## Alkln_Phspht  -0.23   0.18
-## Almn_Amntrns   0.00   0.16
-## Asprtt_Amntr  -0.07   0.15
-## Total_Protns   0.23  -0.03
-## Albumin        0.69  -0.16
-## Albmn_nd_G_R   1.00  -0.16
-## target        -0.16   1.00
-\end{verbatim}
-\end{kframe}
-\end{knitrout}
+
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
@@ -630,62 +603,10 @@ suy biến và khiến hệ số ước lượng mất ổn định.
 trị lớn nhất chỉ đạt $0{,}25$. Điều này cho thấy không có biến đơn lẻ nào
 tách được hai nhóm một cách rõ ràng.
 
-\subsection{Đa cộng tuyến và hệ số VIF}
-
-Hệ số tương quan chỉ phát hiện được quan hệ giữa từng cặp biến. Hệ số phóng
-đại phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
-bởi toàn bộ các biến còn lại:
-\[
-  \mathrm{VIF}_j = \frac{1}{1 - R_j^2},
-\]
-với $R_j^2$ là hệ số xác định của hồi quy biến $j$ lên tất cả các biến
-khác.
+\subsection{Phân bố các biến sinh hoá và biến đổi log}
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hldef{compute_vif} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{data}\hldef{) \{}
-  \hldef{vars} \hlkwb{<-} \hlkwd{colnames}\hldef{(data)}
-  \hlkwd{sapply}\hldef{(vars,} \hlkwa{function}\hldef{(}\hlkwc{v}\hldef{) \{}
-    \hldef{others} \hlkwb{<-} \hlkwd{setdiff}\hldef{(vars, v)}
-    \hldef{fml} \hlkwb{<-} \hlkwd{as.formula}\hldef{(}\hlkwd{paste}\hldef{(v,} \hlsng{"~"}\hldef{,} \hlkwd{paste}\hldef{(others,} \hlkwc{collapse} \hldef{=} \hlsng{" + "}\hldef{)))}
-    \hldef{r2} \hlkwb{<-} \hlkwd{summary}\hldef{(}\hlkwd{lm}\hldef{(fml,} \hlkwc{data} \hldef{= data))}\hlopt{$}\hldef{r.squared}
-    \hlnum{1} \hlopt{/} \hldef{(}\hlnum{1} \hlopt{-} \hldef{r2)}
-  \hldef{\})}
-\hldef{\}}
-
-\hldef{X_vif} \hlkwb{<-} \hldef{df[,} \hlkwd{c}\hldef{(numeric_cols,} \hlsng{"Gender"}\hldef{)]}
-\hldef{X_vif}\hlopt{$}\hldef{Gender} \hlkwb{<-} \hlkwd{ifelse}\hldef{(X_vif}\hlopt{$}\hldef{Gender} \hlopt{==} \hlsng{"Male"}\hldef{,} \hlnum{1}\hldef{,} \hlnum{0}\hldef{)}
-\hldef{X_vif}\hlopt{$}\hldef{Albumin_and_Globulin_Ratio[}\hlkwd{is.na}\hldef{(X_vif}\hlopt{$}\hldef{Albumin_and_Globulin_Ratio)]} \hlkwb{<-}
-  \hlkwd{median}\hldef{(X_vif}\hlopt{$}\hldef{Albumin_and_Globulin_Ratio,} \hlkwc{na.rm} \hldef{=} \hlnum{TRUE}\hldef{)}
-
-\hldef{vif_raw} \hlkwb{<-} \hlkwd{compute_vif}\hldef{(X_vif)}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(}\hlkwd{sort}\hldef{(vif_raw,} \hlkwc{decreasing} \hldef{=} \hlnum{TRUE}\hldef{),} \hlnum{3}\hldef{))}
-\end{alltt}
-\begin{verbatim}
-##                    Albumin             Total_Protiens 
-##                     10.124                      5.549 
-##           Direct_Bilirubin            Total_Bilirubin 
-##                      4.525                      4.277 
-## Albumin_and_Globulin_Ratio   Alamine_Aminotransferase 
-##                      3.683                      2.820 
-## Aspartate_Aminotransferase       Alkaline_Phosphotase 
-##                      2.811                      1.122 
-##                        Age                     Gender 
-##                      1.099                      1.034
-\end{verbatim}
-\end{kframe}
-\end{knitrout}
-
-Theo quy ước thường dùng, giá trị VIF lớn hơn 5 là đáng lo ngại và lớn hơn
-10 là nghiêm trọng. Biến \texttt{Albumin} vượt ngưỡng 10 còn
-\texttt{Total\_Protiens} vượt ngưỡng 5, đúng như cặp tương quan $0{,}78$ đã
-gợi ý.
-
-\subsection{Phân bố các biến sinh hoá theo nhóm}
-
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-boxplot-raw-1} 
 
@@ -701,8 +622,6 @@ men gan đều lệch phải rất nặng, với phần hộp bị nén sát tr�
 sát cực trị kéo dài lên trên. Đây là dạng phân bố điển hình của các chỉ số
 men gan.
 
-\subsection{Biến đổi log cho các biến lệch phải}
-
 Phép biến đổi $\log(1+x)$ được áp dụng cho năm biến lệch phải nặng nói
 trên. Phép biến đổi này nén đuôi phân phối nhưng vẫn bảo toàn thứ hạng của
 các quan sát, do là hàm đơn điệu tăng. Việc bảo toàn thứ hạng có hai ý
@@ -712,37 +631,7 @@ gan cấp, thay vì bị kẹp lại và mất đi khả năng phân biệt hai 
 kết quả của các kiểm định dựa trên thứ hạng ở phần sau không bị thay đổi
 bởi phép biến đổi.
 
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hldef{skewed_cols} \hlkwb{<-} \hlkwd{c}\hldef{(}\hlsng{"Total_Bilirubin"}\hldef{,} \hlsng{"Direct_Bilirubin"}\hldef{,}
-                 \hlsng{"Alkaline_Phosphotase"}\hldef{,} \hlsng{"Alamine_Aminotransferase"}\hldef{,}
-                 \hlsng{"Aspartate_Aminotransferase"}\hldef{)}
 
-\hldef{df_raw} \hlkwb{<-} \hldef{df}                       \hlcom{# giữ bản gốc để tra thang đo lâm sàng}
-\hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{skewed_cols) df[[col]]} \hlkwb{<-} \hlkwd{log1p}\hldef{(df[[col]])}
-
-\hlcom{# Hệ số bất đối xứng (skewness)}
-\hldef{skewness} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) \{}
-  \hldef{x} \hlkwb{<-} \hldef{x[}\hlopt{!}\hlkwd{is.na}\hldef{(x)]}
-  \hlkwd{mean}\hldef{((x} \hlopt{-} \hlkwd{mean}\hldef{(x))}\hlopt{^}\hlnum{3}\hldef{)} \hlopt{/} \hldef{(}\hlkwd{mean}\hldef{((x} \hlopt{-} \hlkwd{mean}\hldef{(x))}\hlopt{^}\hlnum{2}\hldef{))}\hlopt{^}\hlnum{1.5}
-\hldef{\}}
-
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(}\hlkwd{data.frame}\hldef{(}
-  \hlkwc{goc}       \hldef{=} \hlkwd{sapply}\hldef{(df_raw[skewed_cols], skewness),}
-  \hlkwc{sau_log1p} \hldef{=} \hlkwd{sapply}\hldef{(df[skewed_cols], skewness)}
-\hldef{),} \hlnum{2}\hldef{))}
-\end{alltt}
-\begin{verbatim}
-##                              goc sau_log1p
-## Total_Bilirubin             4.89      1.72
-## Direct_Bilirubin            3.20      1.68
-## Alkaline_Phosphotase        3.76      1.33
-## Alamine_Aminotransferase    6.53      1.47
-## Aspartate_Aminotransferase 10.52      1.23
-\end{verbatim}
-\end{kframe}
-\end{knitrout}
 
 Hiệu quả của phép biến đổi rất rõ rệt. Biến
 \texttt{Aspartate\_Aminotransferase} giảm hệ số bất đối xứng từ $10{,}52$
@@ -752,7 +641,7 @@ giữa hai nhóm trở nên quan sát được rõ ràng hơn
 (Hình~\ref{fig:boxplot-log}).
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-boxplot-log-1} 
 
@@ -763,16 +652,44 @@ giữa hai nhóm trở nên quan sát được rõ ràng hơn
 
 \end{knitrout}
 
-\subsection{Hệ số VIF trên thang log}
+\subsection{Đa cộng tuyến và hệ số VIF}
 
-Một điểm dễ bị bỏ qua là hệ số tương quan Pearson và hệ số VIF không bất
-biến với phép biến đổi log, khác với các kiểm định dựa trên thứ hạng. Ma
-trận thiết kế mà mô hình thực sự sử dụng là ma trận trên thang log, nên VIF
-cần được tính lại trên đúng thang đo đó.
+Hệ số tương quan chỉ phát hiện được quan hệ giữa từng cặp biến. Hệ số phóng
+đại phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
+bởi toàn bộ các biến còn lại:
+\[
+  \mathrm{VIF}_j = \frac{1}{1 - R_j^2},
+\]
+với $R_j^2$ là hệ số xác định của hồi quy biến $j$ lên tất cả các biến
+khác; theo quy ước thường dùng, VIF lớn hơn 5 là đáng lo ngại và lớn hơn 10
+là nghiêm trọng.
+
+Một điểm dễ bị bỏ qua là hệ số VIF không bất biến với phép biến đổi log,
+khác với các kiểm định dựa trên thứ hạng. Vì ma trận thiết kế mà mô hình
+thực sự sử dụng là ma trận trên thang log, VIF được tính trên cả hai thang
+đo để đối chiếu.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
+\hldef{compute_vif} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{data}\hldef{) \{}
+  \hldef{vars} \hlkwb{<-} \hlkwd{colnames}\hldef{(data)}
+  \hlkwd{sapply}\hldef{(vars,} \hlkwa{function}\hldef{(}\hlkwc{v}\hldef{) \{}
+    \hldef{others} \hlkwb{<-} \hlkwd{setdiff}\hldef{(vars, v)}
+    \hldef{fml} \hlkwb{<-} \hlkwd{as.formula}\hldef{(}\hlkwd{paste}\hldef{(v,} \hlsng{"~"}\hldef{,} \hlkwd{paste}\hldef{(others,} \hlkwc{collapse} \hldef{=} \hlsng{" + "}\hldef{)))}
+    \hldef{r2} \hlkwb{<-} \hlkwd{summary}\hldef{(}\hlkwd{lm}\hldef{(fml,} \hlkwc{data} \hldef{= data))}\hlopt{$}\hldef{r.squared}
+    \hlnum{1} \hlopt{/} \hldef{(}\hlnum{1} \hlopt{-} \hldef{r2)}
+  \hldef{\})}
+\hldef{\}}
+
+\hlcom{# Thang gốc: dùng df_raw (bản trước biến đổi log)}
+\hldef{X_vif} \hlkwb{<-} \hldef{df_raw[,} \hlkwd{c}\hldef{(numeric_cols,} \hlsng{"Gender"}\hldef{)]}
+\hldef{X_vif}\hlopt{$}\hldef{Gender} \hlkwb{<-} \hlkwd{ifelse}\hldef{(X_vif}\hlopt{$}\hldef{Gender} \hlopt{==} \hlsng{"Male"}\hldef{,} \hlnum{1}\hldef{,} \hlnum{0}\hldef{)}
+\hldef{X_vif}\hlopt{$}\hldef{Albumin_and_Globulin_Ratio[}\hlkwd{is.na}\hldef{(X_vif}\hlopt{$}\hldef{Albumin_and_Globulin_Ratio)]} \hlkwb{<-}
+  \hlkwd{median}\hldef{(X_vif}\hlopt{$}\hldef{Albumin_and_Globulin_Ratio,} \hlkwc{na.rm} \hldef{=} \hlnum{TRUE}\hldef{)}
+\hldef{vif_raw} \hlkwb{<-} \hlkwd{compute_vif}\hldef{(X_vif)}
+
+\hlcom{# Thang log: log1p cho các biến lệch phải}
 \hldef{X_vif_log} \hlkwb{<-} \hldef{X_vif}
 \hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{skewed_cols) X_vif_log[[col]]} \hlkwb{<-} \hlkwd{log1p}\hldef{(df_raw[[col]])}
 \hldef{vif_log} \hlkwb{<-} \hlkwd{compute_vif}\hldef{(X_vif_log)}

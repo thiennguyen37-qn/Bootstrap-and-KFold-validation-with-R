@@ -447,7 +447,7 @@ vào độ chính xác tổng thể.
 
 \subsection{Tương quan giữa các biến}
 
-<<corr-matrix, echo=FALSE, size="tiny">>=
+<<corr-matrix, echo=FALSE>>=
 numeric_cols <- c(
   "Age", "Total_Bilirubin", "Direct_Bilirubin", "Alkaline_Phosphotase",
   "Alamine_Aminotransferase", "Aspartate_Aminotransferase",
@@ -455,24 +455,26 @@ numeric_cols <- c(
 )
 
 corr_mat <- cor(df[, c(numeric_cols, "target")], use = "complete.obs")
-
-# Rút gọn tên khi in để bảng vừa khổ giấy
-corr_disp <- round(corr_mat, 2)
-dimnames(corr_disp) <- list(abbreviate(rownames(corr_mat), 12),
-                            abbreviate(colnames(corr_mat), 6))
-print(corr_disp)
 @
 
-<<corr-heatmap, echo=FALSE, fig.width=6, fig.height=5.5, fig.cap="Ma trận tương quan giữa các biến sinh hoá và biến mục tiêu">>=
+<<corr-heatmap, echo=FALSE, fig.width=6.5, fig.height=6, fig.cap="Ma trận tương quan giữa các biến sinh hoá và biến mục tiêu">>=
+n_c <- nrow(corr_mat)
+z <- t(corr_mat[n_c:1, ])   # đảo hàng để trục y đọc từ trên xuống
+
 par(mar = c(9, 9, 3, 2))
-image(seq_len(ncol(corr_mat)), seq_len(nrow(corr_mat)),
-      t(corr_mat[nrow(corr_mat):1, ]),
+image(seq_len(n_c), seq_len(n_c), z,
       col = colorRampPalette(c("#3288bd", "white", "#d53e4f"))(64),
       zlim = c(-1, 1), axes = FALSE, xlab = "", ylab = "",
       main = "Ma trận tương quan")
-axis(1, seq_len(ncol(corr_mat)), colnames(corr_mat), las = 2, cex.axis = 0.7)
-axis(2, seq_len(nrow(corr_mat)), rev(rownames(corr_mat)), las = 2,
-     cex.axis = 0.7)
+axis(1, seq_len(n_c), colnames(corr_mat), las = 2, cex.axis = 0.7)
+axis(2, seq_len(n_c), rev(rownames(corr_mat)), las = 2, cex.axis = 0.7)
+
+# Ghi hệ số r lên từng ô; chữ trắng trên ô đậm, chữ đen trên ô nhạt
+xs <- rep(seq_len(n_c), times = n_c)
+ys <- rep(seq_len(n_c), each = n_c)
+vals <- z[cbind(xs, ys)]
+text(xs, ys, sprintf("%.2f", vals), cex = 0.55,
+     col = ifelse(abs(vals) > 0.55, "white", "black"))
 par(mar = c(5, 4, 4, 2) + 0.1)
 @
 
@@ -491,45 +493,9 @@ suy biến và khiến hệ số ước lượng mất ổn định.
 trị lớn nhất chỉ đạt $0{,}25$. Điều này cho thấy không có biến đơn lẻ nào
 tách được hai nhóm một cách rõ ràng.
 
-\subsection{Đa cộng tuyến và hệ số VIF}
+\subsection{Phân bố các biến sinh hoá và biến đổi log}
 
-Hệ số tương quan chỉ phát hiện được quan hệ giữa từng cặp biến. Hệ số phóng
-đại phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
-bởi toàn bộ các biến còn lại:
-\[
-  \mathrm{VIF}_j = \frac{1}{1 - R_j^2},
-\]
-với $R_j^2$ là hệ số xác định của hồi quy biến $j$ lên tất cả các biến
-khác.
-
-<<vif-raw>>=
-compute_vif <- function(data) {
-  vars <- colnames(data)
-  sapply(vars, function(v) {
-    others <- setdiff(vars, v)
-    fml <- as.formula(paste(v, "~", paste(others, collapse = " + ")))
-    r2 <- summary(lm(fml, data = data))$r.squared
-    1 / (1 - r2)
-  })
-}
-
-X_vif <- df[, c(numeric_cols, "Gender")]
-X_vif$Gender <- ifelse(X_vif$Gender == "Male", 1, 0)
-X_vif$Albumin_and_Globulin_Ratio[is.na(X_vif$Albumin_and_Globulin_Ratio)] <-
-  median(X_vif$Albumin_and_Globulin_Ratio, na.rm = TRUE)
-
-vif_raw <- compute_vif(X_vif)
-print(round(sort(vif_raw, decreasing = TRUE), 3))
-@
-
-Theo quy ước thường dùng, giá trị VIF lớn hơn 5 là đáng lo ngại và lớn hơn
-10 là nghiêm trọng. Biến \texttt{Albumin} vượt ngưỡng 10 còn
-\texttt{Total\_Protiens} vượt ngưỡng 5, đúng như cặp tương quan $0{,}78$ đã
-gợi ý.
-
-\subsection{Phân bố các biến sinh hoá theo nhóm}
-
-<<boxplot-raw, echo=FALSE, fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc">>=
+<<boxplot-raw, echo=FALSE, fig.pos="H", fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc">>=
 par(mfrow = c(3, 3), mar = c(4, 4, 3, 1))
 for (col in numeric_cols) {
   boxplot(df[[col]] ~ df$target, col = c("#66c2a5", "#fc8d62"),
@@ -543,8 +509,6 @@ men gan đều lệch phải rất nặng, với phần hộp bị nén sát tr�
 sát cực trị kéo dài lên trên. Đây là dạng phân bố điển hình của các chỉ số
 men gan.
 
-\subsection{Biến đổi log cho các biến lệch phải}
-
 Phép biến đổi $\log(1+x)$ được áp dụng cho năm biến lệch phải nặng nói
 trên. Phép biến đổi này nén đuôi phân phối nhưng vẫn bảo toàn thứ hạng của
 các quan sát, do là hàm đơn điệu tăng. Việc bảo toàn thứ hạng có hai ý
@@ -554,7 +518,7 @@ gan cấp, thay vì bị kẹp lại và mất đi khả năng phân biệt hai 
 kết quả của các kiểm định dựa trên thứ hạng ở phần sau không bị thay đổi
 bởi phép biến đổi.
 
-<<log1p-transform>>=
+<<log1p-transform, echo=FALSE, results="hide">>=
 skewed_cols <- c("Total_Bilirubin", "Direct_Bilirubin",
                  "Alkaline_Phosphotase", "Alamine_Aminotransferase",
                  "Aspartate_Aminotransferase")
@@ -581,7 +545,7 @@ xuống $1{,}47$. Cả năm biến đều trở về mức bất đối xứng n
 giữa hai nhóm trở nên quan sát được rõ ràng hơn
 (Hình~\ref{fig:boxplot-log}).
 
-<<boxplot-log, echo=FALSE, fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log">>=
+<<boxplot-log, echo=FALSE, fig.pos="H", fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log">>=
 par(mfrow = c(3, 3), mar = c(4, 4, 3, 1))
 for (col in numeric_cols) {
   boxplot(df[[col]] ~ df$target, col = c("#66c2a5", "#fc8d62"),
@@ -591,14 +555,42 @@ for (col in numeric_cols) {
 par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1)
 @
 
-\subsection{Hệ số VIF trên thang log}
+\subsection{Đa cộng tuyến và hệ số VIF}
 
-Một điểm dễ bị bỏ qua là hệ số tương quan Pearson và hệ số VIF không bất
-biến với phép biến đổi log, khác với các kiểm định dựa trên thứ hạng. Ma
-trận thiết kế mà mô hình thực sự sử dụng là ma trận trên thang log, nên VIF
-cần được tính lại trên đúng thang đo đó.
+Hệ số tương quan chỉ phát hiện được quan hệ giữa từng cặp biến. Hệ số phóng
+đại phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
+bởi toàn bộ các biến còn lại:
+\[
+  \mathrm{VIF}_j = \frac{1}{1 - R_j^2},
+\]
+với $R_j^2$ là hệ số xác định của hồi quy biến $j$ lên tất cả các biến
+khác; theo quy ước thường dùng, VIF lớn hơn 5 là đáng lo ngại và lớn hơn 10
+là nghiêm trọng.
 
-<<vif-log>>=
+Một điểm dễ bị bỏ qua là hệ số VIF không bất biến với phép biến đổi log,
+khác với các kiểm định dựa trên thứ hạng. Vì ma trận thiết kế mà mô hình
+thực sự sử dụng là ma trận trên thang log, VIF được tính trên cả hai thang
+đo để đối chiếu.
+
+<<vif-compare>>=
+compute_vif <- function(data) {
+  vars <- colnames(data)
+  sapply(vars, function(v) {
+    others <- setdiff(vars, v)
+    fml <- as.formula(paste(v, "~", paste(others, collapse = " + ")))
+    r2 <- summary(lm(fml, data = data))$r.squared
+    1 / (1 - r2)
+  })
+}
+
+# Thang gốc: dùng df_raw (bản trước biến đổi log)
+X_vif <- df_raw[, c(numeric_cols, "Gender")]
+X_vif$Gender <- ifelse(X_vif$Gender == "Male", 1, 0)
+X_vif$Albumin_and_Globulin_Ratio[is.na(X_vif$Albumin_and_Globulin_Ratio)] <-
+  median(X_vif$Albumin_and_Globulin_Ratio, na.rm = TRUE)
+vif_raw <- compute_vif(X_vif)
+
+# Thang log: log1p cho các biến lệch phải
 X_vif_log <- X_vif
 for (col in skewed_cols) X_vif_log[[col]] <- log1p(df_raw[[col]])
 vif_log <- compute_vif(X_vif_log)
