@@ -122,39 +122,55 @@ Giảng viên hướng dẫn: & TS. Nguyễn Đặng Thiên Thư\\
 
 \section{Đặt vấn đề}
 
-Bệnh lý về gan thường tiến triển âm thầm trong nhiều năm trước khi xuất hiện
-các triệu chứng lâm sàng rõ rệt, khiến cơ hội can thiệp y khoa bị thu hẹp đáng
-kể. Do đó, việc sàng lọc sớm dựa trên các chỉ số sinh hóa thường quy như
-bilirubin, men gan và albumin mang ý nghĩa thực tiễn rất lớn. Bộ dữ liệu 
-\emph{Indian Liver Patient Dataset} (ILPD) ghi nhận các chỉ số này cùng chẩn 
-đoán xác định từ 583 bệnh nhân, tạo tiền đề cho một bài toán phân loại nhị 
-phân: dự đoán tình trạng mắc bệnh gan từ kết quả xét nghiệm.
+Các bệnh lý về gan thường tiến triển âm thầm trong thời gian dài và chỉ biểu
+hiện triệu chứng rõ rệt khi bệnh đã bước sang giai đoạn nặng, làm giảm đáng kể
+hiệu quả của các biện pháp điều trị. Vì vậy, việc phát hiện sớm nguy cơ mắc
+bệnh thông qua các xét nghiệm sinh hóa thường quy, chẳng hạn như bilirubin,
+men gan và albumin, có ý nghĩa quan trọng trong hỗ trợ chẩn đoán và can thiệp
+kịp thời.
 
-Trong thực hành học máy, việc chỉ huấn luyện một mô hình duy nhất và báo cáo 
-một giá trị độ chính xác đơn lẻ là chưa đủ thuyết phục. Chỉ số này được tính 
-trên một mẫu dữ liệu hữu hạn, do đó sẽ biến động khi áp dụng trên các quần 
-thể bệnh nhân khác. Để đánh giá mô hình một cách toàn diện, hai câu hỏi cốt 
-lõi cần được giải quyết:
+Bộ dữ liệu \emph{Indian Liver Patient Dataset} (ILPD) bao gồm kết quả xét
+nghiệm của 583 bệnh nhân cùng với nhãn chẩn đoán xác định, qua đó hình thành
+một bài toán phân loại nhị phân nhằm dự đoán tình trạng mắc bệnh gan dựa trên
+các chỉ số sinh hóa. Đây là một bài toán điển hình trong lĩnh vực học máy ứng
+dụng vào y tế, nơi yêu cầu không chỉ là xây dựng một mô hình có độ chính xác
+cao mà còn phải đánh giá được khả năng tổng quát hóa và mức độ tin cậy của mô
+hình.
+
+Trong thực tế, việc chỉ huấn luyện một mô hình và báo cáo một giá trị hiệu
+năng trên một tập dữ liệu kiểm thử là chưa đủ để khẳng định chất lượng của mô
+hình. Các chỉ số đánh giá như Accuracy, F1-score hay ROC-AUC chỉ là những ước
+lượng thu được từ một mẫu dữ liệu hữu hạn và có thể thay đổi khi áp dụng trên
+các tập dữ liệu khác. Do đó, quá trình đánh giá cần trả lời hai câu hỏi quan
+trọng sau:
 
 \begin{enumerate}
-  \item Trong các cấu hình mô hình thử nghiệm, đâu là mô hình cho khả năng 
-        tổng quát hóa tốt nhất trên dữ liệu chưa từng quan sát? Điều này đòi 
-        hỏi một cơ chế đánh giá khách quan, đảm bảo dữ liệu kiểm thử hoàn 
-        toàn độc lập và không tham gia vào quá trình tối ưu hóa. Đó là vai 
-        trò của \emph{K-fold Cross-Validation}.
-  \item Độ tin cậy của mô hình được chọn đạt mức độ nào? Điểm hiệu năng công 
-        bố vốn chỉ là một ước lượng điểm (point estimate), do đó cần được bổ 
-        sung khoảng tin cậy (confidence interval) để phản ánh mức độ biến 
-        động và tính ổn định của nó. Đó là vai trò của \emph{Bootstrap}.
+    \item Trong số các mô hình và cấu hình siêu tham số được thử nghiệm, mô
+    hình nào có khả năng tổng quát hóa tốt nhất trên dữ liệu chưa từng được
+    quan sát? Để trả lời câu hỏi này, cần sử dụng một quy trình đánh giá khách
+    quan, trong đó dữ liệu kiểm thử hoàn toàn tách biệt khỏi quá trình huấn
+    luyện và tối ưu hóa mô hình. \emph{K-fold Cross-Validation} là phương pháp
+    được sử dụng nhằm đáp ứng yêu cầu này.
+
+    \item Sau khi lựa chọn được mô hình phù hợp, mức độ tin cậy của các chỉ số
+    đánh giá là bao nhiêu? Thay vì chỉ công bố một giá trị ước lượng điểm
+    (\emph{point estimate}), cần xác định thêm khoảng tin cậy
+    (\emph{confidence interval}) để phản ánh sự biến thiên của hiệu năng mô
+    hình. Phương pháp \emph{Bootstrap} được sử dụng nhằm ước lượng khoảng tin
+    cậy này.
 \end{enumerate}
 
-Tóm lại, \emph{K-fold Cross-Validation} đóng vai trò cốt lõi trong việc tinh 
-chỉnh và lựa chọn mô hình, trong khi \emph{Bootstrap} đảm nhận nhiệm vụ định 
-lượng độ tin cậy của kết quả đánh giá. Báo cáo này trình bày cơ sở lý thuyết 
-của hai phương pháp, đồng thời triển khai một quy trình học máy hoàn chỉnh 
-trên bộ dữ liệu ILPD—từ tiền xử lý, lựa chọn đặc trưng, tinh chỉnh siêu tham 
-số, tối ưu ngưỡng phân loại cho đến ước lượng khoảng tin cậy cho hiệu năng 
-cuối cùng.
+Từ những phân tích trên, có thể thấy \emph{K-fold Cross-Validation} và
+\emph{Bootstrap} đảm nhận hai vai trò bổ sung cho nhau trong quá trình đánh
+giá mô hình. Trong khi \emph{K-fold Cross-Validation} được sử dụng để lựa chọn
+và tinh chỉnh mô hình có khả năng tổng quát hóa tốt nhất, thì
+\emph{Bootstrap} cho phép định lượng mức độ tin cậy của các chỉ số đánh giá
+cuối cùng. Báo cáo này trình bày cơ sở lý thuyết của hai phương pháp, đồng
+thời xây dựng một quy trình học máy hoàn chỉnh trên bộ dữ liệu ILPD, bao gồm
+tiền xử lý dữ liệu, lựa chọn đặc trưng, tinh chỉnh siêu tham số, tối ưu
+ngưỡng phân loại và ước lượng khoảng tin cậy cho hiệu năng của mô hình.
+```
+
 
 
 \section{Cơ sở lý thuyết}

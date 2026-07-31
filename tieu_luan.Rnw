@@ -79,144 +79,183 @@ set.seed(42)
 
 \section{Đặt vấn đề}
 
-Bệnh lý về gan thường tiến triển âm thầm trong nhiều năm trước khi xuất hiện
-các triệu chứng lâm sàng rõ rệt, khiến cơ hội can thiệp y khoa bị thu hẹp đáng
-kể. Do đó, việc sàng lọc sớm dựa trên các chỉ số sinh hóa thường quy như
-bilirubin, men gan và albumin mang ý nghĩa thực tiễn rất lớn. Bộ dữ liệu 
-\emph{Indian Liver Patient Dataset} (ILPD) ghi nhận các chỉ số này cùng chẩn 
-đoán xác định từ 583 bệnh nhân, tạo tiền đề cho một bài toán phân loại nhị 
-phân: dự đoán tình trạng mắc bệnh gan từ kết quả xét nghiệm.
+Các bệnh lý về gan thường tiến triển âm thầm trong thời gian dài và chỉ biểu
+hiện triệu chứng rõ rệt khi bệnh đã bước sang giai đoạn nặng, làm giảm đáng kể
+hiệu quả của các biện pháp điều trị. Vì vậy, việc phát hiện sớm nguy cơ mắc
+bệnh thông qua các xét nghiệm sinh hóa thường quy, chẳng hạn như bilirubin,
+men gan và albumin, có ý nghĩa quan trọng trong hỗ trợ chẩn đoán và can thiệp
+kịp thời.
 
-Trong thực hành học máy, việc chỉ huấn luyện một mô hình duy nhất và báo cáo 
-một giá trị độ chính xác đơn lẻ là chưa đủ thuyết phục. Chỉ số này được tính 
-trên một mẫu dữ liệu hữu hạn, do đó sẽ biến động khi áp dụng trên các quần 
-thể bệnh nhân khác. Để đánh giá mô hình một cách toàn diện, hai câu hỏi cốt 
-lõi cần được giải quyết:
+Bộ dữ liệu \emph{Indian Liver Patient Dataset} (ILPD) gồm 583 mẫu dữ liệu,
+mỗi mẫu tương ứng với một bệnh nhân và bao gồm các chỉ số sinh hóa cùng nhãn
+chẩn đoán xác định. Từ đó, bài toán được đặt ra là xây dựng một mô hình phân
+loại nhị phân nhằm dự đoán tình trạng mắc bệnh gan dựa trên kết quả xét
+nghiệm. Đây là một bài toán điển hình trong học máy ứng dụng vào lĩnh vực y
+tế, nơi không chỉ yêu cầu mô hình đạt hiệu năng cao mà còn phải có khả năng
+tổng quát hóa tốt trên dữ liệu chưa từng được quan sát.
+
+Trong thực tế, việc chỉ huấn luyện một mô hình và báo cáo một giá trị hiệu
+năng trên một tập dữ liệu là chưa đủ để khẳng định chất lượng của mô hình.
+Các chỉ số như Accuracy, F1-score hay ROC-AUC chỉ là những ước lượng thu được
+từ một mẫu dữ liệu hữu hạn và có thể thay đổi khi áp dụng trên những tập dữ
+liệu khác. Do đó, quá trình đánh giá cần giải quyết hai vấn đề quan trọng sau:
 
 \begin{enumerate}
-  \item Trong các cấu hình mô hình thử nghiệm, đâu là mô hình cho khả năng 
-        tổng quát hóa tốt nhất trên dữ liệu chưa từng quan sát? Điều này đòi 
-        hỏi một cơ chế đánh giá khách quan, đảm bảo dữ liệu kiểm thử hoàn 
-        toàn độc lập và không tham gia vào quá trình tối ưu hóa. Đó là vai 
-        trò của \emph{K-fold Cross-Validation}.
-  \item Độ tin cậy của mô hình được chọn đạt mức độ nào? Điểm hiệu năng công 
-        bố vốn chỉ là một ước lượng điểm (point estimate), do đó cần được bổ 
-        sung khoảng tin cậy (confidence interval) để phản ánh mức độ biến 
-        động và tính ổn định của nó. Đó là vai trò của \emph{Bootstrap}.
+    \item Trong số các mô hình và cấu hình siêu tham số được thử nghiệm, mô
+    hình nào có khả năng tổng quát hóa tốt nhất? Để trả lời câu hỏi này, cần
+    sử dụng một quy trình đánh giá khách quan nhằm ước lượng hiệu năng của mô
+    hình trên dữ liệu chưa từng được sử dụng để huấn luyện ở mỗi lần đánh giá.
+    \emph{K-fold Cross-Validation} là phương pháp được sử dụng để đánh giá và
+    hỗ trợ lựa chọn mô hình phù hợp.
+
+    \item Sau khi lựa chọn được mô hình, mức độ tin cậy của các chỉ số đánh
+    giá là bao nhiêu? Thay vì chỉ báo cáo một giá trị ước lượng điểm
+    (\emph{point estimate}), cần ước lượng thêm khoảng tin cậy
+    (\emph{confidence interval}) để phản ánh mức độ biến thiên của các chỉ số
+    đánh giá. Phương pháp \emph{Bootstrap} được sử dụng nhằm ước lượng các
+    khoảng tin cậy này.
 \end{enumerate}
 
-Tóm lại, \emph{K-fold Cross-Validation} đóng vai trò cốt lõi trong việc tinh 
-chỉnh và lựa chọn mô hình, trong khi \emph{Bootstrap} đảm nhận nhiệm vụ định 
-lượng độ tin cậy của kết quả đánh giá. Báo cáo này trình bày cơ sở lý thuyết 
-của hai phương pháp, đồng thời triển khai một quy trình học máy hoàn chỉnh 
-trên bộ dữ liệu ILPD—từ tiền xử lý, lựa chọn đặc trưng, tinh chỉnh siêu tham 
-số, tối ưu ngưỡng phân loại cho đến ước lượng khoảng tin cậy cho hiệu năng 
-cuối cùng.
+Như vậy, \emph{K-fold Cross-Validation} và \emph{Bootstrap} đảm nhận hai vai
+trò bổ sung cho nhau trong quá trình đánh giá mô hình. Trong khi
+\emph{K-fold Cross-Validation} được sử dụng để ước lượng khả năng tổng quát
+hóa và hỗ trợ lựa chọn mô hình, thì \emph{Bootstrap} cho phép ước lượng khoảng
+tin cậy của các chỉ số đánh giá, từ đó phản ánh mức độ bất định của hiệu năng
+mô hình. Báo cáo này trình bày cơ sở lý thuyết của hai phương pháp, đồng thời
+xây dựng một quy trình học máy hoàn chỉnh trên bộ dữ liệu ILPD, bao gồm tiền
+xử lý dữ liệu, lựa chọn đặc trưng, tinh chỉnh siêu tham số, tối ưu ngưỡng
+phân loại và ước lượng khoảng tin cậy cho hiệu năng của mô hình.
 
 
 \section{Cơ sở lý thuyết}
 
-Bootstrap và K-fold Cross-Validation đều thuộc nhóm kỹ thuật
-\emph{resampling} (lấy mẫu lại), cùng xuất phát từ một khó khăn nền tảng
-của thống kê ứng dụng. Nhà nghiên cứu chỉ quan sát được một mẫu hữu hạn rút
-ra từ tổng thể, trong khi mọi đại lượng tính từ mẫu đó, dù là giá trị trung
-bình, hệ số hồi quy hay độ chính xác của một mô hình, đều là biến ngẫu
-nhiên và sẽ nhận giá trị khác nếu rút được một mẫu khác. Câu hỏi cốt lõi vì
-thế không dừng ở giá trị ước lượng bằng bao nhiêu, mà là ước lượng đó dao
-động đến mức nào. Khi công thức lý thuyết cho phân phối lấy mẫu không tồn
-tại hoặc quá phức tạp, các phương pháp resampling cho phép mô phỏng chính
-sự biến thiên ấy từ dữ liệu sẵn có, bằng cách sinh ra nhiều mẫu con và quan
-sát đại lượng quan tâm thay đổi ra sao qua các mẫu con đó.
+Bootstrap và K-fold Cross-Validation đều thuộc nhóm các kỹ thuật
+\emph{resampling} (lấy mẫu lại), được phát triển nhằm giải quyết một vấn đề
+cơ bản trong thống kê suy luận. Trong thực tế, nhà nghiên cứu chỉ có thể quan
+sát một mẫu hữu hạn được rút ra từ tổng thể, trong khi các đại lượng thống kê
+được tính từ mẫu đó, chẳng hạn như giá trị trung bình, hệ số hồi quy hay độ
+chính xác của mô hình, đều là những biến ngẫu nhiên. Nếu lấy một mẫu khác từ
+cùng tổng thể, các đại lượng này nhiều khả năng sẽ nhận những giá trị khác.
+
+Do đó, câu hỏi quan trọng không chỉ là giá trị ước lượng bằng bao nhiêu, mà
+còn là mức độ biến thiên của ước lượng đó khi dữ liệu thay đổi. Trong nhiều
+trường hợp, phân phối lấy mẫu của đại lượng quan tâm không thể xác định chính
+xác hoặc quá phức tạp để suy ra bằng lý thuyết. Khi đó, các phương pháp
+\emph{resampling} cho phép xấp xỉ phân phối này bằng cách tạo nhiều mẫu lấy
+lại từ dữ liệu ban đầu và quan sát sự thay đổi của đại lượng quan tâm trên
+các mẫu đó.
 
 \subsection{Phương pháp Bootstrap}
 
-Bootstrap là phương pháp resampling do Bradley Efron giới thiệu năm 1979,
-dùng để ước lượng độ chính xác của một đại lượng thống kê, bao gồm sai số
-chuẩn và khoảng tin cậy, mà không cần giả định về dạng phân phối của tổng
-thể và không cần thu thập thêm dữ liệu.
+Bootstrap là một phương pháp \emph{resampling} do Bradley Efron đề xuất vào
+năm 1979, được sử dụng để ước lượng độ chính xác của các đại lượng thống kê,
+chẳng hạn như sai số chuẩn và khoảng tin cậy, mà không cần giả định trước về
+phân phối của tổng thể cũng như không yêu cầu thu thập thêm dữ liệu.
 
-\textbf{Nền tảng lý thuyết.} Xét tham số tổng thể $\theta = \theta(F)$,
-trong đó $F$ là hàm phân phối chưa biết. Từ mẫu quan sát
-$x_1, \ldots, x_n$ ta thu được ước lượng $\hat{\theta} = \theta(\hat{F})$.
-Muốn đánh giá độ chính xác của $\hat{\theta}$ thì cần biết \emph{phân phối
-lấy mẫu} của nó, tức tập hợp các giá trị mà $\hat{\theta}$ có thể nhận nếu
-quá trình rút mẫu kích thước $n$ từ $F$ được lặp lại vô hạn lần. Điều này
-bất khả thi trên thực tế, bởi $F$ không biết và ta chỉ có duy nhất một mẫu.
-Ý tưởng của Efron là thay tổng thể chưa biết $F$ bằng \emph{phân phối thực
-nghiệm} $\hat{F}$, tức phân phối rời rạc gán xác suất $1/n$ cho mỗi quan
-sát đã có. Theo định lý Glivenko--Cantelli, $\hat{F}$ hội tụ đều về $F$ khi
-cỡ mẫu tăng, nên với $n$ đủ lớn thì $\hat{F}$ là một thay thế hợp lý cho
-$F$. Rút một mẫu kích thước $n$ từ $\hat{F}$ chính là lấy mẫu ngẫu nhiên
-\textbf{có hoàn lại} từ dữ liệu gốc. Đây là nội dung của \emph{nguyên lý
-plug-in}: phân phối lấy mẫu của $\hat{\theta}$ dưới $F$ được xấp xỉ bằng
-phân phối của các ước lượng bootstrap $\hat{\theta}^{*}$ tính dưới
-$\hat{F}$.
+\textbf{Nền tảng lý thuyết.} Xét tham số tổng thể
+$\theta = \theta(F)$, trong đó $F$ là hàm phân phối chưa biết của tổng thể.
+Từ mẫu quan sát $x_1, \ldots, x_n$, ta thu được ước lượng
+$\hat{\theta} = \theta(\hat{F})$. Để đánh giá độ chính xác của
+$\hat{\theta}$, cần biết \emph{phân phối lấy mẫu} của nó, tức phân phối của
+$\hat{\theta}$ nếu quá trình lấy mẫu kích thước $n$ từ $F$ được lặp lại vô
+số lần. Tuy nhiên, điều này không khả thi trong thực tế vì hàm phân phối $F$
+không được biết trước và thông thường chỉ có một mẫu quan sát duy nhất.
+
+Ý tưởng cốt lõi của Bootstrap là thay thế tổng thể chưa biết $F$ bằng
+\emph{phân phối thực nghiệm} $\hat{F}$, tức phân phối rời rạc gán xác suất
+$1/n$ cho mỗi quan sát trong mẫu. Theo định lý Glivenko--Cantelli,
+$\hat{F}$ hội tụ đều về $F$ khi kích thước mẫu tăng, do đó $\hat{F}$ có thể
+được xem là một xấp xỉ hợp lý của $F$. Khi đó, việc rút một mẫu kích thước
+$n$ từ $\hat{F}$ tương đương với việc lấy mẫu ngẫu nhiên \textbf{có hoàn
+lại} từ dữ liệu gốc. Đây chính là nội dung của \emph{nguyên lý plug-in}: sử
+dụng phân phối thực nghiệm để xấp xỉ phân phối của tổng thể, từ đó xấp xỉ
+phân phối lấy mẫu của $\hat{\theta}$ bằng phân phối của các ước lượng
+bootstrap $\hat{\theta}^{*}$ thu được từ các mẫu lấy lại.
 
 \textbf{Thuật toán.}
 \begin{enumerate}
-  \item Từ mẫu gốc kích thước $n$, lấy mẫu ngẫu nhiên có hoàn lại kích
-        thước $n$, thu được mẫu bootstrap thứ $b$.
-  \item Tính thống kê quan tâm $\hat{\theta}^{*}_{b}$ trên mẫu bootstrap
-        đó.
-  \item Lặp lại hai bước trên $B$ lần, với $B$ thường từ 500 đến vài nghìn,
-        thu được $\hat{\theta}^{*}_{1}, \ldots, \hat{\theta}^{*}_{B}$.
-  \item Dùng phân phối thực nghiệm của $B$ giá trị này để ước lượng sai số
-        chuẩn và khoảng tin cậy của $\hat{\theta}$.
+  \item Từ mẫu gốc có kích thước $n$, lấy mẫu ngẫu nhiên \textbf{có hoàn lại}
+        cũng có kích thước $n$, thu được một mẫu bootstrap.
+  \item Tính đại lượng thống kê quan tâm $\hat{\theta}^{*}_{b}$ trên mẫu
+        bootstrap đó.
+  \item Lặp lại hai bước trên $B$ lần, với $B$ thường từ khoảng 1\,000 đến
+        vài nghìn, thu được tập các ước lượng bootstrap
+        $\hat{\theta}^{*}_{1}, \ldots, \hat{\theta}^{*}_{B}$.
+  \item Sử dụng phân phối thực nghiệm của các ước lượng bootstrap để ước
+        lượng sai số chuẩn và khoảng tin cậy của $\hat{\theta}$.
 \end{enumerate}
 
-\textbf{Sai số chuẩn và khoảng tin cậy.} Sai số chuẩn bootstrap là độ lệch
-chuẩn của $B$ giá trị thống kê:
+\textbf{Sai số chuẩn và khoảng tin cậy.} Sai số chuẩn bootstrap được ước
+lượng bằng độ lệch chuẩn của $B$ giá trị thống kê bootstrap:
 \[
-  \widehat{SE}_{boot} = \sqrt{\frac{1}{B-1}\sum_{b=1}^{B}
-  \left(\hat{\theta}^{*}_{b} - \bar{\theta}^{*}\right)^2}, \qquad
-  \bar{\theta}^{*} = \frac{1}{B}\sum_{b=1}^{B}\hat{\theta}^{*}_{b}.
+  \widehat{SE}_{boot} =
+  \sqrt{\frac{1}{B-1}\sum_{b=1}^{B}
+  \left(\hat{\theta}^{*}_{b}-\bar{\theta}^{*}\right)^2},
+  \qquad
+  \bar{\theta}^{*}=
+  \frac{1}{B}\sum_{b=1}^{B}\hat{\theta}^{*}_{b}.
 \]
-Khoảng tin cậy được dựng theo \emph{phương pháp phân vị}. Ở mức tin cậy
-$1-\alpha$, hai đầu mút là phân vị mức $\alpha/2$ và $1-\alpha/2$ của tập
-$B$ giá trị bootstrap. Chẳng hạn ở mức 95\%, khoảng tin cậy trải từ phân vị
-2,5\% đến phân vị 97,5\%.
+
+Có nhiều phương pháp để xây dựng khoảng tin cậy từ các mẫu bootstrap, trong
+đó \emph{phương pháp phân vị} (\emph{Percentile Bootstrap}) là cách đơn giản
+và được sử dụng phổ biến. Với mức tin cậy $1-\alpha$, hai đầu mút của khoảng
+tin cậy được xác định lần lượt bởi các phân vị mức $\alpha/2$ và
+$1-\alpha/2$ của tập $B$ giá trị bootstrap. Chẳng hạn, với mức tin cậy
+95\%, khoảng tin cậy được xác định bởi phân vị 2,5\% và phân vị 97,5\%.
 
 \textbf{Ưu điểm.}
 \begin{enumerate}
-  \item \emph{Không đòi hỏi giả định về phân phối tổng thể.} Các công thức
-        khoảng tin cậy cổ điển thường dựa trên giả định phân phối chuẩn
-        hoặc trên xấp xỉ tiệm cận khi cỡ mẫu lớn. Bootstrap không cần điều
-        kiện nào trong số đó, nên đặc biệt phù hợp với dữ liệu lệch nặng
-        hoặc cỡ mẫu vừa phải, đúng như tình huống của bộ dữ liệu ILPD.
-  \item \emph{Áp dụng được cho hầu như mọi thống kê.} Nhiều đại lượng quan
-        trọng trong học máy, chẳng hạn recall, precision hay macro F1, không
-        có công thức sai số chuẩn lý thuyết vì chúng là hàm phi tuyến của
-        các tần số đếm được. Bootstrap chỉ cần tính lại đại lượng đó trên
-        mỗi mẫu con, nên xử lý được tất cả các trường hợp này bằng cùng một
-        quy trình.
-  \item \emph{Không cần thu thập thêm dữ liệu.} Toàn bộ thông tin về mức
-        dao động được khai thác từ chính mẫu đã có. Đây là ưu thế quyết
-        định trong các nghiên cứu y sinh, nơi việc mở rộng cỡ mẫu tốn kém
-        cả về chi phí lẫn thời gian.
-  \item \emph{Cho biết cả hình dạng phân phối.} Kết quả của bootstrap không
-        chỉ là một cặp đầu mút, mà là toàn bộ tập $B$ giá trị. Nhờ vậy có
-        thể quan sát trực tiếp phân phối lấy mẫu, kiểm tra tính đối xứng
-        cũng như mức độ tập trung của ước lượng.
+  \item \emph{Không yêu cầu giả định trước về phân phối của tổng thể.}
+        Nhiều phương pháp xây dựng khoảng tin cậy cổ điển dựa trên giả định
+        dữ liệu tuân theo phân phối chuẩn hoặc dựa vào các kết quả tiệm cận
+        khi kích thước mẫu đủ lớn. Bootstrap không yêu cầu các giả định này,
+        do đó đặc biệt hữu ích đối với dữ liệu có phân phối lệch hoặc trong
+        những trường hợp khó áp dụng các công thức lý thuyết.
+
+  \item \emph{Áp dụng được cho nhiều đại lượng thống kê.} Nhiều chỉ số đánh
+        giá trong học máy, chẳng hạn như Recall, Precision hay Macro F1-score,
+        không có công thức giải tích đơn giản để tính sai số chuẩn hoặc khoảng
+        tin cậy. Bootstrap chỉ cần tính lại đại lượng quan tâm trên từng mẫu
+        bootstrap, nhờ đó có thể áp dụng thống nhất cho hầu hết các thống kê.
+
+  \item \emph{Không cần thu thập thêm dữ liệu.} Toàn bộ thông tin về mức độ
+        biến thiên của ước lượng được khai thác từ chính mẫu quan sát ban đầu.
+        Đây là một ưu điểm quan trọng trong các nghiên cứu y sinh, nơi việc
+        mở rộng cỡ mẫu thường tốn kém cả về chi phí lẫn thời gian.
+
+  \item \emph{Cho phép xấp xỉ phân phối lấy mẫu của thống kê.} Kết quả của
+        Bootstrap không chỉ là sai số chuẩn hoặc khoảng tin cậy mà còn bao
+        gồm toàn bộ tập các giá trị bootstrap. Nhờ đó, có thể khảo sát hình
+        dạng của phân phối lấy mẫu xấp xỉ, đánh giá mức độ đối xứng, độ phân
+        tán và tính ổn định của ước lượng.
 \end{enumerate}
 
 \textbf{Hạn chế.}
 \begin{enumerate}
-  \item \emph{Chi phí tính toán cao.} Toàn bộ quá trình tính thống kê phải
-        lặp lại hàng nghìn lần. Chi phí này còn tăng bội nếu mỗi lần lặp
-        đòi hỏi huấn luyện lại mô hình thay vì chỉ tính lại chỉ số trên các
-        dự đoán có sẵn.
-  \item \emph{Có thể bị chệch với cỡ mẫu nhỏ.} Phân phối thực nghiệm
-        $\hat{F}$ chỉ xấp xỉ tốt $F$ khi $n$ đủ lớn. Với mẫu nhỏ, mỗi mẫu
-        bootstrap chỉ chứa lại đúng những giá trị đã có, nên khoảng tin cậy
-        thu được có xu hướng hẹp hơn thực tế.
-  \item \emph{Giả định dữ liệu độc lập và cùng phân phối.} Việc rút mẫu có
-        hoàn lại phá vỡ mọi cấu trúc phụ thuộc giữa các quan sát. Vì vậy
-        phương pháp không áp dụng trực tiếp được cho dữ liệu chuỗi thời
-        gian hay dữ liệu phân cụm theo bệnh viện, theo vùng.
-  \item \emph{Không tạo ra thông tin mới.} Bootstrap chỉ khai thác lại
-        thông tin có sẵn trong mẫu gốc. Nếu bản thân mẫu gốc không đại diện
-        cho tổng thể, chẳng hạn do sai lệch chọn mẫu, thì khoảng tin cậy
-        thu được vẫn có thể hẹp mà vẫn lệch khỏi giá trị thật.
+  \item \emph{Chi phí tính toán cao.} Quá trình tính toán đại lượng thống kê
+        phải được lặp lại hàng nghìn lần trên các mẫu bootstrap. Chi phí này
+        càng tăng nếu mỗi lần lặp đều phải huấn luyện lại mô hình thay vì chỉ
+        tính lại các chỉ số đánh giá từ những dự đoán đã có.
+
+  \item \emph{Hiệu quả phụ thuộc vào kích thước và chất lượng mẫu.}
+        Phân phối thực nghiệm $\hat{F}$ chỉ xấp xỉ tốt phân phối tổng thể $F$
+        khi mẫu quan sát đủ lớn và có tính đại diện. Với cỡ mẫu nhỏ, các mẫu
+        bootstrap chỉ được tạo từ một số lượng quan sát hạn chế, khiến phân
+        phối bootstrap có thể chưa phản ánh chính xác phân phối lấy mẫu thực
+        sự. Do đó, sai số chuẩn và khoảng tin cậy ước lượng có thể kém chính
+        xác.
+
+  \item \emph{Giả định các quan sát độc lập và cùng phân phối.} Bootstrap cơ
+        bản giả định dữ liệu được lấy độc lập và cùng phân phối (i.i.d.). Vì
+        vậy, phương pháp này không thể áp dụng trực tiếp cho các dữ liệu có
+        cấu trúc phụ thuộc, chẳng hạn như chuỗi thời gian hoặc dữ liệu phân
+        cụm theo bệnh viện hay khu vực địa lý.
+
+  \item \emph{Không tạo ra thông tin mới.} Bootstrap chỉ khai thác lại thông
+        tin từ mẫu quan sát ban đầu. Nếu bản thân mẫu gốc không đại diện cho
+        tổng thể, chẳng hạn do sai lệch chọn mẫu, thì các khoảng tin cậy và
+        ước lượng thu được vẫn có thể bị sai lệch so với giá trị thực của
+        tổng thể.
 \end{enumerate}
 
 \subsection{Phương pháp K-fold Cross-Validation}
