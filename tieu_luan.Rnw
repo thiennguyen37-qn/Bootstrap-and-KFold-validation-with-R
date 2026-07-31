@@ -260,97 +260,116 @@ $1-\alpha/2$ của tập $B$ giá trị bootstrap. Chẳng hạn, với mức ti
 
 \subsection{Phương pháp K-fold Cross-Validation}
 
-K-fold Cross-Validation, hay kiểm định chéo $k$ phần, là kỹ thuật
-resampling \textbf{không hoàn lại}, dùng để ước lượng sai số dự đoán của
-một mô hình trên dữ liệu chưa từng quan sát, qua đó tránh việc đánh giá mô
-hình ngay trên chính dữ liệu đã dùng để huấn luyện nó.
+K-fold Cross-Validation, hay kiểm định chéo $k$ phần, là một kỹ thuật
+\emph{resampling} \textbf{không hoàn lại}, được sử dụng để ước lượng khả
+năng tổng quát hóa của mô hình trên dữ liệu chưa từng được sử dụng trong quá
+trình huấn luyện. Nhờ đó, phương pháp giúp đánh giá khách quan hơn hiệu năng
+của mô hình so với việc đánh giá trực tiếp trên tập dữ liệu huấn luyện.
 
-\textbf{Nền tảng lý thuyết.} Mục tiêu của một mô hình dự đoán là dự đoán
-chính xác trên dữ liệu mới, chứ không phải mô tả thật khớp dữ liệu đã có.
-Nếu đánh giá mô hình ngay trên dữ liệu huấn luyện, ta sẽ thu được ước lượng
-quá lạc quan, bởi mô hình đã học cả những dao động ngẫu nhiên riêng của
-mẫu. Đây là hiện tượng \emph{overfitting}. Cách khắc phục đơn giản nhất là
-tách riêng một phần dữ liệu làm tập kiểm tra, nhưng cách này vừa lãng phí
-dữ liệu, vừa cho kết quả phụ thuộc mạnh vào một lần chia ngẫu nhiên duy
-nhất, khiến ước lượng có phương sai lớn khi mẫu nhỏ. K-fold
-Cross-Validation khắc phục đồng thời cả hai hạn chế bằng cách luân phiên
-vai trò huấn luyện và kiểm tra qua $k$ lần chia, sao cho mọi quan sát đều
-được dùng để kiểm tra đúng một lần và dùng để huấn luyện $k-1$ lần.
+\textbf{Nền tảng lý thuyết.} Mục tiêu của một mô hình học máy là dự đoán tốt
+trên dữ liệu mới, thay vì chỉ khớp với dữ liệu đã quan sát. Nếu đánh giá mô
+hình trên chính tập dữ liệu dùng để huấn luyện, kết quả thu được thường quá
+lạc quan vì mô hình có thể đã học cả những dao động ngẫu nhiên đặc trưng của
+mẫu huấn luyện, hay còn gọi là hiện tượng \emph{overfitting}. Một cách khắc
+phục đơn giản là tách riêng một tập kiểm tra độc lập. Tuy nhiên, phương pháp
+này làm giảm lượng dữ liệu dành cho huấn luyện và kết quả đánh giá phụ thuộc
+đáng kể vào một lần chia dữ liệu ngẫu nhiên, đặc biệt khi kích thước mẫu nhỏ.
+K-fold Cross-Validation khắc phục hạn chế này bằng cách luân phiên sử dụng các
+phần dữ liệu làm tập huấn luyện và tập kiểm tra, sao cho mỗi quan sát được sử
+dụng đúng một lần để kiểm tra và $k-1$ lần để huấn luyện.
 
 \textbf{Thuật toán.}
 \begin{enumerate}
-  \item Chia ngẫu nhiên dữ liệu thành $k$ phần rời nhau, kích thước xấp xỉ
-        bằng nhau, gọi là các fold.
-  \item Với mỗi $i = 1, \ldots, k$: huấn luyện mô hình trên $k-1$ phần còn
-        lại và kiểm tra trên phần thứ $i$.
-  \item Tính sai số dự đoán trên từng fold rồi lấy trung bình:
+    \item Chia ngẫu nhiên tập dữ liệu thành $k$ phần rời nhau có kích thước
+          xấp xỉ bằng nhau, gọi là các \emph{fold}.
+    \item Với mỗi $i=1,\ldots,k$, sử dụng $k-1$ fold để huấn luyện mô hình và
+          fold còn lại làm tập kiểm tra.
+    \item Tính sai số dự đoán trên từng fold, sau đó lấy trung bình:
 \[
-  CV_{(k)} = \frac{1}{k}\sum_{i=1}^{k}
-  L\!\left(y_i,\, \hat{f}^{(-i)}(x_i)\right),
+CV_{(k)}
+=
+\frac{1}{k}\sum_{i=1}^{k}Err_i,
 \]
-        với $L$ là hàm mất mát và $\hat{f}^{(-i)}$ là mô hình được huấn
-        luyện mà không dùng fold thứ $i$.
+trong đó $Err_i$ là giá trị trung bình của hàm mất mát trên fold thứ $i$.
+Nếu ký hiệu $\mathcal{F}_i$ là tập các quan sát thuộc fold thứ $i$, ta có
+\[
+Err_i
+=
+\frac{1}{|\mathcal{F}_i|}
+\sum_{j\in\mathcal{F}_i}
+L\!\left(y_j,\hat f^{(-i)}(x_j)\right),
+\]
+với $L$ là hàm mất mát và $\hat f^{(-i)}$ là mô hình được huấn luyện khi loại
+bỏ fold thứ $i$.
 \end{enumerate}
 
-\textbf{Ví dụ minh hoạ.} Xét bài toán phân loại bệnh gan trên ILPD với
-$n = 583$ quan sát và mô hình hồi quy logistic. Với $k = 5$, dữ liệu được
-chia thành 5 phần, mỗi phần khoảng 117 quan sát. Ở lần lặp thứ nhất, 4 phần
-tương ứng khoảng 466 quan sát được dùng để ước lượng các hệ số của mô hình,
-phần còn lại dùng để dự đoán và tính sai số phân loại. Quá trình lặp lại 5
-lần, mỗi phần lần lượt đóng vai tập kiểm tra. Trung bình của 5 sai số này
-là ước lượng sai số dự đoán, còn độ lệch chuẩn giữa chúng phản ánh mức độ
-ổn định của mô hình qua các cách chia dữ liệu khác nhau.
+\textbf{Ví dụ minh họa.} Xét bài toán phân loại bệnh gan trên bộ dữ liệu ILPD
+gồm $n=583$ quan sát bằng mô hình hồi quy logistic. Với $k=5$, dữ liệu được
+chia thành 5 fold, mỗi fold gồm khoảng 117 quan sát. Ở mỗi lần lặp, mô hình
+được huấn luyện trên khoảng 466 quan sát thuộc 4 fold và được đánh giá trên
+fold còn lại. Quá trình được lặp lại 5 lần để mỗi fold lần lượt đóng vai trò
+tập kiểm tra. Giá trị trung bình của năm lần đánh giá được sử dụng để ước
+lượng hiệu năng dự đoán của mô hình, trong khi sự khác biệt giữa các fold phản
+ánh mức độ ổn định của mô hình đối với các cách chia dữ liệu khác nhau.
 
-\textbf{Biến thể Stratified k-fold.} Khi biến mục tiêu mất cân bằng lớp,
-việc chia fold hoàn toàn ngẫu nhiên có thể tạo ra những fold có tỉ lệ lớp
-lệch hẳn so với tổng thể, thậm chí thiếu vắng lớp thiểu số, làm cho ước
-lượng sai số bị nhiễu. \textbf{Stratified k-fold}, hay kiểm định chéo phân
-tầng, khắc phục bằng cách chia sao cho mỗi fold giữ nguyên tỉ lệ các lớp
-như trong toàn bộ dữ liệu. Với ILPD, nơi tỉ lệ giữa nhóm mắc bệnh và không
-mắc bệnh xấp xỉ 71\% và 29\%, mỗi fold được ràng buộc để duy trì đúng tỉ lệ
-đó. Nhờ vậy mỗi lần kiểm tra đều phản ánh đúng cơ cấu lớp thực tế và cho
-ước lượng ổn định hơn. Đây là biến thể được áp dụng trong toàn bộ phần thực
-nghiệm.
+\textbf{Biến thể Stratified K-fold.} Khi biến mục tiêu bị mất cân bằng lớp,
+việc chia dữ liệu hoàn toàn ngẫu nhiên có thể tạo ra những fold có tỷ lệ lớp
+khác biệt đáng kể so với toàn bộ dữ liệu, thậm chí không chứa lớp thiểu số.
+Điều này làm cho kết quả đánh giá có phương sai lớn và thiếu ổn định.
+\textbf{Stratified K-fold} khắc phục vấn đề này bằng cách duy trì tỷ lệ các
+lớp trong mỗi fold gần giống với tỷ lệ của toàn bộ tập dữ liệu. Đối với ILPD,
+tỷ lệ giữa nhóm mắc bệnh và không mắc bệnh xấp xỉ 71\% và 29\%, vì vậy mỗi
+fold đều được tạo sao cho phản ánh gần đúng tỷ lệ này. Nhờ đó, kết quả đánh
+giá giữa các fold ổn định và có tính đại diện cao hơn. Đây cũng là biến thể
+được sử dụng trong toàn bộ phần thực nghiệm của báo cáo.
 
 \textbf{Ưu điểm.}
 \begin{enumerate}
-  \item \emph{Ước lượng ít lạc quan hơn.} Mọi quan sát đều được dự đoán bởi
-        một mô hình chưa từng sử dụng nó trong huấn luyện. Kết quả thu được
-        vì thế phản ánh khả năng tổng quát hoá chứ không phải mức độ khớp
-        với dữ liệu đã có.
-  \item \emph{Sử dụng dữ liệu hiệu quả.} Khác với cách tách riêng một tập
-        kiểm tra cố định, ở đây toàn bộ quan sát đều lần lượt tham gia cả
-        vai trò huấn luyện lẫn vai trò kiểm tra. Đây là ưu thế quan trọng
-        khi cỡ mẫu hạn chế.
-  \item \emph{Cung cấp thước đo độ ổn định.} Ngoài giá trị trung bình, kiểm
-        định chéo còn cho $k$ kết quả riêng lẻ. Độ lệch chuẩn giữa chúng
-        cho biết hiệu năng dao động ra sao khi thay đổi cách chia dữ liệu,
-        một thông tin mà một lần chia train/test đơn lẻ không thể cung cấp.
-  \item \emph{Không phụ thuộc vào thuật toán cụ thể.} Quy trình chỉ yêu cầu
-        mô hình có thể huấn luyện và dự đoán, nên áp dụng được cho mọi họ
-        mô hình và cho phép so sánh chúng trên cùng một cơ sở.
+    \item \emph{Ước lượng khách quan hơn về khả năng tổng quát hóa.} Mỗi quan
+          sát đều được dự đoán bởi một mô hình chưa từng sử dụng chính quan
+          sát đó trong quá trình huấn luyện, nhờ đó giảm sự lạc quan của các
+          chỉ số đánh giá.
+
+    \item \emph{Sử dụng dữ liệu hiệu quả.} Toàn bộ các quan sát đều lần lượt
+          tham gia vào cả quá trình huấn luyện và kiểm tra, giúp tận dụng tối
+          đa dữ liệu, đặc biệt khi kích thước mẫu hạn chế.
+
+    \item \emph{Đánh giá tính ổn định của mô hình.} Ngoài giá trị trung bình
+          của các chỉ số đánh giá, K-fold Cross-Validation còn cung cấp kết
+          quả trên từng fold, qua đó cho phép quan sát mức độ dao động của mô
+          hình dưới các cách chia dữ liệu khác nhau.
+
+    \item \emph{Áp dụng cho nhiều loại mô hình.} Phương pháp chỉ yêu cầu mô
+          hình có khả năng huấn luyện và dự đoán, do đó có thể áp dụng thống
+          nhất cho hầu hết các thuật toán học máy.
 \end{enumerate}
 
 \textbf{Hạn chế.}
 \begin{enumerate}
-  \item \emph{Chi phí tính toán tăng theo $k$.} Mô hình phải được huấn
-        luyện $k$ lần thay vì một lần. Chi phí này nhân lên khi kiểm định
-        chéo được lồng bên trong một vòng dò siêu tham số, như trong phần
-        thực nghiệm của báo cáo.
-  \item \emph{Đánh đổi giữa bias và variance theo $k$.} Với $k$ nhỏ, mỗi mô
-        hình chỉ được huấn luyện trên một phần nhỏ dữ liệu nên ước lượng
-        sai số có xu hướng bi quan. Với $k$ lớn, các tập huấn luyện chồng
-        lấp gần như hoàn toàn nên các kết quả tương quan mạnh với nhau và
-        phương sai của ước lượng trung bình tăng lên.
-  \item \emph{Các fold không độc lập.} Những tập huấn luyện dùng ở các lần
-        lặp khác nhau chia sẻ phần lớn quan sát. Do đó độ lệch chuẩn giữa
-        các fold không phải là sai số chuẩn đúng nghĩa của ước lượng trung
-        bình, mà chỉ nên hiểu là một chỉ báo về mức độ ổn định.
-  \item \emph{Có thể bị overfit nếu dùng lặp lại quá nhiều.} Khi cùng một
-        cách chia fold được dùng để so sánh hàng chục cấu hình, cấu hình
-        thắng cuộc có thể chỉ đơn thuần phù hợp với cách chia đó. Kết quả
-        kiểm định chéo khi ấy trở nên lạc quan so với hiệu năng thật trên
-        dữ liệu mới.
+    \item \emph{Chi phí tính toán cao.} Mô hình phải được huấn luyện $k$ lần
+          thay vì một lần. Chi phí này còn tăng đáng kể khi K-fold
+          Cross-Validation được sử dụng bên trong quá trình dò siêu tham số
+          (Grid Search hoặc Random Search).
+
+    \item \emph{Đánh đổi giữa bias và variance.} Khi $k$ nhỏ, mỗi mô hình
+          được huấn luyện trên ít dữ liệu hơn nên ước lượng sai số có xu
+          hướng thiên lệch (bias) lớn hơn. Ngược lại, khi $k$ tăng, các tập
+          huấn luyện trở nên rất giống nhau, khiến phương sai của ước lượng
+          Cross-Validation có xu hướng tăng.
+
+    \item \emph{Các lần đánh giá không độc lập.} Các tập huấn luyện ở các
+          fold khác nhau chia sẻ phần lớn các quan sát. Vì vậy, độ lệch chuẩn
+          giữa các kết quả trên từng fold không phải là sai số chuẩn của
+          ước lượng Cross-Validation mà chỉ nên được xem như một chỉ báo về
+          mức độ ổn định của mô hình.
+
+    \item \emph{Có thể dẫn đến selection bias trong lựa chọn mô hình.} Nếu
+          cùng một kết quả K-fold Cross-Validation được sử dụng để so sánh
+          rất nhiều mô hình hoặc cấu hình siêu tham số, mô hình được lựa chọn
+          có thể vô tình phù hợp với cách chia fold cụ thể hơn là thật sự có
+          khả năng tổng quát hóa tốt. Trong trường hợp này, nên sử dụng một
+          tập kiểm tra độc lập hoặc Nested Cross-Validation để đánh giá cuối
+          cùng.
 \end{enumerate}
 
 \section{Dữ liệu và tiền xử lý}
