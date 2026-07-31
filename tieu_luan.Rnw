@@ -6,6 +6,7 @@
 \usepackage{geometry}
 \geometry{margin=2.5cm}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{microtype}
@@ -72,7 +73,7 @@ Giảng viên hướng dẫn: & TS. Nguyễn Đặng Thiên Thư\\
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
                       fig.align = "center", fig.width = 6, fig.height = 4,
                       fig.path = "figure/tl-", dev = "cairo_pdf",
-                      size = "scriptsize")
+                      fig.pos = "H", size = "scriptsize")
 options(width = 72)
 set.seed(42)
 @
