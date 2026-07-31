@@ -73,7 +73,7 @@ Giảng viên hướng dẫn: & TS. Nguyễn Đặng Thiên Thư\\
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
                       fig.align = "center", fig.width = 6, fig.height = 4,
                       fig.path = "figure/tl-", dev = "cairo_pdf",
-                      fig.pos = "H", size = "scriptsize")
+                      fig.pos = "ht", size = "scriptsize")
 options(width = 72)
 set.seed(42)
 @
@@ -426,7 +426,7 @@ bày ở Mục~\ref{sec:pipeline}.
 
 \subsection{Phân bố biến mục tiêu}
 
-<<target-dist, fig.width=6, fig.height=4.2, fig.cap="Phân bố biến mục tiêu">>=
+<<target-dist, echo=FALSE, fig.width=6, fig.height=4.2, fig.cap="Phân bố biến mục tiêu">>=
 counts <- table(df$target)
 pct <- round(100 * counts / sum(counts), 1)
 
@@ -445,33 +445,9 @@ $0{,}714$ mà không mang lại thông tin nào. Vì vậy toàn bộ phần đ�
 sau sử dụng recall và precision của từng lớp cùng với macro F1, thay vì dựa
 vào độ chính xác tổng thể.
 
-\subsection{Giới tính và tình trạng bệnh}
-
-Trước khi đưa biến \texttt{Gender} vào mô hình, cần kiểm tra xem biến này
-có thực sự liên hệ với biến mục tiêu hay không. Giả thuyết $H_0$ được đặt
-ra là tỉ lệ mắc bệnh không khác nhau giữa hai giới.
-
-<<chisq>>=
-contingency <- table(df$Gender, df$target)
-print(contingency)
-
-chi_res <- chisq.test(contingency)
-cat("\nChi-square =", round(chi_res$statistic, 4),
-    "| p-value =", round(chi_res$p.value, 4), "\n")
-cat("Bảng tần số kỳ vọng (cần >= 5 để kiểm định hợp lệ):\n")
-print(round(chi_res$expected, 2))
-@
-
-Tần số kỳ vọng ở cả bốn ô đều lớn hơn 5 nên kiểm định hợp lệ. Với
-$p = 0{,}0597$, lớn hơn mức ý nghĩa $0{,}05$, chưa đủ bằng chứng để bác bỏ
-$H_0$: dữ liệu không cho thấy khác biệt có ý nghĩa thống kê về tỉ lệ mắc
-bệnh giữa nam và nữ. Cần lưu ý rằng không bác bỏ được $H_0$ khác với chứng
-minh $H_0$ đúng. Giá trị $p$ ở đây nằm sát ngưỡng, nên kết luận hợp lý là
-bằng chứng còn yếu, chứ không phải mối liên hệ chắc chắn không tồn tại.
-
 \subsection{Tương quan giữa các biến}
 
-<<corr-matrix, size="tiny">>=
+<<corr-matrix, echo=FALSE, size="tiny">>=
 numeric_cols <- c(
   "Age", "Total_Bilirubin", "Direct_Bilirubin", "Alkaline_Phosphotase",
   "Alamine_Aminotransferase", "Aspartate_Aminotransferase",
@@ -487,7 +463,7 @@ dimnames(corr_disp) <- list(abbreviate(rownames(corr_mat), 12),
 print(corr_disp)
 @
 
-<<corr-heatmap, fig.width=7, fig.height=6.5, fig.cap="Ma trận tương quan giữa các biến sinh hoá và biến mục tiêu">>=
+<<corr-heatmap, echo=FALSE, fig.width=6, fig.height=5.5, fig.cap="Ma trận tương quan giữa các biến sinh hoá và biến mục tiêu">>=
 par(mar = c(9, 9, 3, 2))
 image(seq_len(ncol(corr_mat)), seq_len(nrow(corr_mat)),
       t(corr_mat[nrow(corr_mat):1, ]),
@@ -553,7 +529,7 @@ gợi ý.
 
 \subsection{Phân bố các biến sinh hoá theo nhóm}
 
-<<boxplot-raw, fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc">>=
+<<boxplot-raw, echo=FALSE, fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc">>=
 par(mfrow = c(3, 3), mar = c(4, 4, 3, 1))
 for (col in numeric_cols) {
   boxplot(df[[col]] ~ df$target, col = c("#66c2a5", "#fc8d62"),
@@ -605,7 +581,7 @@ xuống $1{,}47$. Cả năm biến đều trở về mức bất đối xứng n
 giữa hai nhóm trở nên quan sát được rõ ràng hơn
 (Hình~\ref{fig:boxplot-log}).
 
-<<boxplot-log, fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log">>=
+<<boxplot-log, echo=FALSE, fig.width=8, fig.height=7.5, fig.cap="Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log">>=
 par(mfrow = c(3, 3), mar = c(4, 4, 3, 1))
 for (col in numeric_cols) {
   boxplot(df[[col]] ~ df$target, col = c("#66c2a5", "#fc8d62"),
@@ -672,8 +648,8 @@ kiểm định phi tham số Mann-Whitney U, không đòi hỏi giả định v�
 phối. Kích thước ảnh hưởng đi kèm là hệ số tương quan
 \emph{rank-biserial}, nhận giá trị trong đoạn $[-1, 1]$, với giá trị tuyệt
 đối càng lớn thì mức tách biệt giữa hai nhóm càng rõ. Riêng biến
-\texttt{Gender} là biến phân loại nên sử dụng kết quả kiểm định Chi-square
-ở trên, với kích thước ảnh hưởng là hệ số Cramér's V.
+\texttt{Gender} là biến phân loại nên sử dụng kiểm định Chi-square, với
+kích thước ảnh hưởng là hệ số Cramér's V.
 
 Vì mười kiểm định được thực hiện đồng thời ở mức $\alpha = 0{,}05$, xác
 suất có ít nhất một kết quả dương tính giả không còn là 5\%. Thủ tục
@@ -694,7 +670,9 @@ for (col in numeric_cols) {
                              effect_size = as.numeric(rb)))
 }
 
-# Gender: dùng Cramer's V làm kích thước ảnh hưởng
+# Gender là biến phân loại: dùng Chi-square, kích thước ảnh hưởng Cramer's V
+contingency <- table(df$Gender, df$target)
+chi_res <- chisq.test(contingency)
 n_total <- sum(contingency)
 cramers_v <- sqrt(chi_res$statistic /
                     (n_total * (min(dim(contingency)) - 1)))
@@ -1021,7 +999,7 @@ cat(sprintf("Bề rộng khoảng       = %.3f\n", ci[2] - ci[1]))
 cat(sprintf("Sai số chuẩn         = %.3f\n", sd(recalls)))
 @
 
-<<boot-hist, fig.width=6.5, fig.height=4.2, fig.cap="Phân phối bootstrap của recall lớp có bệnh">>=
+<<boot-hist, echo=FALSE, fig.width=6.5, fig.height=4.2, fig.cap="Phân phối bootstrap của recall lớp có bệnh">>=
 hist(recalls, breaks = 40, col = "#66c2a5", border = "white",
      main = sprintf("Phân phối bootstrap của recall (B = %d)",
                     length(recalls)),
@@ -1345,7 +1323,7 @@ ci_tbl <- data.frame(
 print(round(ci_tbl, 4))
 @
 
-<<forest-plot, fig.width=6.8, fig.height=4.5, fig.cap="Khoảng tin cậy bootstrap 95\\% cho sáu chỉ số trên tập kiểm tra">>=
+<<forest-plot, echo=FALSE, fig.width=6.8, fig.height=4.5, fig.cap="Khoảng tin cậy bootstrap 95\\% cho sáu chỉ số trên tập kiểm tra">>=
 par(mar = c(5, 9, 4, 2))
 n_m <- nrow(ci_tbl)
 plot(ci_tbl$diem_uoc_luong, seq_len(n_m), pch = 19, col = "#3288bd",

@@ -554,19 +554,7 @@ bày ở Mục~\ref{sec:pipeline}.
 \subsection{Phân bố biến mục tiêu}
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hldef{counts} \hlkwb{<-} \hlkwd{table}\hldef{(df}\hlopt{$}\hldef{target)}
-\hldef{pct} \hlkwb{<-} \hlkwd{round}\hldef{(}\hlnum{100} \hlopt{*} \hldef{counts} \hlopt{/} \hlkwd{sum}\hldef{(counts),} \hlnum{1}\hldef{)}
-
-\hldef{bp} \hlkwb{<-} \hlkwd{barplot}\hldef{(counts,}
-              \hlkwc{names.arg} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Không bệnh (0)"}\hldef{,} \hlsng{"Có bệnh (1)"}\hldef{),}
-              \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#66c2a5"}\hldef{,} \hlsng{"#fc8d62"}\hldef{),}
-              \hlkwc{main} \hldef{=} \hlsng{"Phân bố biến mục tiêu"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Số lượng"}\hldef{,}
-              \hlkwc{ylim} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,} \hlkwd{max}\hldef{(counts)} \hlopt{*} \hlnum{1.15}\hldef{))}
-\hlkwd{text}\hldef{(bp, counts,} \hlkwc{labels} \hldef{=} \hlkwd{paste0}\hldef{(counts,} \hlsng{"\textbackslash{}n("}\hldef{, pct,} \hlsng{"%)"}\hldef{),} \hlkwc{pos} \hldef{=} \hlnum{3}\hldef{)}
-\end{alltt}
-\end{kframe}\begin{figure}[H]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-target-dist-1} 
 
@@ -584,77 +572,10 @@ $0{,}714$ mà không mang lại thông tin nào. Vì vậy toàn bộ phần đ�
 sau sử dụng recall và precision của từng lớp cùng với macro F1, thay vì dựa
 vào độ chính xác tổng thể.
 
-\subsection{Giới tính và tình trạng bệnh}
-
-Trước khi đưa biến \texttt{Gender} vào mô hình, cần kiểm tra xem biến này
-có thực sự liên hệ với biến mục tiêu hay không. Giả thuyết $H_0$ được đặt
-ra là tỉ lệ mắc bệnh không khác nhau giữa hai giới.
-
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hldef{contingency} \hlkwb{<-} \hlkwd{table}\hldef{(df}\hlopt{$}\hldef{Gender, df}\hlopt{$}\hldef{target)}
-\hlkwd{print}\hldef{(contingency)}
-\end{alltt}
-\begin{verbatim}
-##         
-##            0   1
-##   Female  50  92
-##   Male   117 324
-\end{verbatim}
-\begin{alltt}
-\hldef{chi_res} \hlkwb{<-} \hlkwd{chisq.test}\hldef{(contingency)}
-\hlkwd{cat}\hldef{(}\hlsng{"\textbackslash{}nChi-square ="}\hldef{,} \hlkwd{round}\hldef{(chi_res}\hlopt{$}\hldef{statistic,} \hlnum{4}\hldef{),}
-    \hlsng{"| p-value ="}\hldef{,} \hlkwd{round}\hldef{(chi_res}\hlopt{$}\hldef{p.value,} \hlnum{4}\hldef{),} \hlsng{"\textbackslash{}n"}\hldef{)}
-\end{alltt}
-\begin{verbatim}
-## 
-## Chi-square = 3.5466 | p-value = 0.0597
-\end{verbatim}
-\begin{alltt}
-\hlkwd{cat}\hldef{(}\hlsng{"Bảng tần số kỳ vọng (cần >= 5 để kiểm định hợp lệ):\textbackslash{}n"}\hldef{)}
-\end{alltt}
-\begin{verbatim}
-## Bảng tần số kỳ vọng (cần >= 5 để kiểm định hợp lệ):
-\end{verbatim}
-\begin{alltt}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(chi_res}\hlopt{$}\hldef{expected,} \hlnum{2}\hldef{))}
-\end{alltt}
-\begin{verbatim}
-##         
-##               0      1
-##   Female  40.68 101.32
-##   Male   126.32 314.68
-\end{verbatim}
-\end{kframe}
-\end{knitrout}
-
-Tần số kỳ vọng ở cả bốn ô đều lớn hơn 5 nên kiểm định hợp lệ. Với
-$p = 0{,}0597$, lớn hơn mức ý nghĩa $0{,}05$, chưa đủ bằng chứng để bác bỏ
-$H_0$: dữ liệu không cho thấy khác biệt có ý nghĩa thống kê về tỉ lệ mắc
-bệnh giữa nam và nữ. Cần lưu ý rằng không bác bỏ được $H_0$ khác với chứng
-minh $H_0$ đúng. Giá trị $p$ ở đây nằm sát ngưỡng, nên kết luận hợp lý là
-bằng chứng còn yếu, chứ không phải mối liên hệ chắc chắn không tồn tại.
-
 \subsection{Tương quan giữa các biến}
 
 \begin{knitrout}\tiny
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hldef{numeric_cols} \hlkwb{<-} \hlkwd{c}\hldef{(}
-  \hlsng{"Age"}\hldef{,} \hlsng{"Total_Bilirubin"}\hldef{,} \hlsng{"Direct_Bilirubin"}\hldef{,} \hlsng{"Alkaline_Phosphotase"}\hldef{,}
-  \hlsng{"Alamine_Aminotransferase"}\hldef{,} \hlsng{"Aspartate_Aminotransferase"}\hldef{,}
-  \hlsng{"Total_Protiens"}\hldef{,} \hlsng{"Albumin"}\hldef{,} \hlsng{"Albumin_and_Globulin_Ratio"}
-\hldef{)}
-
-\hldef{corr_mat} \hlkwb{<-} \hlkwd{cor}\hldef{(df[,} \hlkwd{c}\hldef{(numeric_cols,} \hlsng{"target"}\hldef{)],} \hlkwc{use} \hldef{=} \hlsng{"complete.obs"}\hldef{)}
-
-\hlcom{# Rút gọn tên khi in để bảng vừa khổ giấy}
-\hldef{corr_disp} \hlkwb{<-} \hlkwd{round}\hldef{(corr_mat,} \hlnum{2}\hldef{)}
-\hlkwd{dimnames}\hldef{(corr_disp)} \hlkwb{<-} \hlkwd{list}\hldef{(}\hlkwd{abbreviate}\hldef{(}\hlkwd{rownames}\hldef{(corr_mat),} \hlnum{12}\hldef{),}
-                            \hlkwd{abbreviate}\hldef{(}\hlkwd{colnames}\hldef{(corr_mat),} \hlnum{6}\hldef{))}
-\hlkwd{print}\hldef{(corr_disp)}
-\end{alltt}
 \begin{verbatim}
 ##                Age Ttl_Bl Drct_B Alkl_P Almn_A Aspr_A Ttl_Pr Albumn
 ## Age           1.00   0.01   0.01   0.08  -0.09  -0.02  -0.19  -0.26
@@ -683,19 +604,7 @@ bằng chứng còn yếu, chứ không phải mối liên hệ chắc chắn kh
 \end{knitrout}
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{9}\hldef{,} \hlnum{9}\hldef{,} \hlnum{3}\hldef{,} \hlnum{2}\hldef{))}
-\hlkwd{image}\hldef{(}\hlkwd{seq_len}\hldef{(}\hlkwd{ncol}\hldef{(corr_mat)),} \hlkwd{seq_len}\hldef{(}\hlkwd{nrow}\hldef{(corr_mat)),}
-      \hlkwd{t}\hldef{(corr_mat[}\hlkwd{nrow}\hldef{(corr_mat)}\hlopt{:}\hlnum{1}\hldef{, ]),}
-      \hlkwc{col} \hldef{=} \hlkwd{colorRampPalette}\hldef{(}\hlkwd{c}\hldef{(}\hlsng{"#3288bd"}\hldef{,} \hlsng{"white"}\hldef{,} \hlsng{"#d53e4f"}\hldef{))(}\hlnum{64}\hldef{),}
-      \hlkwc{zlim} \hldef{=} \hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{axes} \hldef{=} \hlnum{FALSE}\hldef{,} \hlkwc{xlab} \hldef{=} \hlsng{""}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{""}\hldef{,}
-      \hlkwc{main} \hldef{=} \hlsng{"Ma trận tương quan"}\hldef{)}
-\hlkwd{axis}\hldef{(}\hlnum{1}\hldef{,} \hlkwd{seq_len}\hldef{(}\hlkwd{ncol}\hldef{(corr_mat)),} \hlkwd{colnames}\hldef{(corr_mat),} \hlkwc{las} \hldef{=} \hlnum{2}\hldef{,} \hlkwc{cex.axis} \hldef{=} \hlnum{0.7}\hldef{)}
-\hlkwd{axis}\hldef{(}\hlnum{2}\hldef{,} \hlkwd{seq_len}\hldef{(}\hlkwd{nrow}\hldef{(corr_mat)),} \hlkwd{rev}\hldef{(}\hlkwd{rownames}\hldef{(corr_mat)),} \hlkwc{las} \hldef{=} \hlnum{2}\hldef{,}
-     \hlkwc{cex.axis} \hldef{=} \hlnum{0.7}\hldef{)}
-\end{alltt}
-\end{kframe}\begin{figure}[H]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-corr-heatmap-1} 
 
@@ -704,10 +613,6 @@ bằng chứng còn yếu, chứ không phải mối liên hệ chắc chắn kh
 \caption[Ma trận tương quan giữa các biến sinh hoá và biến mục tiêu]{Ma trận tương quan giữa các biến sinh hoá và biến mục tiêu}\label{fig:corr-heatmap}
 \end{figure}
 
-\begin{kframe}\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{5}\hldef{,} \hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{2}\hldef{)} \hlopt{+} \hlnum{0.1}\hldef{)}
-\end{alltt}
-\end{kframe}
 \end{knitrout}
 
 Ba cặp biến có tương quan rất cao. Cặp thứ nhất là
@@ -780,15 +685,7 @@ gợi ý.
 \subsection{Phân bố các biến sinh hoá theo nhóm}
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mfrow} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{3}\hldef{,} \hlnum{3}\hldef{),} \hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{3}\hldef{,} \hlnum{1}\hldef{))}
-\hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{numeric_cols) \{}
-  \hlkwd{boxplot}\hldef{(df[[col]]} \hlopt{~} \hldef{df}\hlopt{$}\hldef{target,} \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#66c2a5"}\hldef{,} \hlsng{"#fc8d62"}\hldef{),}
-          \hlkwc{main} \hldef{= col,} \hlkwc{xlab} \hldef{=} \hlsng{"target"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{""}\hldef{)}
-\hldef{\}}
-\end{alltt}
-\end{kframe}\begin{figure}[H]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-boxplot-raw-1} 
 
@@ -797,10 +694,6 @@ gợi ý.
 \caption[Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc]{Phân bố các biến sinh hoá theo nhóm bệnh trên thang đo gốc}\label{fig:boxplot-raw}
 \end{figure}
 
-\begin{kframe}\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mfrow} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{5}\hldef{,} \hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{2}\hldef{)} \hlopt{+} \hlnum{0.1}\hldef{)}
-\end{alltt}
-\end{kframe}
 \end{knitrout}
 
 Hình~\ref{fig:boxplot-raw} cho thấy năm biến gồm hai chỉ số bilirubin và ba
@@ -859,16 +752,7 @@ giữa hai nhóm trở nên quan sát được rõ ràng hơn
 (Hình~\ref{fig:boxplot-log}).
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mfrow} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{3}\hldef{,} \hlnum{3}\hldef{),} \hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{3}\hldef{,} \hlnum{1}\hldef{))}
-\hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{numeric_cols) \{}
-  \hlkwd{boxplot}\hldef{(df[[col]]} \hlopt{~} \hldef{df}\hlopt{$}\hldef{target,} \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#66c2a5"}\hldef{,} \hlsng{"#fc8d62"}\hldef{),}
-          \hlkwc{main} \hldef{=} \hlkwa{if} \hldef{(col} \hlopt{%in%} \hldef{skewed_cols)} \hlkwd{paste0}\hldef{(}\hlsng{"log1p("}\hldef{, col,} \hlsng{")"}\hldef{)} \hlkwa{else} \hldef{col,}
-          \hlkwc{xlab} \hldef{=} \hlsng{"target"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{""}\hldef{)}
-\hldef{\}}
-\end{alltt}
-\end{kframe}\begin{figure}[H]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-boxplot-log-1} 
 
@@ -877,10 +761,6 @@ giữa hai nhóm trở nên quan sát được rõ ràng hơn
 \caption[Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log]{Phân bố các biến sinh hoá theo nhóm bệnh sau biến đổi log}\label{fig:boxplot-log}
 \end{figure}
 
-\begin{kframe}\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mfrow} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{5}\hldef{,} \hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{2}\hldef{)} \hlopt{+} \hlnum{0.1}\hldef{)}
-\end{alltt}
-\end{kframe}
 \end{knitrout}
 
 \subsection{Hệ số VIF trên thang log}
@@ -1008,8 +888,8 @@ kiểm định phi tham số Mann-Whitney U, không đòi hỏi giả định v�
 phối. Kích thước ảnh hưởng đi kèm là hệ số tương quan
 \emph{rank-biserial}, nhận giá trị trong đoạn $[-1, 1]$, với giá trị tuyệt
 đối càng lớn thì mức tách biệt giữa hai nhóm càng rõ. Riêng biến
-\texttt{Gender} là biến phân loại nên sử dụng kết quả kiểm định Chi-square
-ở trên, với kích thước ảnh hưởng là hệ số Cramér's V.
+\texttt{Gender} là biến phân loại nên sử dụng kiểm định Chi-square, với
+kích thước ảnh hưởng là hệ số Cramér's V.
 
 Vì mười kiểm định được thực hiện đồng thời ở mức $\alpha = 0{,}05$, xác
 suất có ít nhất một kết quả dương tính giả không còn là 5\%. Thủ tục
@@ -1032,7 +912,9 @@ soát tỉ lệ phát hiện sai (False Discovery Rate).
                              \hlkwc{effect_size} \hldef{=} \hlkwd{as.numeric}\hldef{(rb)))}
 \hldef{\}}
 
-\hlcom{# Gender: dùng Cramer's V làm kích thước ảnh hưởng}
+\hlcom{# Gender là biến phân loại: dùng Chi-square, kích thước ảnh hưởng Cramer's V}
+\hldef{contingency} \hlkwb{<-} \hlkwd{table}\hldef{(df}\hlopt{$}\hldef{Gender, df}\hlopt{$}\hldef{target)}
+\hldef{chi_res} \hlkwb{<-} \hlkwd{chisq.test}\hldef{(contingency)}
 \hldef{n_total} \hlkwb{<-} \hlkwd{sum}\hldef{(contingency)}
 \hldef{cramers_v} \hlkwb{<-} \hlkwd{sqrt}\hldef{(chi_res}\hlopt{$}\hldef{statistic} \hlopt{/}
                     \hldef{(n_total} \hlopt{*} \hldef{(}\hlkwd{min}\hldef{(}\hlkwd{dim}\hldef{(contingency))} \hlopt{-} \hlnum{1}\hldef{)))}
@@ -1429,20 +1311,7 @@ phần kết luận.
 \end{knitrout}
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{hist}\hldef{(recalls,} \hlkwc{breaks} \hldef{=} \hlnum{40}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"#66c2a5"}\hldef{,} \hlkwc{border} \hldef{=} \hlsng{"white"}\hldef{,}
-     \hlkwc{main} \hldef{=} \hlkwd{sprintf}\hldef{(}\hlsng{"Phân phối bootstrap của recall (B = %d)"}\hldef{,}
-                    \hlkwd{length}\hldef{(recalls)),}
-     \hlkwc{xlab} \hldef{=} \hlsng{"Recall lớp có bệnh"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Tần số"}\hldef{)}
-\hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{= recall_point,} \hlkwc{col} \hldef{=} \hlsng{"#d53e4f"}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{)}
-\hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{= ci,} \hlkwc{col} \hldef{=} \hlsng{"gray40"}\hldef{,} \hlkwc{lty} \hldef{=} \hlnum{2}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{1.5}\hldef{)}
-\hlkwd{legend}\hldef{(}\hlsng{"topright"}\hldef{,} \hlkwc{bty} \hldef{=} \hlsng{"n"}\hldef{,} \hlkwc{cex} \hldef{=} \hlnum{0.85}\hldef{,}
-       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Ước lượng điểm = %.3f"}\hldef{, recall_point),}
-                  \hlkwd{sprintf}\hldef{(}\hlsng{"KTC %.0f%%"}\hldef{, CONF} \hlopt{*} \hlnum{100}\hldef{)),}
-       \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"gray40"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{2}\hldef{),} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{)}
-\end{alltt}
-\end{kframe}\begin{figure}[H]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-boot-hist-1} 
 
@@ -1712,7 +1581,7 @@ của tập huấn luyện được chấm điểm bởi mô hình chưa từng 
                   \hlsng{"Ngưỡng mặc định 0.5"}\hldef{),}
        \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"#3288bd"}\hldef{,} \hlsng{"gray50"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{3}\hldef{))}
 \end{alltt}
-\end{kframe}\begin{figure}[H]
+\end{kframe}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-threshold-plot-1} 
 
@@ -1917,19 +1786,7 @@ phù hợp riêng với dữ liệu dùng để dò nó.
 \end{knitrout}
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{5}\hldef{,} \hlnum{9}\hldef{,} \hlnum{4}\hldef{,} \hlnum{2}\hldef{))}
-\hldef{n_m} \hlkwb{<-} \hlkwd{nrow}\hldef{(ci_tbl)}
-\hlkwd{plot}\hldef{(ci_tbl}\hlopt{$}\hldef{diem_uoc_luong,} \hlkwd{seq_len}\hldef{(n_m),} \hlkwc{pch} \hldef{=} \hlnum{19}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"#3288bd"}\hldef{,}
-     \hlkwc{cex} \hldef{=} \hlnum{1.3}\hldef{,} \hlkwc{xlim} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{yaxt} \hldef{=} \hlsng{"n"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{""}\hldef{,} \hlkwc{xlab} \hldef{=} \hlsng{"Giá trị"}\hldef{,}
-     \hlkwc{main} \hldef{=} \hlkwd{sprintf}\hldef{(}\hlsng{"Khoảng tin cậy bootstrap %.0f%%"}\hldef{, CONF2} \hlopt{*} \hlnum{100}\hldef{))}
-\hlkwd{arrows}\hldef{(ci_tbl}\hlopt{$}\hldef{ci_duoi,} \hlkwd{seq_len}\hldef{(n_m), ci_tbl}\hlopt{$}\hldef{ci_tren,} \hlkwd{seq_len}\hldef{(n_m),}
-       \hlkwc{length} \hldef{=} \hlnum{0.05}\hldef{,} \hlkwc{angle} \hldef{=} \hlnum{90}\hldef{,} \hlkwc{code} \hldef{=} \hlnum{3}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"gray40"}\hldef{)}
-\hlkwd{axis}\hldef{(}\hlnum{2}\hldef{,} \hlkwd{seq_len}\hldef{(n_m),} \hlkwd{rownames}\hldef{(ci_tbl),} \hlkwc{las} \hldef{=} \hlnum{2}\hldef{,} \hlkwc{cex.axis} \hldef{=} \hlnum{0.85}\hldef{)}
-\hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{=} \hlnum{0.5}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"#d53e4f"}\hldef{,} \hlkwc{lty} \hldef{=} \hlnum{3}\hldef{)}
-\end{alltt}
-\end{kframe}\begin{figure}[H]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-forest-plot-1} 
 
@@ -1938,10 +1795,6 @@ phù hợp riêng với dữ liệu dùng để dò nó.
 \caption[Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra]{Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra}\label{fig:forest-plot}
 \end{figure}
 
-\begin{kframe}\begin{alltt}
-\hlkwd{par}\hldef{(}\hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{5}\hldef{,} \hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{2}\hldef{)} \hlopt{+} \hlnum{0.1}\hldef{)}
-\end{alltt}
-\end{kframe}
 \end{knitrout}
 
 Kết quả chính của báo cáo là recall lớp có bệnh đạt $0{,}819$ với khoảng
