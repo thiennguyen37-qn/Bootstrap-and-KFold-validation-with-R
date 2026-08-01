@@ -735,15 +735,16 @@ nhóm chỉ số bilirubin và men gan có kích thước ảnh hưởng lớn n
 (effect size khoảng $0{,}35$--$0{,}39$), cho thấy khả năng phân biệt tốt giữa
 hai nhóm bệnh.
 
-\section{Thiết kế quy trình mô hình hoá}
+\section{Thiết kế quy trình xây dựng mô hình}
 
 \subsection{Tập biến đưa vào mô hình}
 
-Từ 10 biến ban đầu, ba biến bị loại với lý do khác nhau.
-\texttt{Direct\_Bilirubin} bị loại do trùng thông tin với
-\texttt{Total\_Bilirubin}, thể hiện qua hệ số tương quan $0{,}87$ và VIF
-trên thang log khoảng 20. \texttt{Gender} và \texttt{Total\_Protiens} bị
-loại do không đạt ngưỡng ý nghĩa sau hiệu chỉnh FDR.
+Từ 10 biến ban đầu, ba biến được loại bỏ theo các tiêu chí lựa chọn đặc
+trưng đã trình bày. Biến \texttt{Direct\_Bilirubin} bị loại do hiện tượng đa
+cộng tuyến nghiêm trọng với \texttt{Total\_Bilirubin}, thể hiện qua hệ số
+tương quan khoảng $0{,}87$ và giá trị VIF trên thang log vượt 20. Hai biến
+\texttt{Gender} và \texttt{Total\_Proteins} không đạt ý nghĩa thống kê sau
+khi hiệu chỉnh FDR, nên không được đưa vào mô hình.
 
 <<model-cols>>=
 model_cols <- c("Age", "Total_Bilirubin", "Alkaline_Phosphotase",
@@ -754,16 +755,26 @@ X_all <- as.matrix(df[, model_cols])
 y_all <- df$target
 @
 
-Cần thừa nhận rằng đa cộng tuyến chưa được loại bỏ hoàn toàn. Hai biến
-\texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn liên quan
-chặt về mặt định nghĩa, còn cặp men gan ALT và AST vẫn giữ mức tương quan
-$0{,}79$. Đây là một lý do nữa để sử dụng hồi quy có điều chuẩn ridge ở
-Mục~\ref{sec:ridge}.
+Mặc dù vậy, đa cộng tuyến chưa được loại bỏ hoàn toàn. Cặp biến
+\texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn có mối liên
+hệ tương đốichặt chẽ do tỷ số albumin/globulin được tính trực tiếp từ nồng độ
+albumin. Tương tự, hai men gan
+\texttt{Alamine\_Aminotransferase} (ALT) và
+\texttt{Aspartate\_Aminotransferase} (AST) vẫn có hệ số tương quan khoảng
+$0{,}79$. Tuy nhiên, các biến này đều mang ý nghĩa lâm sàng riêng và mức độ
+đa cộng tuyến chưa đủ lớn để loại bỏ thêm biến nào, do đó được giữ lại trong
+mô hình cuối cùng.
 
-\subsection{Chia phân tầng và gán fold}
+\subsection{Chia phân tầng (Stratified Sampling) và cân bằng lớp thiểu số bằng phương pháp SMOTE}
 
-Hai thủ tục dưới đây đều xáo trộn trong nội bộ từng lớp trước khi chia, nhờ
-vậy tỉ lệ 71 trên 29 được giữ nguyên ở mọi tập con.
+Bộ dữ liệu ILPD mất cân bằng lớp, với khoảng 71\% bệnh nhân mắc bệnh và
+29\% không mắc bệnh. Vì vậy, báo cáo áp dụng hai kỹ thuật xử lý ở hai giai
+đoạn khác nhau: chia phân tầng để duy trì tỷ lệ lớp trong các tập dữ liệu và
+SMOTE để cân bằng lớp trong quá trình huấn luyện.
+
+Đối với bước chia dữ liệu, các quan sát trong từng lớp được xáo trộn ngẫu
+nhiên rồi chia riêng trước khi ghép lại, nhờ đó tỷ lệ giữa hai lớp được duy
+trì xấp xỉ trong tập huấn luyện, tập kiểm tra và các fold của Cross-Validation.
 
 <<split-fold-fns>>=
 stratified_split <- function(y, test_frac = 0.2, seed = 42) {
@@ -787,18 +798,15 @@ stratified_folds <- function(y, k = 5, seed = 42) {
 }
 @
 
-\subsection{Xử lý mất cân bằng lớp bằng SMOTE}
-
-Với tỉ lệ lớp 71 trên 29, mô hình huấn luyện trực tiếp sẽ thiên vị lớp đa
-số. Kỹ thuật SMOTE (Synthetic Minority Over-sampling Technique) cân bằng
-lại bằng cách sinh thêm mẫu tổng hợp cho lớp thiểu số, thay vì nhân bản mẫu
-sẵn có. Nhân bản chỉ làm tăng trọng số của đúng những điểm đã tồn tại và dễ
-dẫn tới overfitting. Mỗi mẫu mới được nội suy tuyến tính giữa một quan sát
-thiểu số $x_a$ và một trong $k$ láng giềng gần nhất cùng lớp của nó:
+Để giảm ảnh hưởng của sự mất cân bằng trong quá trình huấn luyện, báo cáo sử
+dụng \emph{Synthetic Minority Over-sampling Technique} (SMOTE). Thay vì sao
+chép các quan sát hiện có, SMOTE sinh các mẫu tổng hợp bằng phép nội suy
+tuyến tính giữa một quan sát của lớp thiểu số và một trong các láng giềng
+gần nhất cùng lớp:
 \[
-  x_{new} = x_a + u \cdot (x_b - x_a), \qquad u \sim \mathcal{U}(0,1),
+  x_{new} = x_a + u \cdot (x_b - x_a), \qquad
+  u \sim \mathcal{U}(0,1).
 \]
-tức là một điểm ngẫu nhiên nằm trên đoạn thẳng nối hai quan sát thật.
 
 <<smote-fn>>=
 smote_oversample <- function(X, y, k = 5, seed = 42) {
@@ -818,9 +826,9 @@ smote_oversample <- function(X, y, k = 5, seed = 42) {
   synth <- matrix(0, nrow = n_new, ncol = ncol(X))
   for (i in seq_len(n_new)) {
     a <- sample.int(nrow(X_min), 1)
-    neighbours <- order(D[a, ])[seq_len(k)]   # k láng giềng gần nhất
-    b <- neighbours[sample.int(k, 1)]         # chọn ngẫu nhiên 1 trong k
-    gap <- runif(1)                           # điểm mới nằm trên đoạn a-b
+    neighbours <- order(D[a, ])[seq_len(k)]
+    b <- neighbours[sample.int(k, 1)]
+    gap <- runif(1)
     synth[i, ] <- X_min[a, ] + gap * (X_min[b, ] - X_min[a, ])
   }
   colnames(synth) <- colnames(X)
@@ -985,16 +993,20 @@ hợp với đặc thù của bài toán mất cân bằng.
 
 \section{Ước lượng khoảng tin cậy bằng Bootstrap}
 
-Recall của lớp có bệnh chỉ là một con số tính từ hơn một trăm bệnh nhân
-trong tập kiểm tra. Với một nhóm bệnh nhân khác, con số đó sẽ khác đi.
-Bootstrap được dùng để ước lượng chính mức dao động ấy.
+Recall của lớp có bệnh là một ước lượng điểm được tính từ tập kiểm tra hữu
+hạn. Nếu thay tập kiểm tra bằng một mẫu bệnh nhân khác rút ra từ cùng quần
+thể, giá trị recall thu được có thể thay đổi. Vì vậy, bên cạnh ước lượng
+điểm, báo cáo sử dụng bootstrap để mô tả mức độ bất định của chỉ số này.
 
-Về thiết kế, mô hình được huấn luyện một lần và dự đoán một lần, sau đó kết
-quả dự đoán được giữ cố định trong suốt vòng lặp. Mỗi lần lặp chỉ rút lại
-tập kiểm tra theo cách có hoàn lại. Khoảng tin cậy thu được vì thế phản ánh
-độ bất định đến từ việc lấy mẫu bệnh nhân kiểm tra, chứ không bao gồm độ
-bất định do thay đổi tập huấn luyện. Đây là một giới hạn được bàn thêm ở
-phần kết luận.
+Trong phần này, mô hình được huấn luyện một lần trên tập huấn luyện của phép
+chia 80:20 và được dùng để dự đoán một lần trên tập kiểm tra. Sau đó, cặp
+giá trị thực tế và giá trị dự đoán trên tập kiểm tra được giữ cố định; ở mỗi
+vòng bootstrap, các quan sát trong tập kiểm tra được lấy mẫu lại có hoàn lại
+với cùng kích thước mẫu ban đầu. Do đó, khoảng tin cậy thu được phản ánh
+biến thiên do thành phần bệnh nhân trong tập kiểm tra, trong điều kiện mô
+hình đã được cố định. Cách làm này không bao gồm độ bất định phát sinh từ
+việc thay đổi tập huấn luyện hoặc huấn luyện lại mô hình, nên kết quả cần
+được diễn giải như một khoảng tin cậy có điều kiện.
 
 <<boot-setup>>=
 sp <- stratified_split(y_all, test_frac = 0.2, seed = 42)
@@ -1016,16 +1028,19 @@ CONF <- 0.90
 B <- 10000
 n_test <- length(y_test)
 
-recalls <- numeric(0)
+set.seed(42)
+recalls <- numeric(B)
+n_valid <- 0
 for (b in seq_len(B)) {
-  # Rút CÓ HOÀN LẠI, cùng cỡ mẫu
+  # Rút có hoàn lại, cùng cỡ mẫu
   idx <- sample.int(n_test, n_test, replace = TRUE)
-  if (sum(y_test[idx] == 1) == 0) next   # không có ca bệnh -> recall vô nghĩa
-  recalls <- c(recalls,
-               compute_metrics(y_test[idx], pred_test[idx])["recall1"])
+  if (sum(y_test[idx] == 1) == 0) next   # không có ca bệnh -> recall không xác định
+  n_valid <- n_valid + 1
+  recalls[n_valid] <- compute_metrics(y_test[idx], pred_test[idx])["recall1"]
 }
+recalls <- recalls[seq_len(n_valid)]
 
-# Khoảng tin cậy percentile: cắt (1-CONF)/2 ở MỖI đuôi
+# Khoảng tin cậy percentile: cắt (1 - CONF) / 2 ở mỗi đuôi
 tail_pct <- (1 - CONF) / 2
 ci <- quantile(recalls, c(tail_pct, 1 - tail_pct))
 
@@ -1049,14 +1064,13 @@ legend("topright", bty = "n", cex = 0.85,
        col = c("#d53e4f", "gray40"), lty = c(1, 2), lwd = 2)
 @
 
-Với ngưỡng mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$ và khoảng
-tin cậy 90\% là $[0{,}526;\ 0{,}700]$, tức bề rộng $0{,}174$ hay gần 17
-điểm phần trăm. Con số này rất đáng lưu ý: nếu chỉ công bố giá trị recall
-bằng $0{,}61$, báo cáo sẽ bỏ qua một mức bất định rất lớn, mà nguyên nhân
-hoàn toàn nằm ở cỡ mẫu kiểm tra chỉ gồm 116 quan sát, trong đó có 83 ca
-bệnh. Đây chính là loại thông tin mà một ước lượng điểm đơn lẻ không thể
-truyền tải. Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối
-cân đối, phù hợp với việc sử dụng khoảng tin cậy phân vị.
+Với ngưỡng mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$. Khoảng
+tin cậy bootstrap 90\% là $[0{,}525;\ 0{,}701]$, có bề rộng $0{,}176$, tương
+đương gần 17 điểm phần trăm. Kết quả này cho thấy ước lượng điểm $0{,}614$
+chưa đủ để mô tả đầy đủ hiệu năng của mô hình: trên một tập kiểm tra chỉ gồm
+116 quan sát, trong đó có 83 ca bệnh, độ bất định của recall vẫn còn đáng
+kể. Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối cân đối,
+vì vậy khoảng tin cậy phân vị là một lựa chọn phù hợp trong bối cảnh này.
 
 \section{Kiểm định chéo phân tầng}
 
