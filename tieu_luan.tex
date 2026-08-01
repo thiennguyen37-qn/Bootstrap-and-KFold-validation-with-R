@@ -1030,27 +1030,22 @@ gần nhất cùng lớp:
 \end{kframe}
 \end{knitrout}
 
-\subsection{Hồi quy logistic có điều chuẩn ridge}
+\subsection{Hồi quy logistic có điều chuẩn Ridge}
 \label{sec:ridge}
 
 Mô hình phân loại được sử dụng là hồi quy logistic có bổ sung phạt $L_2$,
-còn gọi là điều chuẩn ridge. So với hồi quy logistic thông thường, hàm mục
-tiêu được cộng thêm một lượng phạt tỉ lệ với tổng bình phương các hệ số,
-với cường độ do tham số $\lambda$ điều khiển. Hệ số chặn không bị phạt.
+còn gọi là điều chuẩn Ridge. Mô hình này phù hợp với biến mục tiêu nhị phân,
+cho phép dự đoán xác suất mắc bệnh, đồng thời đủ gọn để có thể huấn luyện
+lặp lại nhiều lần trong các bước bootstrap và kiểm định chéo.
 
-Vai trò của lượng phạt này là ổn định hoá nghiệm khi các biến giải thích
-còn tương quan với nhau. Trong trường hợp đó, mô hình không có điều chuẩn
-có thể gán cho hai biến tương quan hai hệ số rất lớn và ngược dấu, gần như
-triệt tiêu lẫn nhau; kết quả khớp dữ liệu vẫn tốt nhưng các hệ số dao động
-mạnh theo từng mẫu. Phạt $L_2$ khiến nghiệm co các hệ số này về phía nhau
-và về phía 0, đổi một chút độ chệch lấy mức giảm đáng kể của phương sai.
-
-Giá trị $\lambda$ càng lớn thì các hệ số càng bị co mạnh, kéo theo xác suất
-dự đoán tập trung quanh $0{,}5$. Đây là điểm cần lưu ý vì nó ảnh hưởng trực
-tiếp tới bước lựa chọn ngưỡng phân loại ở Mục~\ref{sec:threshold}. Nghiệm
-được tìm bằng thuật toán IRLS (Iteratively Reweighted Least Squares), một
-quy trình lặp trong đó mỗi vòng lặp giải một bài toán bình phương tối thiểu
-có trọng số.
+Thành phần phạt Ridge làm co các hệ số hồi quy về gần 0, nhờ đó giúp mô hình
+ổn định hơn khi các biến giải thích còn tương quan với nhau. Cường độ co được
+điều khiển bởi tham số $\lambda$; $\lambda$ càng lớn thì mô hình càng bị điều
+chuẩn mạnh và xác suất dự đoán có xu hướng tập trung hơn quanh $0{,}5$. Trong
+báo cáo này, hồi quy logistic Ridge chỉ đóng vai trò mô hình nền. Tham số
+$\lambda$ sẽ được dò cùng với số láng giềng của SMOTE ở phần tinh chỉnh siêu
+tham số, còn trọng tâm phân tích vẫn là quy trình đánh giá bằng bootstrap và
+kiểm định chéo.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1087,30 +1082,30 @@ có trọng số.
 \end{kframe}
 \end{knitrout}
 
-\subsection{Phòng ngừa rò rỉ dữ liệu}
+\subsection{Phòng ngừa rò rỉ dữ liệu trong quy trình huấn luyện}
 \label{sec:pipeline}
 
-Đây là nội dung quan trọng nhất về mặt phương pháp luận. Quy trình huấn
-luyện gồm bốn bước, trong đó ba bước đầu đều ước lượng tham số từ dữ liệu:
+Để tránh rò rỉ dữ liệu trong quá trình đánh giá mô hình, toàn bộ quy trình
+huấn luyện được thực hiện độc lập trong từng fold của phép kiểm định chéo,
+bao gồm bốn bước:
 
 \begin{enumerate}
-  \item điền khuyết, cần ước lượng trung vị của từng biến;
-  \item chuẩn hoá, cần ước lượng trung bình và độ lệch chuẩn của từng biến;
-  \item SMOTE, sinh mẫu mới dựa trên cấu trúc láng giềng của dữ liệu;
-  \item khớp mô hình hồi quy ridge.
+  \item Điền khuyết giá trị thiếu bằng trung vị;
+  \item Chuẩn hoá dữ liệu;
+  \item Cân bằng lớp bằng SMOTE;
+  \item Huấn luyện mô hình hồi quy logistic Ridge.
 \end{enumerate}
 
-Nếu ba bước đầu được thực hiện trên toàn bộ dữ liệu trước khi chia fold,
-một cách làm khá phổ biến vì tiện lợi, thì thông tin từ tập kiểm tra đã rò
-rỉ vào quá trình huấn luyện. Cụ thể, trung vị và độ lệch chuẩn dùng để biến
-đổi tập huấn luyện đã được tính với sự đóng góp của chính những quan sát
-sau đó dùng để đánh giá, khiến kết quả công bố lạc quan giả tạo. Với SMOTE,
-hậu quả còn nặng hơn: các mẫu tổng hợp nội suy từ quan sát nằm trong tập
-kiểm tra sẽ lọt vào tập huấn luyện, và mô hình gần như được biết trước đáp
-án.
+Ba bước đầu đều cần ước lượng tham số từ dữ liệu huấn luyện. Nếu các bước này
+được thực hiện trước khi chia fold, thông tin từ tập kiểm tra sẽ vô tình được
+sử dụng trong quá trình huấn luyện. Đối với điền khuyết và chuẩn hoá, các tham
+số như trung vị, trung bình và độ lệch chuẩn sẽ bị ảnh hưởng bởi dữ liệu kiểm
+tra. Đối với SMOTE, các mẫu tổng hợp có thể được sinh từ những quan sát thuộc
+tập kiểm tra, khiến thông tin của tập kiểm tra xuất hiện trong tập huấn luyện.
 
-Cách phòng ngừa đúng đắn là thực hiện lại toàn bộ bốn bước một cách độc lập
-bên trong mỗi fold, chỉ dựa trên phần dữ liệu huấn luyện của fold đó.
+Vì vậy, ở mỗi fold, toàn bộ quy trình tiền xử lý và huấn luyện được thực hiện
+chỉ trên tập huấn luyện. Các tham số của bước tiền xử lý sau đó được lưu lại
+để áp dụng nguyên vẹn cho dữ liệu mới.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1145,13 +1140,23 @@ bên trong mỗi fold, chỉ dựa trên phần dữ liệu huấn luyện của
 \end{kframe}
 \end{knitrout}
 
-Ngoài các hệ số hồi quy, quy trình còn lưu lại trung vị, trung bình và độ
-lệch chuẩn đã ước lượng từ tập huấn luyện. Đó chính là những tham số học
-được, và chúng phải được áp dụng nguyên vẹn khi biến đổi dữ liệu mới. Riêng
-SMOTE không xuất hiện ở bước dự đoán, bởi đây chỉ là kỹ thuật can thiệp vào
-tập huấn luyện và không bao giờ được áp lên dữ liệu cần dự đoán.
+Khi dự đoán, dữ liệu mới chỉ được điền khuyết và chuẩn hoá bằng các tham số đã
+ước lượng từ tập huấn luyện. SMOTE không được áp dụng ở bước dự đoán vì đây là
+kỹ thuật chỉ dùng để cân bằng dữ liệu trong giai đoạn huấn luyện.
 
 \subsection{Bộ chỉ số đánh giá}
+
+Như đã nêu khi phân tích phân bố biến mục tiêu, độ chính xác tổng thể không
+phản ánh đúng chất lượng mô hình trên dữ liệu mất cân bằng. Bộ chỉ số dưới đây
+vì vậy tách riêng recall và precision cho từng lớp, tất cả đều tính trực tiếp
+từ bốn thành phần của ma trận nhầm lẫn.
+
+Hai loại sai sót cũng không tương đương nhau về hậu quả lâm sàng. Âm tính giả
+(FN) là bệnh nhân có bệnh nhưng bị bỏ sót, dẫn tới chậm trễ trong chẩn đoán và
+điều trị. Dương tính giả (FP) là người không bệnh bị dự đoán nhầm, hậu quả chủ
+yếu là phải làm thêm xét nghiệm xác nhận. Do đó recall của lớp có bệnh, tức tỉ
+lệ bệnh nhân thực sự được phát hiện, là chỉ số được quan tâm nhiều nhất trong
+bài toán này.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1386,7 +1391,7 @@ Từ đây trở đi, quy trình tuân thủ nghiêm ngặt nguyên tắc phân 
 nguyên vẹn và chỉ sử dụng ở phần cuối cùng.
 
 Hai siêu tham số được dò trên lưới là cường độ điều chuẩn $\lambda$ của
-ridge và số láng giềng $k$ mà SMOTE dùng để nội suy, tạo thành 15 cấu hình.
+Ridge và số láng giềng $k$ mà SMOTE dùng để nội suy, tạo thành 15 cấu hình.
 Mỗi cấu hình được đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện,
 tương ứng 75 lần huấn luyện mô hình. Tiêu chí chấm điểm là macro F1 chứ
 không phải recall của lớp có bệnh. Lý do là việc tối đa hoá recall lớp có
@@ -1397,7 +1402,7 @@ cho recall bằng 1 nhưng không có giá trị sử dụng.
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hldef{param_grid} \hlkwb{<-} \hlkwd{expand.grid}\hldef{(}
-  \hlkwc{lambda}  \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0.01}\hldef{,} \hlnum{0.1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{10}\hldef{,} \hlnum{100}\hldef{),}   \hlcom{# cường độ điều chuẩn ridge}
+  \hlkwc{lambda}  \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0.01}\hldef{,} \hlnum{0.1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{10}\hldef{,} \hlnum{100}\hldef{),}   \hlcom{# cường độ điều chuẩn Ridge}
   \hlkwc{smote_k} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{3}\hldef{,} \hlnum{5}\hldef{,} \hlnum{7}\hldef{)}                  \hlcom{# số láng giềng SMOTE}
 \hldef{)}
 
@@ -1813,7 +1818,7 @@ so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều cầ
 trong bối cảnh đó.
 
 \textbf{Về mô hình và ngưỡng phân loại.} Cấu hình cuối cùng là hồi quy
-logistic có điều chuẩn ridge với $\lambda = 0{,}01$, kết hợp SMOTE với
+logistic có điều chuẩn Ridge với $\lambda = 0{,}01$, kết hợp SMOTE với
 $k = 3$ láng giềng và ngưỡng phân loại $0{,}330$, sử dụng 7 biến còn lại
 sau khi loại \texttt{Direct\_Bilirubin} do đa cộng tuyến cùng
 \texttt{Gender} và \texttt{Total\_Protiens} do không đạt ngưỡng ý nghĩa sau
@@ -1853,7 +1858,7 @@ mô hình.
         chắc tổng quát hoá được sang quần thể khác.
   \item \textbf{Đa cộng tuyến chưa được loại bỏ hoàn toàn.} Hai biến
         \texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn liên
-        quan chặt về mặt định nghĩa. Điều chuẩn ridge làm giảm ảnh hưởng
+        quan chặt về mặt định nghĩa. Điều chuẩn Ridge làm giảm ảnh hưởng
         của vấn đề này nhưng không loại bỏ được nó, và hệ quả là các hệ số
         riêng lẻ của mô hình không nên được diễn giải như mức độ quan trọng
         của từng biến.
