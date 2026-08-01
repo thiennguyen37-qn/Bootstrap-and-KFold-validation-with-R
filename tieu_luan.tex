@@ -1325,17 +1325,17 @@ khoảng tin cậy phân vị là lựa chọn phù hợp để tóm tắt kết
 \FloatBarrier
 \subsection{Kiểm định chéo phân tầng}
 
-Kết quả bootstrap vừa trình bày dựa trên một lần chia dữ liệu 80:20. Để kiểm
-tra xem kết luận có phụ thuộc nhiều vào lần chia này hay không, báo cáo tiếp
-tục sử dụng kiểm định chéo phân tầng 5 fold. Ở mỗi lượt, một fold được giữ
-lại để đánh giá, còn bốn fold còn lại dùng để huấn luyện. Nhờ vậy, mỗi quan
-sát đều có đúng một lần đóng vai trò dữ liệu kiểm tra, và ở lần đó nó không
-xuất hiện trong tập huấn luyện.
+Kết quả bootstrap ở phần trước được xây dựng từ một lần chia dữ liệu 80:20.
+Để đánh giá xem kết quả này có ổn định trước các cách chia dữ liệu khác nhau
+hay không, báo cáo tiếp tục sử dụng kiểm định chéo phân tầng 5-fold. Ở mỗi
+lượt, một fold được giữ lại làm tập kiểm tra, còn bốn fold còn lại được dùng
+để huấn luyện. Nhờ đó, mỗi quan sát đều được sử dụng đúng một lần để đánh
+giá và không xuất hiện trong tập huấn luyện của lần đánh giá đó.
 
-Giá trị $K = 5$ được chọn để mỗi fold kiểm tra chiếm xấp xỉ 20\% dữ liệu,
-tương ứng với phép chia 80:20 ở phần bootstrap. Nhờ đó, quy mô huấn luyện và
-kiểm tra của hai cách đánh giá tương đối gần nhau, giúp việc so sánh kết quả
-trở nên hợp lý hơn.
+Giá trị $K = 5$ được lựa chọn để mỗi fold kiểm tra chiếm khoảng 20\% dữ liệu,
+tương ứng với phép chia 80:20 ở phần bootstrap. Nhờ vậy, quy mô của tập huấn
+luyện và tập kiểm tra giữa hai phương pháp gần tương đương, giúp việc so sánh
+kết quả trở nên hợp lý hơn.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1385,19 +1385,20 @@ trở nên hợp lý hơn.
 \end{kframe}
 \end{knitrout}
 
-Kết quả kiểm định chéo được trình bày bằng trung bình và độ lệch chuẩn giữa
-các fold. Cách trình bày này không chỉ cho biết mức hiệu năng trung bình, mà
-còn cho thấy hiệu năng thay đổi như thế nào giữa các cách chia dữ liệu khác
-nhau. Trong ba chỉ số, recall biến động rõ nhất, đạt
+Kết quả được báo cáo dưới dạng giá trị trung bình kèm độ lệch chuẩn giữa các
+fold. Giá trị trung bình phản ánh hiệu năng trung bình của mô hình, còn độ
+lệch chuẩn cho biết mức độ biến động của hiệu năng khi thay đổi cách chia dữ
+liệu. Trong ba chỉ số được xem xét, recall biến động lớn nhất, đạt
 $0{,}606 \pm 0{,}047$ và dao động từ $0{,}524$ đến $0{,}639$ giữa các fold.
-Macro F1 ổn định hơn, với giá trị trung bình $0{,}643$ và độ lệch chuẩn
-$0{,}031$.
+Trong khi đó, macro F1 ổn định hơn với giá trị trung bình $0{,}643$ và độ
+lệch chuẩn $0{,}031$.
 
-Recall trung bình qua kiểm định chéo ($0{,}606$) gần với recall của phép
-chia 80:20 ($0{,}614$). Cả hai giá trị cũng nằm trong khoảng tin cậy
-bootstrap 95\% $[0{,}511;\ 0{,}718]$. Sự nhất quán giữa hai cách đánh giá cho
-thấy nhận định về hiệu năng của mô hình nền không phụ thuộc quá mạnh vào một
-cách chia dữ liệu cụ thể.
+Recall trung bình của kiểm định chéo ($0{,}606$) rất gần với recall thu được
+từ phép chia 80:20 ($0{,}614$). Đồng thời, cả hai đều nằm trong khoảng tin
+cậy bootstrap 95\% $[0{,}511;\ 0{,}718]$. Kết quả nhất quán giữa bootstrap và
+kiểm định chéo cho thấy đánh giá về hiệu năng của mô hình nền tương đối ổn
+định và không phụ thuộc đáng kể vào một cách chia dữ liệu cụ thể.
+
 
 \section{Tinh chỉnh siêu tham số}
 
