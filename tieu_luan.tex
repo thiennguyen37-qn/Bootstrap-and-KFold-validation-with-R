@@ -617,28 +617,31 @@ tách được hai nhóm một cách rõ ràng.
 
 \end{knitrout}
 
-Hình~\ref{fig:boxplot-raw} cho thấy năm biến gồm hai chỉ số bilirubin và ba
-men gan đều lệch phải rất nặng, với phần hộp bị nén sát trục còn các quan
-sát cực trị kéo dài lên trên. Đây là dạng phân bố điển hình của các chỉ số
-men gan.
+Hình~\ref{fig:boxplot-raw} cho thấy năm biến gồm
+\texttt{Total\_Bilirubin},
+\texttt{Direct\_Bilirubin},
+\texttt{Alkaline\_Phosphotase},
+\texttt{Alamine\_Aminotransferase} và
+\texttt{Aspartate\_Aminotransferase} đều có phân phối lệch phải rõ rệt.
+Phần lớn các quan sát tập trung ở vùng giá trị thấp, trong khi một số ít giá
+trị rất lớn tạo thành đuôi phân phối kéo dài và nhiều điểm ngoại lai. Do đó,
+phần hộp của boxplot bị nén sát phía dưới, gây khó khăn cho việc quan sát và
+so sánh phân bố giữa hai nhóm bệnh.
 
-Phép biến đổi $\log(1+x)$ được áp dụng cho năm biến lệch phải nặng nói
-trên. Phép biến đổi này nén đuôi phân phối nhưng vẫn bảo toàn thứ hạng của
-các quan sát, do là hàm đơn điệu tăng. Việc bảo toàn thứ hạng có hai ý
-nghĩa. Thứ nhất, các giá trị cực đại vẫn giữ được vai trò tín hiệu lâm sàng
-của chúng, chẳng hạn nồng độ men gan AST khoảng 5000 U/L tương ứng với suy
-gan cấp, thay vì bị kẹp lại và mất đi khả năng phân biệt hai nhóm. Thứ hai,
-kết quả của các kiểm định dựa trên thứ hạng ở phần sau không bị thay đổi
-bởi phép biến đổi.
+Để giảm mức độ bất đối xứng, phép biến đổi $\log(1+x)$ được áp dụng cho năm
+biến trên. Vì $\log(1+x)$ là một hàm đơn điệu tăng nên phép biến đổi này bảo
+toàn thứ tự giữa các quan sát, đồng thời làm giảm ảnh hưởng của các giá trị
+lớn bằng cách nén phần đuôi của phân phối.
+
+Hiệu quả của phép biến đổi được thể hiện ở
+Hình~\ref{fig:boxplot-log}. Sau khi biến đổi log, các phân phối trở nên cân
+đối hơn, phần hộp của boxplot được trải rộng thay vì tập trung sát đáy, trong
+khi các giá trị ngoại lai không còn chi phối mạnh thang đo của biểu đồ. Nhờ
+đó, sự khác biệt về vị trí trung tâm và mức độ phân tán giữa hai nhóm bệnh
+được thể hiện trực quan hơn, tạo điều kiện thuận lợi cho các bước phân tích
+và xây dựng mô hình ở các phần tiếp theo.
 
 
-
-Hiệu quả của phép biến đổi rất rõ rệt. Biến
-\texttt{Aspartate\_Aminotransferase} giảm hệ số bất đối xứng từ $10{,}52$
-xuống $1{,}23$, biến \texttt{Alamine\_Aminotransferase} giảm từ $6{,}53$
-xuống $1{,}47$. Cả năm biến đều trở về mức bất đối xứng nhẹ, và khác biệt
-giữa hai nhóm trở nên quan sát được rõ ràng hơn
-(Hình~\ref{fig:boxplot-log}).
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
@@ -654,20 +657,24 @@ giữa hai nhóm trở nên quan sát được rõ ràng hơn
 
 \subsection{Đa cộng tuyến và hệ số VIF}
 
-Hệ số tương quan chỉ phát hiện được quan hệ giữa từng cặp biến. Hệ số phóng
-đại phương sai (Variance Inflation Factor) đo mức độ một biến bị giải thích
-bởi toàn bộ các biến còn lại:
+Hệ số tương quan chỉ phản ánh mối quan hệ giữa từng cặp biến, trong khi hiện
+tượng đa cộng tuyến có thể phát sinh từ mối quan hệ đồng thời giữa một biến
+với nhiều biến giải thích khác. Vì vậy, báo cáo sử dụng hệ số phóng đại
+phương sai (Variance Inflation Factor -- VIF) để đánh giá mức độ đa cộng
+tuyến của từng biến. Hệ số VIF được xác định theo công thức
 \[
   \mathrm{VIF}_j = \frac{1}{1 - R_j^2},
 \]
-với $R_j^2$ là hệ số xác định của hồi quy biến $j$ lên tất cả các biến
-khác; theo quy ước thường dùng, VIF lớn hơn 5 là đáng lo ngại và lớn hơn 10
-là nghiêm trọng.
+trong đó $R_j^2$ là hệ số xác định của mô hình hồi quy biến thứ $j$ theo tất
+cả các biến còn lại. Theo quy ước thường được sử dụng, giá trị VIF lớn hơn
+5 cho thấy dấu hiệu đa cộng tuyến đáng lưu ý, trong khi VIF lớn hơn 10 được
+xem là nghiêm trọng.
 
-Một điểm dễ bị bỏ qua là hệ số VIF không bất biến với phép biến đổi log,
-khác với các kiểm định dựa trên thứ hạng. Vì ma trận thiết kế mà mô hình
-thực sự sử dụng là ma trận trên thang log, VIF được tính trên cả hai thang
-đo để đối chiếu.
+Khác với các kiểm định dựa trên thứ hạng, hệ số VIF không bất biến đối với
+các phép biến đổi đơn điệu như phép biến đổi log. Do mô hình trong nghiên
+cứu được xây dựng trên dữ liệu sau biến đổi log, VIF được tính trên cả thang
+đo gốc và thang đo log nhằm đánh giá ảnh hưởng của phép biến đổi đến mức độ
+đa cộng tuyến.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -716,13 +723,24 @@ thực sự sử dụng là ma trận trên thang log, VIF được tính trên 
 \end{kframe}
 \end{knitrout}
 
-Kết quả thay đổi hẳn nhận định ban đầu. Trên thang gốc, hai biến bilirubin
-có VIF chỉ khoảng $4{,}3$ đến $4{,}5$, tức dưới ngưỡng cảnh báo. Trên thang
-log, giá trị này tăng lên trên $20$, tức mức nghiêm trọng. Nguyên nhân là
-quan hệ giữa hai biến vốn có dạng nhân tính, và phép lấy log đã chuyển nó
-thành quan hệ tuyến tính gần như hoàn hảo. Nếu chỉ căn cứ vào VIF trên
-thang gốc, ta sẽ kết luận sai rằng cặp bilirubin không có vấn đề. Đây là cơ
-sở trực tiếp để loại biến \texttt{Direct\_Bilirubin} khỏi mô hình.
+Kết quả cho thấy phép biến đổi log ảnh hưởng đáng kể đến mức độ đa cộng
+tuyến của một số biến. Đáng chú ý nhất là hai biến
+\texttt{Total\_Bilirubin} và \texttt{Direct\_Bilirubin}, với giá trị VIF tăng
+từ khoảng $4{,}3$ trên thang đo gốc lên trên $20$ sau khi biến đổi log. Điều
+này cho thấy mối quan hệ tuyến tính giữa hai biến trở nên mạnh hơn trên
+thang đo log, dẫn đến hiện tượng đa cộng tuyến nghiêm trọng.
+
+Đối với các biến còn lại, giá trị VIF thay đổi không đáng kể sau phép biến
+đổi. Riêng biến \texttt{Albumin} có VIF xấp xỉ $10$ trên cả hai thang đo,
+cho thấy hiện tượng đa cộng tuyến đã tồn tại ngay từ dữ liệu gốc và hầu như
+không chịu ảnh hưởng của phép biến đổi log. Các biến khác đều có VIF nhỏ hơn
+6, cho thấy mức độ đa cộng tuyến không đáng kể.
+
+Do mô hình được xây dựng trên dữ liệu sau biến đổi log, kết quả VIF trên
+thang đo này được sử dụng để lựa chọn đặc trưng. Trong đó,
+\texttt{Direct\_Bilirubin} được loại bỏ do có mức đa cộng tuyến rất cao với
+\texttt{Total\_Bilirubin}, trong khi \texttt{Total\_Bilirubin} được giữ lại
+vì mang ý nghĩa lâm sàng tổng quát hơn.
 
 \subsection{Thống kê mô tả theo nhóm}
 
@@ -793,25 +811,52 @@ nghiệm.
 \end{kframe}
 \end{knitrout}
 
-Chênh lệch giữa trung bình và trung vị ở nhóm bệnh rất lớn. Chẳng hạn men
-gan AST có trung bình $137{,}70$ trong khi trung vị chỉ $52{,}50$. Điều này
-một lần nữa khẳng định phân phối lệch nặng và củng cố lựa chọn sử dụng kiểm
-định phi tham số ở bước tiếp theo.
+Bảng thống kê mô tả cho thấy nhóm bệnh nhân mắc bệnh gan (target = 1) có xu
+hướng lớn tuổi hơn so với nhóm không mắc bệnh, với tuổi trung bình lần lượt
+là 46,15 và 41,24.
 
-\subsection{Lựa chọn biến}
+Đối với các chỉ số bilirubin và men gan, nhóm mắc bệnh có giá trị trung bình,
+trung vị và độ phân tán đều cao hơn rõ rệt. Cụ thể,
+\texttt{Total\_Bilirubin} tăng từ 1,14 lên 4,16 mg/dL,
+\texttt{Direct\_Bilirubin} tăng từ 0,40 lên 1,92 mg/dL, trong khi các men gan
+\texttt{Alamine\_Aminotransferase},
+\texttt{Aspartate\_Aminotransferase} và
+\texttt{Alkaline\_Phosphotase} đều có giá trị trung bình cao hơn đáng kể ở
+nhóm mắc bệnh. Đồng thời, độ lệch chuẩn của các biến này cũng lớn hơn nhiều,
+cho thấy mức độ biến thiên cao và sự xuất hiện của các giá trị rất lớn trong
+nhóm bệnh.
 
-Do phần lớn biến lệch phải nặng, việc so sánh hai nhóm được thực hiện bằng
-kiểm định phi tham số Mann-Whitney U, không đòi hỏi giả định về dạng phân
-phối. Kích thước ảnh hưởng đi kèm là hệ số tương quan
-\emph{rank-biserial}, nhận giá trị trong đoạn $[-1, 1]$, với giá trị tuyệt
-đối càng lớn thì mức tách biệt giữa hai nhóm càng rõ. Riêng biến
-\texttt{Gender} là biến phân loại nên sử dụng kiểm định Chi-square, với
-kích thước ảnh hưởng là hệ số Cramér's V.
+Ngược lại, các chỉ số phản ánh chức năng tổng hợp của gan có xu hướng giảm ở
+nhóm mắc bệnh. Giá trị trung bình của \texttt{Albumin} giảm từ 3,34 xuống
+3,06 g/dL, trong khi tỷ số
+\texttt{Albumin\_and\_Globulin\_Ratio} giảm từ 1,03 xuống 0,91. Hai nhóm có
+giá trị \texttt{Total\_Proteins} tương đối tương đồng, với trung bình lần
+lượt là 6,54 và 6,46 g/dL.
 
-Vì mười kiểm định được thực hiện đồng thời ở mức $\alpha = 0{,}05$, xác
-suất có ít nhất một kết quả dương tính giả không còn là 5\%. Thủ tục
-Benjamini--Hochberg được áp dụng để hiệu chỉnh giá trị $p$, qua đó kiểm
-soát tỉ lệ phát hiện sai (False Discovery Rate).
+Nhìn chung, các thống kê mô tả cho thấy nhóm mắc bệnh có xu hướng tăng các
+chỉ số bilirubin và men gan, đồng thời giảm nồng độ albumin và tỷ số
+albumin/globulin.
+
+\subsection{Lựa chọn đặc trưng}
+
+Mục tiêu của bước này là xác định những đặc trưng có mối liên hệ với biến mục tiêu - tức tình trạng 
+mắc bệnh gan. Quá trình thực hiện kiểm định giả thuyết được xem như một bước sàng lọc ban đầu 
+nhằm loại bỏ các biến không có bằng chứng thống kê về mối liên hệ với biến mục tiêu
+Ta tiến hành kiểm định với cặp giả thuyết sau:
+
+\begin{itemize}
+    \item $H_0$: Biến không có mối liên hệ với tình trạng mắc bệnh gan (phân
+    phối của biến là như nhau giữa hai nhóm đối với biến liên tục, hoặc độc
+    lập với biến mục tiêu đối với biến phân loại).
+    \item $H_1$: Biến có mối liên hệ với tình trạng mắc bệnh gan.
+\end{itemize}
+
+Do hầu hết các biến liên tục có phân phối lệch, sự khác biệt giữa hai nhóm
+được đánh giá bằng kiểm định phi tham số Mann--Whitney U. Riêng biến
+\texttt{Gender} là biến phân loại nên được kiểm định bằng phép kiểm
+Chi-square. Để kiểm soát sai số do thực hiện nhiều phép kiểm đồng thời, các
+giá trị $p$ được hiệu chỉnh bằng thủ tục Benjamini--Hochberg nhằm kiểm soát
+tỷ lệ phát hiện sai (False Discovery Rate -- FDR).
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -864,13 +909,13 @@ soát tỉ lệ phát hiện sai (False Discovery Rate).
 \end{kframe}
 \end{knitrout}
 
-Tám trên mười biến đạt ý nghĩa thống kê sau hiệu chỉnh FDR. Hai biến bị
-loại là \texttt{Gender} với $p_{FDR} = 0{,}066$ và
-\texttt{Total\_Protiens} với $p_{FDR} = 0{,}437$. Nhóm men gan và bilirubin
-có kích thước ảnh hưởng lớn nhất, trong khoảng $0{,}35$ đến $0{,}39$. Biến
-\texttt{Age} tuy đạt ý nghĩa thống kê nhưng kích thước ảnh hưởng chỉ
-$0{,}17$, cho thấy ý nghĩa thống kê và mức độ quan trọng thực tế là hai
-khía cạnh khác nhau.
+Kết quả cho thấy 8 trong số 10 biến vẫn đạt ý nghĩa thống kê sau hiệu chỉnh
+FDR. Hai biến không đạt mức ý nghĩa là \texttt{Gender}
+($p_{FDR}=0{,}066$) và \texttt{Total\_Proteins}
+($p_{FDR}=0{,}437$), do đó được loại khỏi mô hình. Trong các biến còn lại,
+nhóm chỉ số bilirubin và men gan có kích thước ảnh hưởng lớn nhất
+(effect size khoảng $0{,}35$--$0{,}39$), cho thấy khả năng phân biệt tốt giữa
+hai nhóm bệnh.
 
 \section{Thiết kế quy trình mô hình hoá}
 

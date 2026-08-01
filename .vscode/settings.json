@@ -5,6 +5,9 @@
   "less.validate": false,
   "scss.validate": false,
 
+  // Tắt chẩn đoán style (lintr) cho R — chỉ là gợi ý thẩm mỹ, không phải lỗi.
+  "r.lsp.diagnostics": false,
+
   "files.associations": {
     "*.Rnw": "latex"
   },
