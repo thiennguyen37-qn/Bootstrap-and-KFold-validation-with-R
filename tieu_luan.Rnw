@@ -7,6 +7,7 @@
 \geometry{margin=2.5cm}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{placeins}     % \FloatBarrier: chặn hình trôi qua mục khác
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{microtype}
@@ -996,30 +997,30 @@ Macro F1, tức trung bình cộng chỉ số F1 của hai lớp, được chọ
 tổng hợp vì nó gán trọng số bằng nhau cho hai lớp bất kể chênh lệch cỡ, phù
 hợp với đặc thù của bài toán mất cân bằng.
 
-\section{Bootstrap và Kiểm định chéo phân tầng}
+\section[Bootstrap và Kiểm định chéo phân tầng]{Bootstrap và Kiểm định chéo phân tầng (Stratified K-fold Cross-Validation)}
 
-Chương này đánh giá mô hình nền với siêu tham số cố định ($\lambda = 1$,
-$k_{SMOTE} = 5$) và ngưỡng phân loại mặc định $0{,}5$ bằng hai kỹ thuật
-resampling độc lập. Mục tiêu không phải là tìm cấu hình tối ưu của mô hình
-mà là đánh giá mức độ ổn định của hiệu năng khi dữ liệu dùng để đánh giá
-thay đổi.
+Phần này xem xét hiệu năng của mô hình nền trước khi tinh chỉnh siêu tham
+số. Các giá trị được giữ cố định ở $\lambda = 1$, $k_{SMOTE} = 5$ và ngưỡng
+phân loại $0{,}5$. Mục tiêu chưa phải là chọn cấu hình tốt nhất, mà là kiểm
+tra xem các chỉ số đánh giá có ổn định hay không khi dữ liệu dùng để đánh
+giá thay đổi.
 
 \subsection{Ước lượng khoảng tin cậy bằng Bootstrap}
 
-Recall của lớp có bệnh là một ước lượng điểm được tính trên một tập kiểm tra
-hữu hạn. Nếu thay tập kiểm tra bằng một mẫu dữ liệu khác được lấy từ cùng
-quần thể, giá trị recall có thể thay đổi. Vì vậy, bên cạnh ước lượng điểm,
-báo cáo sử dụng bootstrap để ước lượng khoảng tin cậy của chỉ số này.
+Recall của lớp có bệnh được tính từ một tập kiểm tra hữu hạn, nên giá trị
+này luôn đi kèm một mức bất định nhất định. Nếu tập kiểm tra gồm một nhóm
+bệnh nhân khác, dù vẫn được rút ra từ cùng quần thể, recall có thể thay đổi.
+Vì vậy, bên cạnh ước lượng điểm, báo cáo dùng bootstrap để ước lượng khoảng
+tin cậy cho chỉ số này.
 
-Trong phần này, mô hình được huấn luyện một lần trên tập huấn luyện của phép
-chia 80:20 và được sử dụng để dự đoán trên tập kiểm tra. Sau đó, cặp giá trị
-thực tế và giá trị dự đoán được giữ cố định; ở mỗi vòng bootstrap, các quan
-sát trong tập kiểm tra được lấy mẫu lại có hoàn lại với cùng kích thước mẫu
-ban đầu. Do đó, khoảng tin cậy thu được phản ánh độ bất định do quá trình lấy
-mẫu của tập kiểm tra, trong khi mô hình được xem là cố định. Cách tiếp cận
-này không phản ánh độ bất định phát sinh từ việc thay đổi tập huấn luyện hoặc
-huấn luyện lại mô hình, vì vậy kết quả cần được diễn giải như một khoảng tin
-cậy có điều kiện.
+Cách thực hiện được giữ nhất quán với mục tiêu trên. Mô hình được huấn luyện
+một lần trên tập huấn luyện của phép chia 80:20, sau đó dự đoán trên tập
+kiểm tra. Trong các vòng bootstrap, mô hình không được huấn luyện lại; chỉ
+các cặp gồm nhãn thực tế và nhãn dự đoán trên tập kiểm tra được lấy mẫu lại
+có hoàn lại. Vì mô hình chỉ được huấn luyện một lần, khoảng tin cậy bootstrap 
+chỉ phản ánh mức độ thay đổi của recall khi thành phần của tập kiểm tra thay đổi. 
+Nó không phản ánh sự thay đổi của recall nếu mô hình được huấn luyện lại 
+trên một tập huấn luyện khác.
 
 <<boot-setup>>=
 sp <- stratified_split(y_all, test_frac = 0.2, seed = 42)
@@ -1077,26 +1078,29 @@ legend("topright", bty = "n", cex = 0.85,
        col = c("#d53e4f", "gray40"), lty = c(1, 2), lwd = 2)
 @
 
-Với ngưỡng mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$. Khoảng tin
-cậy bootstrap 95\% là $[0{,}511;\ 0{,}718]$, có bề rộng $0{,}207$, tương đương
-khoảng 21 điểm phần trăm. Kết quả này cho thấy một ước lượng điểm duy nhất
-chưa phản ánh đầy đủ hiệu năng của mô hình. Trên tập kiểm tra gồm 116 quan
-sát, trong đó có 83 ca bệnh, độ bất định của recall vẫn còn đáng kể.
-Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối đối xứng, do
-đó khoảng tin cậy phân vị là một lựa chọn phù hợp trong trường hợp này.
+Với ngưỡng phân loại mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$.
+Khoảng tin cậy bootstrap 95\% là $[0{,}511;\ 0{,}718]$, có bề rộng $0{,}207$,
+tương đương khoảng 21 điểm phần trăm. Kết quả này cho thấy recall có thể dao
+động đáng kể nếu tập kiểm tra thay đổi, vì vậy một giá trị ước lượng điểm duy
+nhất chưa phản ánh đầy đủ hiệu năng của mô hình. Điều này cũng phù hợp với quy
+mô tập kiểm tra chỉ gồm 116 quan sát, trong đó có 83 ca bệnh.
+Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối đối xứng, nên
+khoảng tin cậy phân vị là lựa chọn phù hợp để tóm tắt kết quả.
 
+\FloatBarrier
 \subsection{Kiểm định chéo phân tầng}
 
-Phần trên đánh giá mô hình trên một lần chia dữ liệu 80:20 duy nhất. Trong
-kiểm định chéo 5-fold, mỗi fold lần lượt được sử dụng làm tập kiểm tra, còn
-bốn fold còn lại được dùng để huấn luyện. Nhờ đó, mọi quan sát đều được dự
-đoán đúng một lần bởi một mô hình chưa từng sử dụng quan sát đó trong quá
-trình huấn luyện.
+Kết quả bootstrap vừa trình bày dựa trên một lần chia dữ liệu 80:20. Để kiểm
+tra xem kết luận có phụ thuộc nhiều vào lần chia này hay không, báo cáo tiếp
+tục sử dụng kiểm định chéo phân tầng 5 fold. Ở mỗi lượt, một fold được giữ
+lại để đánh giá, còn bốn fold còn lại dùng để huấn luyện. Nhờ vậy, mỗi quan
+sát đều có đúng một lần đóng vai trò dữ liệu kiểm tra, và ở lần đó nó không
+xuất hiện trong tập huấn luyện.
 
-Giá trị $K = 5$ được lựa chọn vì mỗi fold kiểm tra chiếm khoảng 20\% dữ liệu,
-tương ứng với phép chia 80:20 ở phần trước. Nhờ vậy, hai phương pháp đánh giá
-đều sử dụng mô hình được huấn luyện trên khoảng 466 quan sát và có thể so
-sánh trực tiếp.
+Giá trị $K = 5$ được chọn để mỗi fold kiểm tra chiếm xấp xỉ 20\% dữ liệu,
+tương ứng với phép chia 80:20 ở phần bootstrap. Nhờ đó, quy mô huấn luyện và
+kiểm tra của hai cách đánh giá tương đối gần nhau, giúp việc so sánh kết quả
+trở nên hợp lý hơn.
 
 <<kfold>>=
 K <- 5
@@ -1128,17 +1132,19 @@ for (m in c("Accuracy", "Recall", "Macro_F1")) {
 }
 @
 
-Kết quả được báo cáo dưới dạng giá trị trung bình kèm độ lệch chuẩn giữa các
-fold, thay vì một giá trị đơn lẻ. Độ lệch chuẩn phản ánh mức độ biến động của
-hiệu năng khi thay đổi cách chia dữ liệu. Recall dao động mạnh nhất, đạt
-$0{,}606 \pm 0{,}047$ và trải từ $0{,}524$ ở fold thứ nhất đến $0{,}639$ ở
-fold thứ hai, trong khi macro F1 ổn định hơn với $0{,}643 \pm 0{,}031$.
+Kết quả kiểm định chéo được trình bày bằng trung bình và độ lệch chuẩn giữa
+các fold. Cách trình bày này không chỉ cho biết mức hiệu năng trung bình, mà
+còn cho thấy hiệu năng thay đổi như thế nào giữa các cách chia dữ liệu khác
+nhau. Trong ba chỉ số, recall biến động rõ nhất, đạt
+$0{,}606 \pm 0{,}047$ và dao động từ $0{,}524$ đến $0{,}639$ giữa các fold.
+Macro F1 ổn định hơn, với giá trị trung bình $0{,}643$ và độ lệch chuẩn
+$0{,}031$.
 
-Đáng chú ý, recall trung bình của kiểm định chéo ($0{,}606$) rất gần với
-recall thu được từ phép chia 80:20 ($0{,}614$), và cả hai đều nằm trong
-khoảng tin cậy bootstrap 95\% $[0{,}511;\ 0{,}718]$. Hai phương pháp
-resampling cho kết quả nhất quán, cho thấy đánh giá hiệu năng tương đối ổn
-định và không phụ thuộc đáng kể vào một cách chia dữ liệu cụ thể.
+Recall trung bình qua kiểm định chéo ($0{,}606$) gần với recall của phép
+chia 80:20 ($0{,}614$). Cả hai giá trị cũng nằm trong khoảng tin cậy
+bootstrap 95\% $[0{,}511;\ 0{,}718]$. Sự nhất quán giữa hai cách đánh giá cho
+thấy nhận định về hiệu năng của mô hình nền không phụ thuộc quá mạnh vào một
+cách chia dữ liệu cụ thể.
 
 \section{Tinh chỉnh siêu tham số}
 
