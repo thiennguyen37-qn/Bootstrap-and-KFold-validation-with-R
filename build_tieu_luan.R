@@ -53,9 +53,16 @@ message("Dùng engine: ", xelatex)
 aux_files <- paste0(BASE, c(".aux", ".toc", ".out"))
 clean_aux <- function() unlink(aux_files)
 
-# Các cảnh báo cho biết tài liệu chưa hội tụ, cần chạy thêm lượt nữa
-WARN_PAT <- paste("Rerun to get", "Label\\(s\\) may have changed",
-                  "undefined references", "Overfull \\\\hbox", sep = "|")
+# Các cảnh báo cho biết tài liệu CHƯA HỘI TỤ, tức chạy thêm lượt nữa thì hết.
+# Chỉ ba loại này mới được dùng làm điều kiện dừng.
+RERUN_PAT <- paste("Rerun to get", "Label\\(s\\) may have changed",
+                   "undefined references", sep = "|")
+
+# Overfull hbox là lỗi TRÌNH BÀY (dòng tràn lề), chạy lại bao nhiêu lượt cũng
+# không mất. Trước đây nó nằm chung trong điều kiện dừng, nên chỉ cần tài liệu
+# có một dòng tràn lề là vòng lặp chạy đủ MAX_ATTEMPTS lượt. Giờ chỉ đếm để
+# báo lại, không chặn việc dừng.
+OVERFULL_PAT <- "Overfull \\\\hbox"
 
 message("== knitr ==")
 knitr::knit(RNW)
@@ -64,6 +71,7 @@ message("\n== xelatex ==")
 clean_aux()
 streak <- 0
 attempt <- 0
+n_over <- 0        # số dòng tràn lề ở lượt chạy sạch gần nhất
 
 while (streak < NEED_STREAK && attempt < MAX_ATTEMPTS) {
   attempt <- attempt + 1
@@ -81,10 +89,11 @@ while (streak < NEED_STREAK && attempt < MAX_ATTEMPTS) {
     message(sprintf("  lần %d: crash, xoá .aux và chạy lại", attempt))
   } else {
     streak <- streak + 1
-    n_warn <- sum(grepl(WARN_PAT, log_txt))
-    message(sprintf("  lần %d: OK (chuỗi %d/%d), %d cảnh báo",
-                    attempt, streak, NEED_STREAK, n_warn))
-    if (streak >= NEED_STREAK && n_warn == 0) break
+    n_rerun <- sum(grepl(RERUN_PAT, log_txt))
+    n_over <- sum(grepl(OVERFULL_PAT, log_txt))
+    message(sprintf("  lần %d: OK (chuỗi %d/%d), %d cần chạy lại, %d tràn lề",
+                    attempt, streak, NEED_STREAK, n_rerun, n_over))
+    if (streak >= NEED_STREAK && n_rerun == 0) break
     if (streak >= NEED_STREAK) streak <- NEED_STREAK - 1   # chưa hội tụ, chạy thêm
   }
 }
@@ -94,3 +103,10 @@ if (!file.exists(pdf)) stop("Build thất bại sau ", attempt, " lượt.")
 
 message(sprintf("\nXong sau %d lượt xelatex -> %s (%.0f KB)",
                 attempt, pdf, file.size(pdf) / 1024))
+
+if (n_over > 0) {
+  message(sprintf("Lưu ý: %d dòng tràn lề (Overfull hbox). Không ảnh hưởng",
+                  n_over))
+  message("việc build, nhưng nên xem lại. Tìm 'Overfull' trong ",
+          BASE, ".log để biết dòng nào.")
+}
