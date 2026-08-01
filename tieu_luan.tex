@@ -1202,22 +1202,30 @@ Macro F1, tức trung bình cộng chỉ số F1 của hai lớp, được chọ
 tổng hợp vì nó gán trọng số bằng nhau cho hai lớp bất kể chênh lệch cỡ, phù
 hợp với đặc thù của bài toán mất cân bằng.
 
-\section{Ước lượng khoảng tin cậy bằng Bootstrap}
+\section{Bootstrap và Kiểm định chéo phân tầng}
 
-Recall của lớp có bệnh là một ước lượng điểm được tính từ tập kiểm tra hữu
-hạn. Nếu thay tập kiểm tra bằng một mẫu bệnh nhân khác rút ra từ cùng quần
-thể, giá trị recall thu được có thể thay đổi. Vì vậy, bên cạnh ước lượng
-điểm, báo cáo sử dụng bootstrap để mô tả mức độ bất định của chỉ số này.
+Chương này đánh giá mô hình nền với siêu tham số cố định ($\lambda = 1$,
+$k_{SMOTE} = 5$) và ngưỡng phân loại mặc định $0{,}5$ bằng hai kỹ thuật
+resampling độc lập. Mục tiêu không phải là tìm cấu hình tối ưu của mô hình
+mà là đánh giá mức độ ổn định của hiệu năng khi dữ liệu dùng để đánh giá
+thay đổi.
+
+\subsection{Ước lượng khoảng tin cậy bằng Bootstrap}
+
+Recall của lớp có bệnh là một ước lượng điểm được tính trên một tập kiểm tra
+hữu hạn. Nếu thay tập kiểm tra bằng một mẫu dữ liệu khác được lấy từ cùng
+quần thể, giá trị recall có thể thay đổi. Vì vậy, bên cạnh ước lượng điểm,
+báo cáo sử dụng bootstrap để ước lượng khoảng tin cậy của chỉ số này.
 
 Trong phần này, mô hình được huấn luyện một lần trên tập huấn luyện của phép
-chia 80:20 và được dùng để dự đoán một lần trên tập kiểm tra. Sau đó, cặp
-giá trị thực tế và giá trị dự đoán trên tập kiểm tra được giữ cố định; ở mỗi
-vòng bootstrap, các quan sát trong tập kiểm tra được lấy mẫu lại có hoàn lại
-với cùng kích thước mẫu ban đầu. Do đó, khoảng tin cậy thu được phản ánh
-biến thiên do thành phần bệnh nhân trong tập kiểm tra, trong điều kiện mô
-hình đã được cố định. Cách làm này không bao gồm độ bất định phát sinh từ
-việc thay đổi tập huấn luyện hoặc huấn luyện lại mô hình, nên kết quả cần
-được diễn giải như một khoảng tin cậy có điều kiện.
+chia 80:20 và được sử dụng để dự đoán trên tập kiểm tra. Sau đó, cặp giá trị
+thực tế và giá trị dự đoán được giữ cố định; ở mỗi vòng bootstrap, các quan
+sát trong tập kiểm tra được lấy mẫu lại có hoàn lại với cùng kích thước mẫu
+ban đầu. Do đó, khoảng tin cậy thu được phản ánh độ bất định do quá trình lấy
+mẫu của tập kiểm tra, trong khi mô hình được xem là cố định. Cách tiếp cận
+này không phản ánh độ bất định phát sinh từ việc thay đổi tập huấn luyện hoặc
+huấn luyện lại mô hình, vì vậy kết quả cần được diễn giải như một khoảng tin
+cậy có điều kiện.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1245,7 +1253,7 @@ việc thay đổi tập huấn luyện hoặc huấn luyện lại mô hình, n
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hldef{CONF} \hlkwb{<-} \hlnum{0.90}
+\hldef{CONF} \hlkwb{<-} \hlnum{0.95}
 \hldef{B} \hlkwb{<-} \hlnum{10000}
 \hldef{n_test} \hlkwb{<-} \hlkwd{length}\hldef{(y_test)}
 
@@ -1275,13 +1283,13 @@ việc thay đổi tập huấn luyện hoặc huấn luyện lại mô hình, n
             \hldef{CONF} \hlopt{*} \hlnum{100}\hldef{, ci[}\hlnum{1}\hldef{], ci[}\hlnum{2}\hldef{]))}
 \end{alltt}
 \begin{verbatim}
-## Khoảng tin cậy 90%   = [0.525, 0.701]
+## Khoảng tin cậy 95%   = [0.511, 0.718]
 \end{verbatim}
 \begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Bề rộng khoảng       = %.3f\textbackslash{}n"}\hldef{, ci[}\hlnum{2}\hldef{]} \hlopt{-} \hldef{ci[}\hlnum{1}\hldef{]))}
 \end{alltt}
 \begin{verbatim}
-## Bề rộng khoảng       = 0.176
+## Bề rộng khoảng       = 0.207
 \end{verbatim}
 \begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Sai số chuẩn         = %.3f\textbackslash{}n"}\hldef{,} \hlkwd{sd}\hldef{(recalls)))}
@@ -1304,24 +1312,26 @@ việc thay đổi tập huấn luyện hoặc huấn luyện lại mô hình, n
 
 \end{knitrout}
 
-Với ngưỡng mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$. Khoảng
-tin cậy bootstrap 90\% là $[0{,}525;\ 0{,}701]$, có bề rộng $0{,}176$, tương
-đương gần 17 điểm phần trăm. Kết quả này cho thấy ước lượng điểm $0{,}614$
-chưa đủ để mô tả đầy đủ hiệu năng của mô hình: trên một tập kiểm tra chỉ gồm
-116 quan sát, trong đó có 83 ca bệnh, độ bất định của recall vẫn còn đáng
-kể. Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối cân đối,
-vì vậy khoảng tin cậy phân vị là một lựa chọn phù hợp trong bối cảnh này.
+Với ngưỡng mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$. Khoảng tin
+cậy bootstrap 95\% là $[0{,}511;\ 0{,}718]$, có bề rộng $0{,}207$, tương đương
+khoảng 21 điểm phần trăm. Kết quả này cho thấy một ước lượng điểm duy nhất
+chưa phản ánh đầy đủ hiệu năng của mô hình. Trên tập kiểm tra gồm 116 quan
+sát, trong đó có 83 ca bệnh, độ bất định của recall vẫn còn đáng kể.
+Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối đối xứng, do
+đó khoảng tin cậy phân vị là một lựa chọn phù hợp trong trường hợp này.
 
-\section{Kiểm định chéo phân tầng}
+\subsection{Kiểm định chéo phân tầng}
 
-Phần trên đánh giá mô hình trên một lần chia 80:20 duy nhất. Kiểm định chéo
-luân phiên vai trò của cả 5 phần, nhờ đó mọi quan sát đều được dự đoán đúng
-một lần bởi một mô hình chưa từng sử dụng nó trong huấn luyện.
+Phần trên đánh giá mô hình trên một lần chia dữ liệu 80:20 duy nhất. Trong
+kiểm định chéo 5-fold, mỗi fold lần lượt được sử dụng làm tập kiểm tra, còn
+bốn fold còn lại được dùng để huấn luyện. Nhờ đó, mọi quan sát đều được dự
+đoán đúng một lần bởi một mô hình chưa từng sử dụng quan sát đó trong quá
+trình huấn luyện.
 
-Giá trị $k = 5$ được chọn với lý do cụ thể: mỗi fold kiểm tra đúng 20\% dữ
-liệu, trùng với tỉ lệ chia 80:20 ở phần trước. Nhờ vậy hai cách đánh giá
-cùng áp dụng cho mô hình huấn luyện trên khoảng 466 quan sát và có thể so
-sánh trực tiếp với nhau.
+Giá trị $K = 5$ được lựa chọn vì mỗi fold kiểm tra chiếm khoảng 20\% dữ liệu,
+tương ứng với phép chia 80:20 ở phần trước. Nhờ vậy, hai phương pháp đánh giá
+đều sử dụng mô hình được huấn luyện trên khoảng 466 quan sát và có thể so
+sánh trực tiếp.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1371,18 +1381,17 @@ sánh trực tiếp với nhau.
 \end{kframe}
 \end{knitrout}
 
-Kết quả được báo cáo dưới dạng trung bình kèm độ lệch chuẩn giữa các fold,
-thay vì một con số đơn lẻ. Độ lệch chuẩn ở đây mang ý nghĩa riêng, cho biết
-kết quả dao động bao nhiêu khi chuyển sang một cách chia dữ liệu khác.
-Recall dao động mạnh nhất, đạt $0{,}606 \pm 0{,}047$ và trải từ $0{,}524$ ở
-fold thứ nhất tới $0{,}639$ ở fold thứ hai, trong khi macro F1 ổn định hơn
-với $0{,}643 \pm 0{,}031$.
+Kết quả được báo cáo dưới dạng giá trị trung bình kèm độ lệch chuẩn giữa các
+fold, thay vì một giá trị đơn lẻ. Độ lệch chuẩn phản ánh mức độ biến động của
+hiệu năng khi thay đổi cách chia dữ liệu. Recall dao động mạnh nhất, đạt
+$0{,}606 \pm 0{,}047$ và trải từ $0{,}524$ ở fold thứ nhất đến $0{,}639$ ở
+fold thứ hai, trong khi macro F1 ổn định hơn với $0{,}643 \pm 0{,}031$.
 
-Một điểm đáng chú ý là recall trung bình qua 5 fold, bằng $0{,}606$, rất
-gần với recall đo được trên một lần chia 80:20 ở phần trước, bằng $0{,}614$,
-và cả hai đều nằm gọn trong khoảng tin cậy bootstrap $[0{,}526;\ 0{,}700]$.
-Hai phương pháp resampling độc lập cho kết quả nhất quán, cho thấy ước
-lượng không phải sản phẩm của một lần chia dữ liệu thuận lợi.
+Đáng chú ý, recall trung bình của kiểm định chéo ($0{,}606$) rất gần với
+recall thu được từ phép chia 80:20 ($0{,}614$), và cả hai đều nằm trong
+khoảng tin cậy bootstrap 95\% $[0{,}511;\ 0{,}718]$. Hai phương pháp
+resampling cho kết quả nhất quán, cho thấy đánh giá hiệu năng tương đối ổn
+định và không phụ thuộc đáng kể vào một cách chia dữ liệu cụ thể.
 
 \section{Tinh chỉnh siêu tham số}
 
@@ -1734,7 +1743,7 @@ phù hợp riêng với dữ liệu dùng để dò nó.
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hldef{CONF2} \hlkwb{<-} \hlnum{0.95}
-\hldef{B2} \hlkwb{<-} \hlnum{2000}
+\hldef{B2} \hlkwb{<-} \hlnum{10000}
 \hldef{boot_mat} \hlkwb{<-} \hlkwd{matrix}\hldef{(}\hlnum{NA}\hldef{,} \hlkwc{nrow} \hldef{= B2,} \hlkwc{ncol} \hldef{=} \hlkwd{length}\hldef{(m_final),}
                    \hlkwc{dimnames} \hldef{=} \hlkwd{list}\hldef{(}\hlkwa{NULL}\hldef{,} \hlkwd{names}\hldef{(m_final)))}
 
@@ -1756,12 +1765,12 @@ phù hợp riêng với dữ liệu dùng để dò nó.
 \end{alltt}
 \begin{verbatim}
 ##            diem_uoc_luong ci_duoi ci_tren sai_so_chuan
-## accuracy           0.7069  0.6207  0.7931       0.0427
-## recall1            0.8193  0.7349  0.9024       0.0432
-## precision1         0.7816  0.6933  0.8675       0.0448
-## recall0            0.4242  0.2500  0.6000       0.0872
-## precision0         0.4828  0.3077  0.6800       0.0941
-## macro_f1           0.6258  0.5279  0.7195       0.0492
+## accuracy           0.7069  0.6207  0.7845       0.0421
+## recall1            0.8193  0.7308  0.9000       0.0427
+## precision1         0.7816  0.6915  0.8642       0.0443
+## recall0            0.4242  0.2581  0.5938       0.0863
+## precision0         0.4828  0.3000  0.6667       0.0935
+## macro_f1           0.6258  0.5278  0.7181       0.0488
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1779,14 +1788,14 @@ phù hợp riêng với dữ liệu dùng để dò nó.
 \end{knitrout}
 
 Kết quả chính của báo cáo là recall lớp có bệnh đạt $0{,}819$ với khoảng
-tin cậy 95\% là $[0{,}735;\ 0{,}902]$.
+tin cậy 95\% là $[0{,}731;\ 0{,}900]$.
 
 Hình~\ref{fig:forest-plot} cho thấy độ rộng khoảng tin cậy khác nhau đáng
 kể giữa các chỉ số, và sự khác biệt đó phản ánh trực tiếp cỡ mẫu dùng để
 tính từng chỉ số. Recall của lớp có bệnh có khoảng hẹp nhất, với sai số
 chuẩn $0{,}043$, vì được tính trên toàn bộ 83 ca bệnh. Ngược lại, hai chỉ
 số của lớp không bệnh có khoảng rộng nhất: độ đặc hiệu bằng
-$[0{,}250;\ 0{,}600]$ và precision bằng $[0{,}308;\ 0{,}680]$, đều với sai
+$[0{,}258;\ 0{,}594]$ và precision bằng $[0{,}300;\ 0{,}667]$, đều với sai
 số chuẩn gần $0{,}09$. Nguyên nhân là chúng chỉ được tính trên 33 người
 khoẻ và 29 dự đoán âm tính. Nói cách khác, các ước lượng $0{,}424$ và
 $0{,}483$ cho hai chỉ số này mang rất ít thông tin xác định, và đó là điều
@@ -1811,9 +1820,9 @@ tin này.
 
 \textbf{Vai trò của Bootstrap trong định lượng độ tin cậy.} Mô hình cuối
 đạt recall $0{,}819$ trên tập kiểm tra, nhưng khoảng tin cậy 95\% trải từ
-$0{,}735$ tới $0{,}902$. Bề rộng gần 17 điểm phần trăm này là thông tin
+$0{,}731$ tới $0{,}900$. Bề rộng gần 17 điểm phần trăm này là thông tin
 thiết yếu, bởi nó cho thấy với cỡ mẫu hiện có, không thể phân biệt được mô
-hình này với một mô hình có recall thực sự bằng $0{,}74$ hay $0{,}90$. Mọi
+hình này với một mô hình có recall thực sự bằng $0{,}73$ hay $0{,}90$. Mọi
 so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều cần được diễn giải
 trong bối cảnh đó.
 

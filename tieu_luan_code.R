@@ -243,9 +243,9 @@ smote_oversample <- function(X, y, k = 5, seed = 42) {
   synth <- matrix(0, nrow = n_new, ncol = ncol(X))
   for (i in seq_len(n_new)) {
     a <- sample.int(nrow(X_min), 1)
-    neighbours <- order(D[a, ])[seq_len(k)]   # k láng giềng gần nhất
-    b <- neighbours[sample.int(k, 1)]         # chọn ngẫu nhiên 1 trong k
-    gap <- runif(1)                           # điểm mới nằm trên đoạn a-b
+    neighbours <- order(D[a, ])[seq_len(k)]
+    b <- neighbours[sample.int(k, 1)]
+    gap <- runif(1)
     synth[i, ] <- X_min[a, ] + gap * (X_min[b, ] - X_min[a, ])
   }
   colnames(synth) <- colnames(X)
@@ -365,20 +365,23 @@ recall_point <- compute_metrics(y_test, pred_test)["recall1"]
 
 
 ## ----boot-loop----------------------------------------------------------------
-CONF <- 0.90
+CONF <- 0.95
 B <- 10000
 n_test <- length(y_test)
 
-recalls <- numeric(0)
+set.seed(42)
+recalls <- numeric(B)
+n_valid <- 0
 for (b in seq_len(B)) {
-  # Rút CÓ HOÀN LẠI, cùng cỡ mẫu
+  # Rút có hoàn lại, cùng cỡ mẫu
   idx <- sample.int(n_test, n_test, replace = TRUE)
-  if (sum(y_test[idx] == 1) == 0) next   # không có ca bệnh -> recall vô nghĩa
-  recalls <- c(recalls,
-               compute_metrics(y_test[idx], pred_test[idx])["recall1"])
+  if (sum(y_test[idx] == 1) == 0) next   # không có ca bệnh -> recall không xác định
+  n_valid <- n_valid + 1
+  recalls[n_valid] <- compute_metrics(y_test[idx], pred_test[idx])["recall1"]
 }
+recalls <- recalls[seq_len(n_valid)]
 
-# Khoảng tin cậy percentile: cắt (1-CONF)/2 ở MỖI đuôi
+# Khoảng tin cậy percentile: cắt (1 - CONF) / 2 ở mỗi đuôi
 tail_pct <- (1 - CONF) / 2
 ci <- quantile(recalls, c(tail_pct, 1 - tail_pct))
 
@@ -434,7 +437,7 @@ for (m in c("Accuracy", "Recall", "Macro_F1")) {
 
 ## ----grid-search--------------------------------------------------------------
 param_grid <- expand.grid(
-  lambda  = c(0.01, 0.1, 1, 10, 100),   # cường độ điều chuẩn ridge
+  lambda  = c(0.01, 0.1, 1, 10, 100),   # cường độ điều chuẩn Ridge
   smote_k = c(3, 5, 7)                  # số láng giềng SMOTE
 )
 
@@ -559,7 +562,7 @@ print(round(cmp, 3))
 
 ## ----final-boot---------------------------------------------------------------
 CONF2 <- 0.95
-B2 <- 2000
+B2 <- 10000
 boot_mat <- matrix(NA, nrow = B2, ncol = length(m_final),
                    dimnames = list(NULL, names(m_final)))
 
