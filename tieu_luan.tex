@@ -1449,10 +1449,9 @@ luyện, thông qua kiểm định chéo phân tầng. Cách làm này giúp tr�
 trạng lựa chọn mô hình dựa trên thông tin của tập kiểm tra.
 
 Hai siêu tham số cần lựa chọn là cường độ điều chuẩn $\lambda$ của Ridge và
-số láng giềng $k$ trong bước SMOTE. Lưới $\lambda$ được thu gọn về ba giá
+số láng giềng $k$ trong bước SMOTE. Lưới $\lambda$ gồm ba giá
 trị $\{0{,}1;\ 1;\ 10\}$ đại diện cho mức điều chuẩn yếu, vừa và mạnh quanh
-vùng trung tâm, bỏ hai đầu mút $0{,}01$ và $100$ vốn đã bị quy tắc một sai
-số chuẩn xem là tương đương với các cấu hình còn lại. Kết hợp với ba giá trị
+vùng trung tâm. Kết hợp với ba giá trị
 $k_{SMOTE} \in \{3, 5, 7\}$, lưới tìm kiếm gồm 9 cấu hình, mỗi cấu hình được
 đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện, tương ứng với 45
 lần khớp mô hình. Tiêu chí so sánh là macro F1 thay vì recall của
@@ -1518,23 +1517,12 @@ Lambda & SMOTE k & Macro F1 & SD giữa fold\\
 \end{table}
 
 
-Cấu hình có điểm trung bình cao nhất là $\lambda = 1$ và
-$k_{SMOTE} = 7$, với macro F1 bằng $0{,}6407$. Tuy nhiên, năm cấu hình đứng
-đầu chỉ chênh nhau khoảng $0{,}002$, trong khi sai số chuẩn của trung bình
-5 fold là $0{,}0141$. Mức chênh lệch này nhỏ hơn nhiều so với độ bất định
-của chính phép đánh giá, nên chưa đủ cơ sở để kết luận cấu hình đứng đầu
-thật sự tốt hơn các cấu hình còn lại.
-
-Vì vậy, báo cáo áp dụng quy tắc một sai số chuẩn: các cấu hình có điểm số
-nằm trong phạm vi một sai số chuẩn so với điểm cao nhất được xem là tương
-đương về mặt thực nghiệm. Cả 9 trên 9 cấu hình của lưới đã thu gọn đều thỏa
-điều kiện này, tức là quanh vùng trung tâm này kiểm định chéo hoàn toàn
-không phân biệt được cấu hình nào vượt trội hơn cấu hình nào. Trong nhóm
-tương đương, báo cáo chọn cấu hình có $\lambda$ nhỏ nhất; trong số các cấu
-hình cùng $\lambda$ nhỏ nhất, ưu tiên $k_{SMOTE}$ cho macro F1 cao nhất.
-Lựa chọn này phù hợp với nhận xét ở Mục~\ref{sec:ridge}: khi $\lambda$ quá
-lớn, xác suất dự đoán bị kéo mạnh về quanh $0{,}5$, khiến bước lựa chọn
-ngưỡng phân loại ở phần sau kém linh hoạt hơn.
+Trong các cấu hình được khảo sát, cấu hình $\lambda=1$ và
+$k_{\text{SMOTE}}=7$ đạt macro F1 trung bình cao nhất, bằng $0{,}6407$.
+Tuy nhiên, chênh lệch macro F1 giữa năm cấu hình dẫn đầu chỉ khoảng $0{,}002$,
+trong khi độ lệch chuẩn giữa các fold đều xấp xỉ $0{,}03$. Điều này cho thấy
+sự khác biệt về hiệu năng giữa các cấu hình là rất nhỏ và khó có thể xem là
+đáng kể. 
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1588,18 +1576,12 @@ Ngưỡng mặc định $0{,}5$ phù hợp với các bài toán phân loại t�
 bệnh, bỏ sót một ca bệnh thường nghiêm trọng hơn nhiều so với việc báo động
 nhầm một người khỏe mạnh. Báo động nhầm chỉ dẫn đến các xét nghiệm bổ sung,
 trong khi bỏ sót có thể khiến bệnh không được phát hiện và điều trị kịp thời.
-Vì vậy, ngưỡng phân loại thường được hạ xuống để tăng khả năng phát hiện các
-ca bệnh.
-
-Trong báo cáo này, ngưỡng được lựa chọn theo tiêu chí \textbf{số ca bệnh bị
-bỏ sót (FN) nhỏ hơn số người khoẻ bị báo động nhầm (FP)}. Tiêu chí này bảo
-đảm rằng, giữa hai loại sai sót, loại sai sót tốn kém hơn về mặt lâm sàng
-không trở thành loại phổ biến hơn. Trên tập huấn luyện, khi ngưỡng giảm dần
-từ $0{,}5$, FN giảm còn FP tăng; tồn tại một điểm giao mà tại đó hai đại
-lượng này bằng nhau. Ngưỡng cao nhất vẫn còn thoả FN nhỏ hơn FP nằm ngay sát
-điểm giao đó, nên báo cáo lùi lại một bước để có khoảng đệm an toàn, tránh
-trường hợp một tập kiểm tra nhỏ và khác biệt ngẫu nhiên với tập huấn luyện
-làm đảo ngược quan hệ FN so với FP.
+Vì lẽ đó, ngưỡng phân loại thường được hạ xuống để tăng khả năng phát hiện các
+ca bệnh. Tuy vậy, nếu ngưỡng quá thấp, số người khỏe bị xếp nhầm vào nhóm
+có bệnh sẽ tăng nhanh, làm giảm độ tin cậy và giá trị ứng dụng của mô hình.
+Tóm lại, ngưỡng được lựa chọn là ngưỡng vừa giúp cải thiện đáng kể recall của
+lớp có bệnh, vừa giữ số báo động nhầm ở mức chấp nhận được, thay vì tối đa
+hóa recall bằng mọi giá.
 
 Ngưỡng phân loại phải được lựa chọn hoàn toàn từ tập huấn luyện. Nếu dò
 ngưỡng trên tập kiểm tra thì thông tin từ tập này đã được sử dụng trong quá
@@ -1665,11 +1647,9 @@ việc lựa chọn ngưỡng vẫn bảo đảm tính khách quan.
 \caption[Đánh đổi giữa độ nhạy và độ đặc hiệu khi thay đổi ngưỡng phân loại]{Đánh đổi giữa độ nhạy và độ đặc hiệu khi thay đổi ngưỡng phân loại}\label{fig:threshold-plot}
 \end{figure}
 
-\begin{kframe}\begin{alltt}
-\hlkwd{par}\hldef{(op)}
-\end{alltt}
-\end{kframe}
 \end{knitrout}
+
+
 
 Hình~\ref{fig:threshold-plot} minh họa mối quan hệ đánh đổi giữa recall của
 hai lớp khi thay đổi ngưỡng phân loại. Khi ngưỡng giảm, recall của lớp có
