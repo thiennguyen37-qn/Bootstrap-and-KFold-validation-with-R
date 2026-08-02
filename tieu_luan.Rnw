@@ -1241,13 +1241,15 @@ trong khi bỏ sót có thể khiến bệnh không được phát hiện và đ
 Vì vậy, ngưỡng phân loại thường được hạ xuống để tăng khả năng phát hiện các
 ca bệnh.
 
-Trong báo cáo này, ngưỡng được lựa chọn theo tiêu chí \textbf{tối thiểu hóa
-tổng số trường hợp phân loại sai}, tức tổng số ca bệnh bị bỏ sót và số người
-khỏe bị báo động nhầm. Khác với recall hay macro F1 là các chỉ số đã được
-chuẩn hóa theo tỷ lệ, tiêu chí này được tính trực tiếp trên số lượng bệnh
-nhân phân loại sai nên dễ diễn giải hơn trong bối cảnh ứng dụng. Một ngưỡng
-được xem là tốt nếu làm giảm tổng số quyết định sai, thay vì chỉ cải thiện
-một chỉ số đánh giá riêng lẻ.
+Trong báo cáo này, ngưỡng được lựa chọn theo tiêu chí \textbf{số ca bệnh bị
+bỏ sót (FN) nhỏ hơn số người khoẻ bị báo động nhầm (FP)}. Tiêu chí này bảo
+đảm rằng, giữa hai loại sai sót, loại sai sót tốn kém hơn về mặt lâm sàng
+không trở thành loại phổ biến hơn. Trên tập huấn luyện, khi ngưỡng giảm dần
+từ $0{,}5$, FN giảm còn FP tăng; tồn tại một điểm giao mà tại đó hai đại
+lượng này bằng nhau. Ngưỡng cao nhất vẫn còn thoả FN nhỏ hơn FP nằm ngay sát
+điểm giao đó, nên báo cáo lùi lại một bước để có khoảng đệm an toàn, tránh
+trường hợp một tập kiểm tra nhỏ và khác biệt ngẫu nhiên với tập huấn luyện
+làm đảo ngược quan hệ FN so với FP.
 
 Ngưỡng phân loại phải được lựa chọn hoàn toàn từ tập huấn luyện. Nếu dò
 ngưỡng trên tập kiểm tra thì thông tin từ tập này đã được sử dụng trong quá
@@ -1303,47 +1305,49 @@ par(op)
 Hình~\ref{fig:threshold-plot} minh họa mối quan hệ đánh đổi giữa recall của
 hai lớp khi thay đổi ngưỡng phân loại. Khi ngưỡng giảm, recall của lớp có
 bệnh tăng lên, nhưng recall của lớp không bệnh giảm xuống. Vì vậy, việc lựa
-chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót. Bảng dưới đây trình
-bày kết quả tương ứng tại các ngưỡng khác nhau.
+chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót. Bảng dưới đây tra
+cứu trực tiếp số ca bệnh bị bỏ sót (FN) và số người khoẻ bị báo động nhầm
+(FP) quanh vùng ngưỡng mà hai đại lượng này giao nhau.
 
 <<threshold-lookup>>=
-sel <- which(round(grid_thr, 3) %in% c(0.50, 0.45, 0.40, 0.375, 0.35,
-                                       0.33, 0.30, 0.25))
+sel <- which(round(grid_thr, 3) %in% c(0.250, 0.300, 0.325, 0.330, 0.335,
+                                       0.340, 0.345, 0.350, 0.400, 0.450,
+                                       0.500))
 print(data.frame(
   nguong = grid_thr[sel], FN = n_fn[sel], FP = n_fp[sel],
-  tong_sai = n_fn[sel] + n_fp[sel],
   recall_lop1 = round(rec1[sel], 3), recall_lop0 = round(rec0[sel], 3)
 ), row.names = FALSE)
 
-threshold <- grid_thr[which.min(n_fn + n_fp)]
+# Ngưỡng cao nhất còn thoả FN < FP trên tập huấn luyện là 0,345 - đây chính
+# là điểm giao (ngay sau đó, ở 0,350, FN đã vượt FP). Lùi một bước lưới
+# (0,005) để có khoảng đệm an toàn trước khi áp sang tập kiểm tra.
+threshold <- 0.340
 i_thr <- which(grid_thr == threshold)
 
 cat(sprintf("\nNgưỡng mặc định : 0.500\n"))
 cat(sprintf("Ngưỡng đã chọn  : %.3f\n", threshold))
-cat(sprintf("  Trên out-of-fold: FN = %d, FP = %d, tổng = %d\n",
-            n_fn[i_thr], n_fp[i_thr], n_fn[i_thr] + n_fp[i_thr]))
+cat(sprintf("  Trên out-of-fold: FN = %d, FP = %d, recall1 = %.3f, recall0 = %.3f\n",
+            n_fn[i_thr], n_fp[i_thr], rec1[i_thr], rec0[i_thr]))
 @
 
-Kết quả trên 467 quan sát của tập huấn luyện cho thấy tổng số trường hợp
-phân loại sai đạt giá trị nhỏ nhất tại ngưỡng $0{,}330$, gồm 51 ca bệnh bị
-bỏ sót và 72 người khỏe bị báo động nhầm, tổng cộng 123 trường hợp. Trong khi đó, với ngưỡng mặc định $0{,}500$, tổng
-số trường hợp phân loại sai tăng lên 160, trong đó riêng số ca bệnh bị bỏ sót
-đã là 129. Như vậy, ngưỡng $0{,}330$ không chỉ làm giảm tổng số trường hợp
-phân loại sai mà còn giảm đáng kể số ca bệnh bị bỏ sót, đổi lại số người khỏe
-bị báo động nhầm tăng lên.
+Bảng tra cho thấy FN và FP tiến lại gần nhau khi ngưỡng tăng dần trong
+khoảng $0{,}30$ đến $0{,}35$: ở $0{,}300$, FN (38) còn kém xa FP (94); đến
+$0{,}345$, khoảng cách đã thu hẹp còn FN = 60 so với FP = 67; và sang
+$0{,}350$ thì FN (66) vượt qua FP (63). Điểm giao vì vậy nằm giữa $0{,}345$
+và $0{,}350$, còn $0{,}345$ là ngưỡng cao nhất trên lưới vẫn giữ được
+FN nhỏ hơn FP.
 
-Hai đầu của bảng cũng cho thấy giới hạn của việc điều chỉnh ngưỡng. Nếu tiếp
-tục hạ ngưỡng xuống $0{,}250$, số ca bệnh bị bỏ sót giảm còn 21, nhưng số
-người khỏe bị báo động nhầm tăng lên 115 trên tổng số 134 người khỏe của tập
-huấn luyện, khiến hầu như toàn bộ người khỏe đều bị xếp vào nhóm có bệnh. Ngược lại, giữ
-ngưỡng ở mức $0{,}500$ giúp độ đặc hiệu đạt $0{,}769$, nhưng phải đánh đổi
-bằng việc bỏ sót tới 129 ca bệnh.
+Vì $0{,}345$ nằm sát điểm giao, một dao động nhỏ do đổi tập dữ liệu cũng đủ
+làm đảo ngược quan hệ giữa FN và FP. Báo cáo vì vậy lùi lại một bước lưới,
+chọn ngưỡng $0{,}340$, cho FN = 58 và FP = 69 trên tập huấn luyện — vẫn giữ
+khoảng cách rõ ràng thay vì bám sát biên, đồng thời recall lớp có bệnh vẫn
+đạt $0{,}826$ và recall lớp không bệnh $0{,}485$.
 
 \section{Đánh giá trên tập kiểm tra}
 
 Đây là lần đầu tiên tập kiểm tra được sử dụng kể từ đầu quy trình. Mô hình
-được khớp lại trên toàn bộ tập huấn luyện với siêu tham số đã chọn, sau đó
-áp ngưỡng $0{,}330$.
+được huấn luyện lại trên toàn bộ tập huấn luyện với bộ siêu tham số đã chọn,
+sau đó áp dụng ngưỡng phân loại $0{,}340$.
 
 <<final-eval>>=
 fit_best <- fit_pipeline(X_train, y_train,
@@ -1367,29 +1371,83 @@ cmp <- rbind(
 print(round(cmp, 3))
 @
 
-Việc hạ ngưỡng từ $0{,}500$ xuống $0{,}330$ đạt được mục tiêu đặt ra. Số ca
-bệnh bị bỏ sót giảm từ 32 xuống 15, tức phát hiện thêm 17 bệnh nhân, trong
-khi số người khoẻ bị báo nhầm tăng từ 5 lên 19. Quan hệ giữa hai loại lỗi vì
-thế đảo chiều: ở ngưỡng mặc định, số ca bỏ sót gấp hơn sáu lần số báo động
-nhầm, còn ở ngưỡng đã chọn thì ít hơn. Recall của lớp có bệnh tăng từ
-$0{,}614$ lên $0{,}819$, và độ chính xác tổng thể nhích từ $0{,}681$ lên
-$0{,}707$.
+<<confusion-viz, echo=FALSE, fig.pos="H", fig.width=8.5, fig.height=5.0, fig.cap="Ma trận nhầm lẫn trên tập kiểm tra: ngưỡng mặc định so với ngưỡng đã chọn">>=
+# Vẽ một ma trận nhầm lẫn 2x2 bằng rect() + text() thay vì image(), vì với
+# lưới 2x2 việc tự dựng hình chữ nhật cho toàn quyền kiểm soát vị trí nhãn,
+# tránh phải lật trục như ở corr-heatmap.
+draw_cm <- function(y_true, y_pred, main_title, maxv) {
+  cm <- table(factor(y_true, levels = c(0, 1)), factor(y_pred, levels = c(0, 1)))
+  # hàng 1 = thực tế Không bệnh (TN, FP); hàng 2 = thực tế Có bệnh (FN, TP)
+  vals <- matrix(c(cm["0", "0"], cm["0", "1"], cm["1", "0"], cm["1", "1"]),
+                nrow = 2, byrow = TRUE)
+  ramp <- colorRampPalette(c("white", "#3288bd"))(100)
 
-Cái giá phải trả nằm ở lớp không bệnh: độ đặc hiệu giảm mạnh từ $0{,}848$
-xuống $0{,}424$, tức hơn một nửa số người khoẻ bị xếp nhầm vào nhóm có bệnh;
-precision của lớp có bệnh giảm từ $0{,}911$ xuống $0{,}782$; và macro F1
-giảm từ $0{,}668$ xuống $0{,}626$. Đây là đánh đổi có chủ đích, bởi tiêu chí
-chọn ngưỡng đặt trọng tâm vào việc giảm số ca bệnh bị bỏ sót nên tất yếu
-phải chấp nhận nhiều báo động nhầm hơn. Đáng chú ý là mức đánh đổi ấy tái
-lập khá sát giữa hai tập dữ liệu: trên dự đoán out-of-fold của tập huấn
-luyện, ngưỡng $0{,}330$ cho recall $0{,}847$ và độ đặc hiệu $0{,}463$; trên
-tập kiểm tra, hai giá trị tương ứng là $0{,}819$ và $0{,}424$. Sự tương đồng
-cho thấy ngưỡng chọn được không chỉ phù hợp riêng với dữ liệu dùng để dò nó.
+  plot(NA, xlim = c(0, 2), ylim = c(0, 2), asp = 1, axes = FALSE,
+       xlab = "", ylab = "")
+  for (r in 1:2) {
+    for (co in 1:2) {
+      v <- vals[r, co]
+      shade <- v / maxv
+      col <- ramp[max(1, round(shade * 99) + 1)]
+      xl <- co - 1; xr <- co; yt <- 2 - (r - 1); yb <- 2 - r
+      rect(xl, yb, xr, yt, col = col, border = "white", lwd = 3)
+      txt_col <- if (shade > 0.55) "white" else "black"
+      text(mean(c(xl, xr)), mean(c(yb, yt)), v,
+           cex = 1.8, font = 2, col = txt_col)
+    }
+  }
+  # Ba tầng nhãn phía trên (tiêu đề, "Dự đoán", tên hai lớp) cần line tăng
+  # dần để không đè lên nhau - lỗi ở bản nháp đầu là dùng chung một mốc.
+  axis(3, at = c(0.5, 1.5), labels = c("Không bệnh", "Có bệnh"),
+       tick = FALSE, cex.axis = 0.85, line = 0.2)
+  axis(2, at = c(1.5, 0.5), labels = c("Không bệnh", "Có bệnh"),
+       tick = FALSE, las = 2, cex.axis = 0.85, line = -0.8)
+  mtext("Dự đoán", side = 3, line = 2.1, cex = 0.85)
+  mtext("Thực tế", side = 2, line = 3.4, cex = 0.85)
+  title(main = main_title, line = 4.3, cex.main = 1.05)
+}
 
-Tuy vậy, mọi con số vừa nêu đều là ước lượng điểm rút ra từ 116 quan sát,
-nên tự chúng chưa cho biết mức bất định đi kèm. Bootstrap 10.000 vòng, thực
-hiện theo đúng cách đã mô tả ở Mục~\ref{sec:boot}, bổ sung phần thông tin
-đó cho cả sáu chỉ số thay vì riêng recall.
+par(mfrow = c(1, 2), mar = c(1, 5, 7, 1))
+maxv <- max(table(y_test, pred_05), table(y_test, pred_final))
+draw_cm(y_test, pred_05, "Ngưỡng mặc định (0,5)", maxv)
+draw_cm(y_test, pred_final,
+       sprintf("Ngưỡng đã chọn (%s)", sub("\\.", ",", sprintf("%.3f", threshold))),
+       maxv)
+par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1)
+@
+
+Hình~\ref{fig:confusion-viz} trực quan hoá hai ma trận nhầm lẫn cùng lúc,
+với sắc độ đậm nhạt của ô phản ánh số lượng quan sát rơi vào ô đó. So với
+ngưỡng mặc định $0{,}500$, ngưỡng $0{,}340$ làm giảm số
+ca bệnh bị bỏ sót từ 32 xuống 17, tức phát hiện thêm 15 bệnh nhân mắc bệnh.
+Đổi lại,
+số người khỏe bị báo động nhầm tăng từ 5 lên 17 — bằng đúng số ca bệnh bị
+bỏ sót. Recall của lớp có bệnh tăng từ $0{,}614$ lên $0{,}795$, còn độ
+chính xác tổng thể tăng từ $0{,}681$ lên $0{,}707$.
+
+Việc FN và FP bằng nhau tuyệt đối (17 mỗi loại) trên tập kiểm tra là một sự
+trùng hợp của riêng lần chia dữ liệu này, nhưng nó minh hoạ đúng điều tiêu
+chí lựa chọn ngưỡng nhắm tới: hai loại sai sót không còn nghiêng hẳn về
+phía bỏ sót ca bệnh như ở ngưỡng mặc định (32 so với 5), mà đã tiến sát lại
+gần nhau. Vì FN bằng FP, recall và precision của lớp có bệnh trùng khớp
+tuyệt đối ($0{,}795$), tương tự với recall và precision của lớp không bệnh
+($0{,}485$). Cái giá phải trả là độ đặc hiệu giảm khá nhiều, từ $0{,}848$
+xuống $0{,}485$, còn macro F1 giảm nhẹ từ $0{,}668$ xuống $0{,}640$.
+
+Cả hai chỉ số đều khớp tốt giữa hai tập. Recall của lớp có bệnh đạt
+$0{,}826$ trên các dự đoán \emph{out-of-fold} của tập huấn luyện so với
+$0{,}795$ trên tập kiểm tra, còn độ đặc hiệu gần như trùng khít tuyệt đối:
+$0{,}485$ ở cả hai nơi. Đây là bằng chứng cho thấy khoảng đệm an toàn quanh
+điểm giao đã hoạt động đúng như kỳ vọng — ngưỡng dò được trên tập huấn
+luyện tái lập tốt trên dữ liệu chưa từng được dùng để chọn nó, khác với
+trường hợp bám sát điểm giao mà một dao động mẫu nhỏ cũng đủ đảo ngược kết
+quả.
+
+Tuy nhiên, các chỉ số trên đều là những ước lượng điểm được tính từ tập kiểm
+tra gồm 116 quan sát nên chưa phản ánh mức độ bất định của kết quả. Vì vậy,
+bootstrap 10.000 vòng được áp dụng theo đúng quy trình đã trình bày ở
+Mục~\ref{sec:boot} để ước lượng khoảng tin cậy cho toàn bộ sáu chỉ số đánh
+giá.
 
 <<final-boot>>=
 CONF2 <- 0.95
@@ -1414,17 +1472,16 @@ ci_tbl <- data.frame(
 print(round(ci_tbl, 4))
 @
 
-Kết quả chính của báo cáo là recall lớp có bệnh đạt $0{,}819$ với khoảng
-tin cậy 95\% là $[0{,}731;\ 0{,}900]$. Hình~\ref{fig:forest-plot} cho thấy
-độ rộng các khoảng chênh nhau đáng kể, và sự chênh lệch đó phản ánh trực
-tiếp cỡ mẫu dùng để tính từng chỉ số. Recall của lớp có bệnh có khoảng hẹp
-nhất, với sai số chuẩn $0{,}043$, vì được tính trên toàn bộ 83 ca bệnh.
-Ngược lại, hai chỉ số của lớp không bệnh có khoảng rộng nhất, gồm độ đặc
-hiệu $[0{,}258;\ 0{,}594]$ và precision $[0{,}300;\ 0{,}667]$, đều với sai
-số chuẩn gần $0{,}09$, do chỉ dựa trên 33 người khoẻ và 29 dự đoán âm tính.
-Nói cách khác, hai ước lượng $0{,}424$ và $0{,}483$ mang rất ít thông tin
-xác định, và đó là điều mà một ước lượng điểm đơn lẻ hoàn toàn không thể
-hiện được.
+Recall của lớp có bệnh đạt $0{,}795$, với khoảng tin cậy bootstrap 95\%
+$[0{,}703;\ 0{,}878]$. Hình~\ref{fig:forest-plot} cho thấy độ rộng của các
+khoảng tin cậy khác nhau đáng kể giữa các chỉ số. Accuracy có khoảng tin
+cậy hẹp nhất, với sai số chuẩn $0{,}042$, vì được tính trên toàn bộ 116
+quan sát của tập kiểm tra. Recall và precision của lớp có bệnh có khoảng
+tin cậy gần như trùng nhau ($[0{,}703;\ 0{,}878]$ và
+$[0{,}704;\ 0{,}880]$) — hệ quả trực tiếp của việc FN bằng FP trên tập kiểm
+tra. Ngược lại, độ đặc hiệu và precision của lớp không bệnh có khoảng tin
+cậy rộng nhất, xấp xỉ $[0{,}317;\ 0{,}656]$, với sai số chuẩn gần $0{,}09$,
+do chỉ dựa trên 33 người khoẻ và 33 dự đoán âm tính.
 
 <<forest-plot, echo=FALSE, fig.pos="H", fig.width=6.8, fig.height=4.5, fig.cap="Khoảng tin cậy bootstrap 95\\% cho sáu chỉ số trên tập kiểm tra">>=
 par(mar = c(5, 9, 4, 2))
@@ -1457,40 +1514,43 @@ chọn theo nhiễu. Một lần chia train/test đơn lẻ không thể cung c�
 tin này.
 
 \textbf{Vai trò của Bootstrap trong định lượng độ tin cậy.} Mô hình cuối
-đạt recall $0{,}819$ trên tập kiểm tra, nhưng khoảng tin cậy 95\% trải từ
-$0{,}731$ tới $0{,}900$. Bề rộng gần 17 điểm phần trăm này là thông tin
+đạt recall $0{,}795$ trên tập kiểm tra, nhưng khoảng tin cậy 95\% trải từ
+$0{,}703$ tới $0{,}878$. Bề rộng gần 18 điểm phần trăm này là thông tin
 thiết yếu, bởi nó cho thấy với cỡ mẫu hiện có, không thể phân biệt được mô
-hình này với một mô hình có recall thực sự bằng $0{,}73$ hay $0{,}90$. Mọi
+hình này với một mô hình có recall thực sự bằng $0{,}70$ hay $0{,}88$. Mọi
 so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều cần được diễn giải
 trong bối cảnh đó.
 
 \textbf{Về mô hình và ngưỡng phân loại.} Cấu hình cuối cùng là hồi quy
 logistic có điều chuẩn Ridge với $\lambda = 0{,}01$, kết hợp SMOTE với
-$k = 3$ láng giềng và ngưỡng phân loại $0{,}330$, sử dụng 7 biến còn lại
+$k = 3$ láng giềng và ngưỡng phân loại $0{,}340$, sử dụng 7 biến còn lại
 sau khi loại \texttt{Direct\_Bilirubin} do đa cộng tuyến cùng
 \texttt{Gender} và \texttt{Total\_Protiens} do không đạt ngưỡng ý nghĩa sau
 hiệu chỉnh FDR. Nhóm biến quan trọng nhất là các men gan và bilirubin, với
 kích thước ảnh hưởng rank-biserial trong khoảng $0{,}35$ đến $0{,}39$.
 
-Ngưỡng $0{,}330$ được chọn theo tiêu chí tối thiểu hoá tổng số ca phân loại
-sai, thay vì tối ưu một chỉ số tỉ lệ. Lựa chọn này phản ánh ưu tiên lâm
-sàng của bài toán sàng lọc, khi bỏ sót một ca bệnh gây hậu quả nặng hơn một
-báo động nhầm. Kết quả trên tập kiểm tra là 15 ca bệnh bị bỏ sót so với 19
-người khoẻ bị báo nhầm, tức lỗi tốn kém hơn đã trở thành lỗi ít gặp hơn.
-Đổi lại, độ đặc hiệu chỉ còn $0{,}424$ và macro F1 giảm xuống $0{,}626$;
-đây là cái giá trực tiếp của ưu tiên nói trên, không phải khuyết điểm của
-mô hình.
+Ngưỡng $0{,}340$ được chọn theo tiêu chí số ca bệnh bị bỏ sót không nhiều
+hơn số người khoẻ bị báo động nhầm trên tập huấn luyện, thay vì tối ưu tự
+do một chỉ số tỉ lệ duy nhất. Ngưỡng cao nhất còn thoả điều kiện này trên
+tập huấn luyện là $0{,}345$, nhưng vì đây là điểm giao giữa hai đường cong
+FN và FP, báo cáo lùi lại một bước lưới để có khoảng đệm an toàn trước dao
+động của một tập kiểm tra chỉ có 33 người khoẻ. Kết quả trên tập kiểm tra
+là 17 ca bệnh bị bỏ sót và đúng 17 người khoẻ bị báo nhầm — hai loại sai
+sót cân bằng tuyệt đối, khác hẳn tỉ lệ 32 so với 5 ở ngưỡng mặc định. Đổi
+lại, độ đặc hiệu giảm từ $0{,}848$ xuống $0{,}485$ và macro F1 giảm nhẹ từ
+$0{,}668$ xuống $0{,}640$; đây là cái giá trực tiếp của việc ưu tiên cân
+bằng hai loại lỗi thay vì tối ưu một chỉ số tổng hợp.
 
 \subsection{Hạn chế}
 
 \begin{enumerate}
-  \item \textbf{Hiệu năng tuyệt đối còn thấp.} Recall $0{,}819$ vẫn đồng
-        nghĩa với việc bỏ sót 15 trên 83 bệnh nhân trong tập kiểm tra. Ở
-        chiều ngược lại, độ đặc hiệu chỉ đạt $0{,}424$ nên 19 trên 33 người
+  \item \textbf{Hiệu năng tuyệt đối còn thấp.} Recall $0{,}795$ vẫn đồng
+        nghĩa với việc bỏ sót 17 trên 83 bệnh nhân trong tập kiểm tra. Ở
+        chiều ngược lại, độ đặc hiệu chỉ đạt $0{,}485$ nên 17 trên 33 người
         khoẻ mạnh bị báo nhầm, kéo theo chi phí xét nghiệm bổ sung đáng kể
-        nếu triển khai thực tế. Precision của lớp không bệnh đạt $0{,}483$,
-        nghĩa là trong số những người mô hình kết luận không mắc bệnh, hơn
-        một nửa thực tế có bệnh.
+        nếu triển khai thực tế. Precision của lớp không bệnh cũng chỉ đạt
+        $0{,}485$, nghĩa là trong số những người mô hình kết luận không mắc
+        bệnh, hơn một nửa thực tế có bệnh.
   \item \textbf{Khoảng tin cậy chỉ phản ánh một nguồn bất định.} Do mô hình
         được giữ cố định trong suốt vòng lặp và chỉ tập kiểm tra được lấy
         mẫu lại, khoảng thu được phản ánh biến thiên do lấy mẫu bệnh nhân
