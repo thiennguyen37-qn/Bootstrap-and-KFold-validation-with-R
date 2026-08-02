@@ -1520,27 +1520,29 @@ phần sau kém linh hoạt hơn.
 \section{Lựa chọn ngưỡng phân loại}
 \label{sec:threshold}
 
-Ngưỡng mặc định $0{,}5$ hướng tới độ chính xác tổng thể và đối xử với hai
-lớp như nhau. Trong chẩn đoán bệnh, cách đối xử ấy không còn hợp lý, bởi bỏ
-sót một ca bệnh gây hậu quả nặng hơn nhiều so với báo động nhầm ở một người
-khoẻ mạnh. Báo động nhầm chỉ dẫn tới một lần xét nghiệm bổ sung, còn bỏ sót
-có thể khiến bệnh âm thầm tiến triển mà không được phát hiện. Đó là lý do
-ngưỡng cần được hạ xuống nhằm nâng recall của lớp có bệnh.
+Ngưỡng mặc định $0{,}5$ phù hợp với các bài toán phân loại tổng quát, trong
+đó hai lớp được xem có tầm quan trọng như nhau. Tuy nhiên, trong chẩn đoán
+bệnh, bỏ sót một ca bệnh thường nghiêm trọng hơn nhiều so với việc báo động
+nhầm một người khỏe mạnh. Báo động nhầm chỉ dẫn đến các xét nghiệm bổ sung,
+trong khi bỏ sót có thể khiến bệnh không được phát hiện và điều trị kịp thời.
+Vì vậy, ngưỡng phân loại thường được hạ xuống để tăng khả năng phát hiện các
+ca bệnh.
 
-Tiêu chí lựa chọn là \textbf{tối thiểu hoá tổng số ca phân loại sai}, tức
-tổng của số ca bệnh bị bỏ sót và số người khoẻ bị báo nhầm. Khác với recall
-hay macro F1 vốn là những chỉ số tỉ lệ, tiêu chí này đếm trực tiếp trên số
-bệnh nhân. Sự khác biệt đó có ý nghĩa vì hai lớp chênh lệch nhau về cỡ: một
-điểm phần trăm recall của lớp có bệnh ứng với nhiều bệnh nhân hơn hẳn một
-điểm phần trăm của lớp không bệnh. Nhờ vậy, cách đếm tự nó đã dành trọng số
-lớn hơn cho lớp đông, ở đây chính là lớp có bệnh.
+Trong báo cáo này, ngưỡng được lựa chọn theo tiêu chí \textbf{tối thiểu hóa
+tổng số trường hợp phân loại sai}, tức tổng số ca bệnh bị bỏ sót và số người
+khỏe bị báo động nhầm. Khác với recall hay macro F1 là các chỉ số đã được
+chuẩn hóa theo tỷ lệ, tiêu chí này được tính trực tiếp trên số lượng bệnh
+nhân phân loại sai nên dễ diễn giải hơn trong bối cảnh ứng dụng. Một ngưỡng
+được xem là tốt nếu làm giảm tổng số quyết định sai, thay vì chỉ cải thiện
+một chỉ số đánh giá riêng lẻ.
 
-Ngưỡng bắt buộc phải được xác định trên tập huấn luyện. Nếu dò ngưỡng trên
-tập kiểm tra thì tập này đã tham gia vào một quyết định của quá trình xây
-dựng mô hình, và con số công bố cuối cùng sẽ lạc quan giả tạo. Vì vậy,
-ngưỡng ở đây được dò trên các dự đoán \emph{out-of-fold}, nghĩa là mỗi quan
-sát của tập huấn luyện đều được chấm điểm bởi một mô hình chưa từng nhìn
-thấy nó.
+Ngưỡng phân loại phải được lựa chọn hoàn toàn từ tập huấn luyện. Nếu dò
+ngưỡng trên tập kiểm tra thì thông tin từ tập này đã được sử dụng trong quá
+trình xây dựng mô hình, dẫn đến rò rỉ dữ liệu và làm kết quả đánh giá trở nên
+lạc quan hơn thực tế. Vì vậy, báo cáo sử dụng các dự đoán \emph{out-of-fold}
+để lựa chọn ngưỡng. Cụ thể, mỗi quan sát trong tập huấn luyện được dự đoán
+bởi một mô hình chưa từng sử dụng chính quan sát đó để huấn luyện, nhờ vậy
+việc lựa chọn ngưỡng vẫn bảo đảm tính khách quan.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1569,17 +1571,25 @@ thấy nó.
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
+\hlcom{# Chừa lề dưới cho chú giải: đặt ở "right" thì nó nằm đè lên chỗ hai đường}
+\hlcom{# recall cắt nhau, tức đúng vùng cần nhìn rõ nhất.}
+\hldef{op} \hlkwb{<-} \hlkwd{par}\hldef{(}\hlkwc{mar} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{7}\hldef{,} \hlnum{4}\hldef{,} \hlnum{4}\hldef{,} \hlnum{2}\hldef{)} \hlopt{+} \hlnum{0.1}\hldef{)}
 \hlkwd{plot}\hldef{(grid_thr, rec1,} \hlkwc{type} \hldef{=} \hlsng{"l"}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"#d53e4f"}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{,} \hlkwc{ylim} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0}\hldef{,} \hlnum{1}\hldef{),}
      \hlkwc{xlab} \hldef{=} \hlsng{"Ngưỡng phân loại"}\hldef{,} \hlkwc{ylab} \hldef{=} \hlsng{"Recall"}\hldef{,}
      \hlkwc{main} \hldef{=} \hlsng{"Recall hai lớp theo ngưỡng (out-of-fold trên tập train)"}\hldef{)}
 \hlkwd{lines}\hldef{(grid_thr, rec0,} \hlkwc{col} \hldef{=} \hlsng{"#3288bd"}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{)}
 \hlkwd{abline}\hldef{(}\hlkwc{v} \hldef{=} \hlnum{0.5}\hldef{,} \hlkwc{col} \hldef{=} \hlsng{"gray50"}\hldef{,} \hlkwc{lty} \hldef{=} \hlnum{3}\hldef{)}
 \hlkwd{grid}\hldef{(}\hlkwc{col} \hldef{=} \hlsng{"gray90"}\hldef{)}
-\hlkwd{legend}\hldef{(}\hlsng{"right"}\hldef{,} \hlkwc{bty} \hldef{=} \hlsng{"n"}\hldef{,} \hlkwc{cex} \hldef{=} \hlnum{0.85}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{,}
-       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Recall lớp có bệnh (độ nhạy)"}\hldef{,}
-                  \hlsng{"Recall lớp không bệnh (độ đặc hiệu)"}\hldef{,}
-                  \hlsng{"Ngưỡng mặc định 0.5"}\hldef{),}
-       \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"#3288bd"}\hldef{,} \hlsng{"gray50"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{3}\hldef{))}
+
+\hlcom{# Bỏ tiền tố "Recall" trong nhãn vì trục tung đã ghi, nhờ vậy cả ba mục xếp}
+\hlcom{# vừa một hàng ngang.}
+\hlkwd{legend}\hldef{(}\hlkwd{grconvertX}\hldef{(}\hlnum{0.5}\hldef{,} \hlsng{"ndc"}\hldef{,} \hlsng{"user"}\hldef{),} \hlkwd{grconvertY}\hldef{(}\hlnum{0.05}\hldef{,} \hlsng{"ndc"}\hldef{,} \hlsng{"user"}\hldef{),}
+       \hlkwc{xjust} \hldef{=} \hlnum{0.5}\hldef{,} \hlkwc{yjust} \hldef{=} \hlnum{0.5}\hldef{,} \hlkwc{bty} \hldef{=} \hlsng{"n"}\hldef{,} \hlkwc{cex} \hldef{=} \hlnum{0.8}\hldef{,} \hlkwc{lwd} \hldef{=} \hlnum{2}\hldef{,}
+       \hlkwc{legend} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Lớp có bệnh (độ nhạy)"}\hldef{,}
+                  \hlsng{"Lớp không bệnh (độ đặc hiệu)"}\hldef{,}
+                  \hlsng{"Ngưỡng mặc định 0,5"}\hldef{),}
+       \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"#3288bd"}\hldef{,} \hlsng{"gray50"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{3}\hldef{),}
+       \hlkwc{horiz} \hldef{=} \hlnum{TRUE}\hldef{,} \hlkwc{xpd} \hldef{=} \hlnum{NA}\hldef{,} \hlkwc{seg.len} \hldef{=} \hlnum{1.8}\hldef{,} \hlkwc{x.intersp} \hldef{=} \hlnum{0.7}\hldef{)}
 \end{alltt}
 \end{kframe}\begin{figure}[ht]
 
@@ -1590,12 +1600,17 @@ thấy nó.
 \caption[Đánh đổi giữa độ nhạy và độ đặc hiệu khi thay đổi ngưỡng phân loại]{Đánh đổi giữa độ nhạy và độ đặc hiệu khi thay đổi ngưỡng phân loại}\label{fig:threshold-plot}
 \end{figure}
 
+\begin{kframe}\begin{alltt}
+\hlkwd{par}\hldef{(op)}
+\end{alltt}
+\end{kframe}
 \end{knitrout}
 
-Hình~\ref{fig:threshold-plot} cho thấy rõ bản chất đánh đổi giữa hai chỉ
-số: hai đường đi ngược chiều nhau, nên mỗi phần recall tăng thêm ở lớp có
-bệnh đều phải trả bằng một phần recall giảm đi ở lớp không bệnh. Bảng tra
-dưới đây lượng hoá cái giá ấy.
+Hình~\ref{fig:threshold-plot} minh họa mối quan hệ đánh đổi giữa recall của
+hai lớp khi thay đổi ngưỡng phân loại. Khi ngưỡng giảm, recall của lớp có
+bệnh tăng lên, nhưng recall của lớp không bệnh giảm xuống. Vì vậy, việc lựa
+chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót. Bảng dưới đây trình
+bày kết quả tương ứng tại các ngưỡng khác nhau.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1645,19 +1660,20 @@ dưới đây lượng hoá cái giá ấy.
 \end{kframe}
 \end{knitrout}
 
-Bảng tra cho thấy tổng số ca sai đạt cực tiểu tại ngưỡng $0{,}330$, gồm 51
-ca bệnh bị bỏ sót và 72 người khoẻ bị báo nhầm, cộng lại là 123 ca. Ở ngưỡng
-mặc định $0{,}500$, con số này lên tới 160 ca, riêng phần bỏ sót đã chiếm
-129. Như vậy, ngưỡng $0{,}330$ vừa giảm tổng sai sót, vừa đảo ngược tương
-quan giữa hai loại lỗi: số ca bệnh bị bỏ sót giờ đã ít hơn số người khoẻ bị
-báo nhầm.
+Kết quả trên 467 quan sát của tập huấn luyện cho thấy tổng số trường hợp
+phân loại sai đạt giá trị nhỏ nhất tại ngưỡng $0{,}330$, gồm 51 ca bệnh bị
+bỏ sót và 72 người khỏe bị báo động nhầm, tổng cộng 123 trường hợp. Trong khi đó, với ngưỡng mặc định $0{,}500$, tổng
+số trường hợp phân loại sai tăng lên 160, trong đó riêng số ca bệnh bị bỏ sót
+đã là 129. Như vậy, ngưỡng $0{,}330$ không chỉ làm giảm tổng số trường hợp
+phân loại sai mà còn giảm đáng kể số ca bệnh bị bỏ sót, đổi lại số người khỏe
+bị báo động nhầm tăng lên.
 
-Hai đầu bảng cho thấy giới hạn của việc điều chỉnh ngưỡng. Hạ tiếp xuống
-$0{,}250$ thì số ca bệnh bị bỏ sót chỉ còn 21, nhưng số người khoẻ bị báo
-nhầm vọt lên 115 trên tổng 134, nghĩa là mô hình xếp gần như toàn bộ người
-khoẻ vào nhóm có bệnh và đánh mất giá trị sàng lọc. Ở chiều ngược lại, giữ
-nguyên $0{,}500$ thì độ đặc hiệu đạt $0{,}769$, song cái giá phải trả là 129
-ca bệnh không được phát hiện.
+Hai đầu của bảng cũng cho thấy giới hạn của việc điều chỉnh ngưỡng. Nếu tiếp
+tục hạ ngưỡng xuống $0{,}250$, số ca bệnh bị bỏ sót giảm còn 21, nhưng số
+người khỏe bị báo động nhầm tăng lên 115 trên tổng số 134 người khỏe của tập
+huấn luyện, khiến hầu như toàn bộ người khỏe đều bị xếp vào nhóm có bệnh. Ngược lại, giữ
+ngưỡng ở mức $0{,}500$ giúp độ đặc hiệu đạt $0{,}769$, nhưng phải đánh đổi
+bằng việc bỏ sót tới 129 ca bệnh.
 
 \section{Đánh giá trên tập kiểm tra}
 
