@@ -1006,6 +1006,7 @@ tra xem các chỉ số đánh giá có ổn định hay không khi dữ liệu 
 giá thay đổi.
 
 \subsection{Ước lượng khoảng tin cậy bằng Bootstrap}
+\label{sec:boot}
 
 Recall của lớp có bệnh được tính từ một tập kiểm tra hữu hạn, nên giá trị
 này luôn đi kèm một mức bất định nhất định. Nếu tập kiểm tra gồm một nhóm
@@ -1368,26 +1369,27 @@ print(round(cmp, 3))
 
 Việc hạ ngưỡng từ $0{,}500$ xuống $0{,}330$ đạt được mục tiêu đặt ra. Số ca
 bệnh bị bỏ sót giảm từ 32 xuống 15, tức phát hiện thêm 17 bệnh nhân, trong
-khi số người khoẻ bị báo nhầm tăng từ 5 lên 19. Quan hệ giữa hai loại lỗi
-đảo chiều: ở ngưỡng mặc định, số ca bỏ sót gấp hơn sáu lần số báo động
-nhầm; ở ngưỡng đã chọn, số ca bỏ sót đã ít hơn số báo động nhầm. Recall của
-lớp có bệnh tăng từ $0{,}614$ lên $0{,}819$, và độ chính xác tổng thể cũng
-nhích từ $0{,}681$ lên $0{,}707$.
+khi số người khoẻ bị báo nhầm tăng từ 5 lên 19. Quan hệ giữa hai loại lỗi vì
+thế đảo chiều: ở ngưỡng mặc định, số ca bỏ sót gấp hơn sáu lần số báo động
+nhầm, còn ở ngưỡng đã chọn thì ít hơn. Recall của lớp có bệnh tăng từ
+$0{,}614$ lên $0{,}819$, và độ chính xác tổng thể nhích từ $0{,}681$ lên
+$0{,}707$.
 
-Cái giá phải trả nằm ở lớp không bệnh. Độ đặc hiệu giảm mạnh từ $0{,}848$
-xuống $0{,}424$, nghĩa là hơn một nửa số người khoẻ mạnh bị xếp nhầm vào
-nhóm có bệnh. Precision của lớp có bệnh giảm từ $0{,}911$ xuống $0{,}782$,
-và macro F1 giảm từ $0{,}668$ xuống $0{,}626$. Đây là đánh đổi có chủ đích:
-tiêu chí lựa chọn ngưỡng đặt trọng tâm vào việc giảm số ca bệnh bị bỏ sót,
-nên tất yếu phải chấp nhận nhiều báo động nhầm hơn.
+Cái giá phải trả nằm ở lớp không bệnh: độ đặc hiệu giảm mạnh từ $0{,}848$
+xuống $0{,}424$, tức hơn một nửa số người khoẻ bị xếp nhầm vào nhóm có bệnh;
+precision của lớp có bệnh giảm từ $0{,}911$ xuống $0{,}782$; và macro F1
+giảm từ $0{,}668$ xuống $0{,}626$. Đây là đánh đổi có chủ đích, bởi tiêu chí
+chọn ngưỡng đặt trọng tâm vào việc giảm số ca bệnh bị bỏ sót nên tất yếu
+phải chấp nhận nhiều báo động nhầm hơn. Đáng chú ý là mức đánh đổi ấy tái
+lập khá sát giữa hai tập dữ liệu: trên dự đoán out-of-fold của tập huấn
+luyện, ngưỡng $0{,}330$ cho recall $0{,}847$ và độ đặc hiệu $0{,}463$; trên
+tập kiểm tra, hai giá trị tương ứng là $0{,}819$ và $0{,}424$. Sự tương đồng
+cho thấy ngưỡng chọn được không chỉ phù hợp riêng với dữ liệu dùng để dò nó.
 
-Mức đánh đổi này cũng được tái lập khá sát giữa hai tập dữ liệu. Trên dự
-đoán out-of-fold của tập huấn luyện, ngưỡng $0{,}330$ cho recall $0{,}847$
-và độ đặc hiệu $0{,}463$; trên tập kiểm tra, hai giá trị tương ứng là
-$0{,}819$ và $0{,}424$. Sự tương đồng cho thấy ngưỡng chọn được không chỉ
-phù hợp riêng với dữ liệu dùng để dò nó.
-
-\subsection{Khoảng tin cậy bootstrap cho toàn bộ chỉ số}
+Tuy vậy, mọi con số vừa nêu đều là ước lượng điểm rút ra từ 116 quan sát,
+nên tự chúng chưa cho biết mức bất định đi kèm. Bootstrap 10.000 vòng, thực
+hiện theo đúng cách đã mô tả ở Mục~\ref{sec:boot}, bổ sung phần thông tin
+đó cho cả sáu chỉ số thay vì riêng recall.
 
 <<final-boot>>=
 CONF2 <- 0.95
@@ -1426,18 +1428,16 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 @
 
 Kết quả chính của báo cáo là recall lớp có bệnh đạt $0{,}819$ với khoảng
-tin cậy 95\% là $[0{,}731;\ 0{,}900]$.
-
-Hình~\ref{fig:forest-plot} cho thấy độ rộng khoảng tin cậy khác nhau đáng
-kể giữa các chỉ số, và sự khác biệt đó phản ánh trực tiếp cỡ mẫu dùng để
-tính từng chỉ số. Recall của lớp có bệnh có khoảng hẹp nhất, với sai số
-chuẩn $0{,}043$, vì được tính trên toàn bộ 83 ca bệnh. Ngược lại, hai chỉ
-số của lớp không bệnh có khoảng rộng nhất: độ đặc hiệu bằng
-$[0{,}258;\ 0{,}594]$ và precision bằng $[0{,}300;\ 0{,}667]$, đều với sai
-số chuẩn gần $0{,}09$. Nguyên nhân là chúng chỉ được tính trên 33 người
-khoẻ và 29 dự đoán âm tính. Nói cách khác, các ước lượng $0{,}424$ và
-$0{,}483$ cho hai chỉ số này mang rất ít thông tin xác định, và đó là điều
-mà một ước lượng điểm đơn lẻ hoàn toàn không thể hiện được.
+tin cậy 95\% là $[0{,}731;\ 0{,}900]$. Hình~\ref{fig:forest-plot} cho thấy
+độ rộng các khoảng chênh nhau đáng kể, và sự chênh lệch đó phản ánh trực
+tiếp cỡ mẫu dùng để tính từng chỉ số. Recall của lớp có bệnh có khoảng hẹp
+nhất, với sai số chuẩn $0{,}043$, vì được tính trên toàn bộ 83 ca bệnh.
+Ngược lại, hai chỉ số của lớp không bệnh có khoảng rộng nhất, gồm độ đặc
+hiệu $[0{,}258;\ 0{,}594]$ và precision $[0{,}300;\ 0{,}667]$, đều với sai
+số chuẩn gần $0{,}09$, do chỉ dựa trên 33 người khoẻ và 29 dự đoán âm tính.
+Nói cách khác, hai ước lượng $0{,}424$ và $0{,}483$ mang rất ít thông tin
+xác định, và đó là điều mà một ước lượng điểm đơn lẻ hoàn toàn không thể
+hiện được.
 
 \section{Kết luận}
 
