@@ -1402,17 +1402,19 @@ kiểm định chéo cho thấy đánh giá về hiệu năng của mô hình n�
 
 \section{Tinh chỉnh siêu tham số}
 
-Từ đây trở đi, quy trình tuân thủ nghiêm ngặt nguyên tắc phân vai: kiểm
-định chéo chạy trên tập huấn luyện để tinh chỉnh, còn tập kiểm tra được giữ
-nguyên vẹn và chỉ sử dụng ở phần cuối cùng.
+Từ bước này trở đi, tập kiểm tra được giữ riêng và chỉ dùng cho đánh giá cuối
+cùng. Việc tinh chỉnh siêu tham số được thực hiện hoàn toàn trên tập huấn
+luyện, thông qua kiểm định chéo phân tầng. Cách làm này giúp tránh tình
+trạng lựa chọn mô hình dựa trên thông tin của tập kiểm tra.
 
-Hai siêu tham số được dò trên lưới là cường độ điều chuẩn $\lambda$ của
-Ridge và số láng giềng $k$ mà SMOTE dùng để nội suy, tạo thành 15 cấu hình.
-Mỗi cấu hình được đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện,
-tương ứng 75 lần huấn luyện mô hình. Tiêu chí chấm điểm là macro F1 chứ
-không phải recall của lớp có bệnh. Lý do là việc tối đa hoá recall lớp có
-bệnh có một nghiệm tầm thường, đó là dự đoán tất cả quan sát đều mắc bệnh,
-cho recall bằng 1 nhưng không có giá trị sử dụng.
+Hai siêu tham số cần lựa chọn là cường độ điều chuẩn $\lambda$ của Ridge và
+số láng giềng $k$ trong bước SMOTE. Lưới tìm kiếm gồm 15 cấu hình, mỗi cấu
+hình được đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện, tương
+ứng với 75 lần khớp mô hình. Tiêu chí so sánh là macro F1 thay vì recall của
+lớp có bệnh. Nếu chỉ tối đa hóa recall, mô hình có thể đạt điểm rất cao bằng
+cách dự đoán gần như mọi quan sát là có bệnh; khi đó recall tăng, nhưng mô
+hình mất khả năng phân biệt giữa hai lớp. Macro F1 phù hợp hơn vì cân bằng
+đóng góp của cả lớp có bệnh và lớp không bệnh.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1456,19 +1458,20 @@ cho recall bằng 1 nhưng không có giá trị sử dụng.
 \end{kframe}
 \end{knitrout}
 
-Cấu hình đạt điểm cao nhất là $\lambda = 100$ với $k_{SMOTE} = 7$, cho macro
-F1 bằng $0{,}6440$. Tuy nhiên chênh lệch giữa năm cấu hình dẫn đầu chỉ
-khoảng $0{,}004$, trong khi sai số chuẩn của trung bình 5 fold là
-$0{,}0075$. Mức chênh lệch giữa các cấu hình như vậy còn nhỏ hơn sai số của
-chính phép đo, nên thứ hạng này không đủ vững để khẳng định cấu hình dẫn
-đầu thực sự tốt hơn những cấu hình còn lại.
+Cấu hình có điểm trung bình cao nhất là $\lambda = 100$ và
+$k_{SMOTE} = 7$, với macro F1 bằng $0{,}6440$. Tuy nhiên, năm cấu hình đứng
+đầu chỉ chênh nhau khoảng $0{,}004$, trong khi sai số chuẩn của trung bình
+5 fold là $0{,}0075$. Mức chênh lệch này nhỏ hơn độ bất định của chính phép
+đánh giá, nên chưa đủ cơ sở để kết luận cấu hình đứng đầu thật sự tốt hơn
+các cấu hình còn lại.
 
-Vì lý do đó, mọi cấu hình nằm trong phạm vi một sai số chuẩn quanh điểm cao
-nhất được xem là tương đương nhau, và có 14 trên 15 cấu hình thoả điều kiện
-này. Trong nhóm tương đương, cấu hình có $\lambda$ nhỏ nhất được chọn, căn
-cứ vào đặc điểm đã nêu ở Mục~\ref{sec:ridge}: giá trị $\lambda$ lớn nén xác
-suất dự đoán quanh $0{,}5$ và làm bước lựa chọn ngưỡng ở phần sau kém hiệu
-quả.
+Vì vậy, báo cáo áp dụng quy tắc một sai số chuẩn: các cấu hình có điểm số
+nằm trong phạm vi một sai số chuẩn so với điểm cao nhất được xem là tương
+đương về mặt thực nghiệm. Có 14 trong 15 cấu hình thỏa điều kiện này. Trong
+nhóm tương đương, báo cáo chọn cấu hình có $\lambda$ nhỏ nhất. Lựa chọn này
+phù hợp với nhận xét ở Mục~\ref{sec:ridge}: khi $\lambda$ quá lớn, xác suất
+dự đoán bị kéo mạnh về quanh $0{,}5$, khiến bước lựa chọn ngưỡng phân loại ở
+phần sau kém linh hoạt hơn.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1517,27 +1520,27 @@ quả.
 \section{Lựa chọn ngưỡng phân loại}
 \label{sec:threshold}
 
-Ngưỡng mặc định $0{,}5$ tối ưu cho độ chính xác tổng thể và không ưu tiên
-lớp nào. Bài toán chẩn đoán bệnh lại khác. Bỏ sót một ca bệnh gây hậu quả
-nặng hơn nhiều so với báo động nhầm một người khoẻ mạnh, bởi báo động nhầm
-chỉ dẫn tới một xét nghiệm bổ sung, trong khi bỏ sót có thể khiến bệnh tiến
-triển mà không được phát hiện. Vì vậy ngưỡng được hạ xuống để tăng recall
-của lớp có bệnh.
+Ngưỡng mặc định $0{,}5$ hướng tới độ chính xác tổng thể và đối xử với hai
+lớp như nhau. Trong chẩn đoán bệnh, cách đối xử ấy không còn hợp lý, bởi bỏ
+sót một ca bệnh gây hậu quả nặng hơn nhiều so với báo động nhầm ở một người
+khoẻ mạnh. Báo động nhầm chỉ dẫn tới một lần xét nghiệm bổ sung, còn bỏ sót
+có thể khiến bệnh âm thầm tiến triển mà không được phát hiện. Đó là lý do
+ngưỡng cần được hạ xuống nhằm nâng recall của lớp có bệnh.
 
 Tiêu chí lựa chọn là \textbf{tối thiểu hoá tổng số ca phân loại sai}, tức
-tổng của số ca bệnh bị bỏ sót và số người khoẻ bị báo nhầm. Cần nhấn mạnh
-rằng đây là tiêu chí đếm trực tiếp trên số bệnh nhân, khác với các chỉ số
-tỉ lệ như recall hay macro F1. Sự phân biệt này quan trọng vì hai lớp có cỡ
-rất khác nhau: một điểm phần trăm recall của lớp có bệnh tương ứng với
-nhiều bệnh nhân hơn hẳn so với một điểm phần trăm của lớp không bệnh. Tiêu
-chí đếm vì thế tự động đặt trọng số cao hơn cho lớp đông, ở đây chính là
-lớp có bệnh.
+tổng của số ca bệnh bị bỏ sót và số người khoẻ bị báo nhầm. Khác với recall
+hay macro F1 vốn là những chỉ số tỉ lệ, tiêu chí này đếm trực tiếp trên số
+bệnh nhân. Sự khác biệt đó có ý nghĩa vì hai lớp chênh lệch nhau về cỡ: một
+điểm phần trăm recall của lớp có bệnh ứng với nhiều bệnh nhân hơn hẳn một
+điểm phần trăm của lớp không bệnh. Nhờ vậy, cách đếm tự nó đã dành trọng số
+lớn hơn cho lớp đông, ở đây chính là lớp có bệnh.
 
-Ngưỡng bắt buộc phải được xác định trên tập huấn luyện. Nếu dò trên tập
-kiểm tra thì tập này đã tham gia vào một quyết định của quá trình xây dựng
-mô hình, và con số công bố cuối cùng sẽ lạc quan giả tạo. Ở đây, ngưỡng
-được xác định thông qua dự đoán \emph{out-of-fold}, trong đó mỗi quan sát
-của tập huấn luyện được chấm điểm bởi mô hình chưa từng sử dụng nó.
+Ngưỡng bắt buộc phải được xác định trên tập huấn luyện. Nếu dò ngưỡng trên
+tập kiểm tra thì tập này đã tham gia vào một quyết định của quá trình xây
+dựng mô hình, và con số công bố cuối cùng sẽ lạc quan giả tạo. Vì vậy,
+ngưỡng ở đây được dò trên các dự đoán \emph{out-of-fold}, nghĩa là mỗi quan
+sát của tập huấn luyện đều được chấm điểm bởi một mô hình chưa từng nhìn
+thấy nó.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1589,10 +1592,10 @@ của tập huấn luyện được chấm điểm bởi mô hình chưa từng 
 
 \end{knitrout}
 
-Hình~\ref{fig:threshold-plot} thể hiện rõ bản chất đánh đổi giữa hai chỉ
-số: hai đường đi ngược chiều nhau, và mọi mức tăng của recall lớp có bệnh
-đều phải trả bằng mức giảm tương ứng của recall lớp không bệnh. Bảng tra
-dưới đây lượng hoá cái giá đó.
+Hình~\ref{fig:threshold-plot} cho thấy rõ bản chất đánh đổi giữa hai chỉ
+số: hai đường đi ngược chiều nhau, nên mỗi phần recall tăng thêm ở lớp có
+bệnh đều phải trả bằng một phần recall giảm đi ở lớp không bệnh. Bảng tra
+dưới đây lượng hoá cái giá ấy.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1642,18 +1645,19 @@ dưới đây lượng hoá cái giá đó.
 \end{kframe}
 \end{knitrout}
 
-Bảng tra cho thấy tổng số ca sai đạt cực tiểu tại ngưỡng $0{,}330$, với 51
-ca bệnh bị bỏ sót và 72 người khoẻ bị báo nhầm trên tổng 123 ca sai. Ở
-ngưỡng mặc định $0{,}500$, tổng này là 160 ca, trong đó riêng số ca bệnh bị
-bỏ sót đã là 129. Ngưỡng $0{,}330$ do đó vừa giảm tổng sai sót, vừa đảo
-ngược tương quan giữa hai loại lỗi: số ca bệnh bỏ sót trở nên ít hơn số
-người khoẻ bị báo nhầm.
+Bảng tra cho thấy tổng số ca sai đạt cực tiểu tại ngưỡng $0{,}330$, gồm 51
+ca bệnh bị bỏ sót và 72 người khoẻ bị báo nhầm, cộng lại là 123 ca. Ở ngưỡng
+mặc định $0{,}500$, con số này lên tới 160 ca, riêng phần bỏ sót đã chiếm
+129. Như vậy, ngưỡng $0{,}330$ vừa giảm tổng sai sót, vừa đảo ngược tương
+quan giữa hai loại lỗi: số ca bệnh bị bỏ sót giờ đã ít hơn số người khoẻ bị
+báo nhầm.
 
-Hai đầu bảng minh hoạ giới hạn của việc điều chỉnh ngưỡng. Hạ tiếp xuống
-$0{,}250$ thì số ca bệnh bỏ sót giảm còn 21, nhưng số người khoẻ bị báo
-nhầm tăng lên 115 trên tổng 134, tức mô hình xếp gần như toàn bộ người khoẻ
-vào nhóm có bệnh và mất giá trị sàng lọc. Ngược lại, nâng lên $0{,}500$ thì
-độ đặc hiệu đạt $0{,}769$ nhưng phải trả bằng 129 ca bệnh bị bỏ sót.
+Hai đầu bảng cho thấy giới hạn của việc điều chỉnh ngưỡng. Hạ tiếp xuống
+$0{,}250$ thì số ca bệnh bị bỏ sót chỉ còn 21, nhưng số người khoẻ bị báo
+nhầm vọt lên 115 trên tổng 134, nghĩa là mô hình xếp gần như toàn bộ người
+khoẻ vào nhóm có bệnh và đánh mất giá trị sàng lọc. Ở chiều ngược lại, giữ
+nguyên $0{,}500$ thì độ đặc hiệu đạt $0{,}769$, song cái giá phải trả là 129
+ca bệnh không được phát hiện.
 
 \section{Đánh giá trên tập kiểm tra}
 
