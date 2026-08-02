@@ -20,6 +20,19 @@
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
 
+% Co bảng vừa khít chiều rộng trang CHỈ KHI nó rộng hơn textwidth; bảng hẹp
+% giữ nguyên kích thước tự nhiên thay vì bị phóng to ra hết trang.
+\makeatletter
+\newcommand{\shrinktofit}[1]{%
+  \sbox0{#1}%
+  \ifdim\wd0>\linewidth
+    \resizebox{\linewidth}{!}{\usebox0}%
+  \else
+    \usebox0
+  \fi
+}
+\makeatother
+
 \title{Xây dựng mô hình dự đoán bệnh gan trên dữ liệu ILPD:\\
 Ứng dụng Bootstrap và K-fold Cross-Validation}
 \author{Nguyen Ho Bao Thien}
@@ -77,6 +90,19 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
                       fig.pos = "ht", size = "scriptsize")
 options(width = 72)
 set.seed(42)
+
+# In một data.frame thành bảng LaTeX thật (đánh số "Bảng N", có caption),
+# thay vì để print() chụp lại thành text console như mặc định của knitr.
+# [H] giữ bảng đúng tại chỗ gọi; \shrinktofit co bảng nhiều cột (tên biến
+# dài, nhiều chỉ số) vừa khít trang thay vì tràn lề.
+kbl_tab <- function(df, caption, label, col.names = NA, row.names = FALSE) {
+  tab <- paste(knitr::kable(df, format = "latex", booktabs = TRUE,
+                            col.names = col.names, row.names = row.names),
+              collapse = "\n")
+  cat(sprintf(
+    "\\begin{table}[H]\n\\centering\n\\caption{%s}\n\\label{tab:%s}\n\\shrinktofit{%%\n%s\n}\n\\end{table}\n",
+    caption, label, tab))
+}
 @
 
 \section{Đặt vấn đề}
@@ -603,11 +629,19 @@ X_vif_log <- X_vif
 for (col in skewed_cols) X_vif_log[[col]] <- log1p(df_raw[[col]])
 vif_log <- compute_vif(X_vif_log)
 
-print(round(data.frame(
-  VIF_goc    = vif_raw,
-  VIF_log    = vif_log[names(vif_raw)],
-  chenh_lech = vif_log[names(vif_raw)] - vif_raw
-)[order(-vif_log[names(vif_raw)]), ], 2))
+vif_tbl <- data.frame(
+  Bien = names(vif_raw),
+  VIF_goc = round(vif_raw, 2),
+  VIF_log = round(vif_log[names(vif_raw)], 2),
+  chenh_lech = round(vif_log[names(vif_raw)] - vif_raw, 2),
+  row.names = NULL
+)
+vif_tbl <- vif_tbl[order(-vif_tbl$VIF_log), ]
+@
+
+<<vif-table, echo=FALSE, results='asis'>>=
+kbl_tab(vif_tbl, "Hệ số VIF trên thang đo gốc và thang đo log", "vif",
+       col.names = c("Biến", "VIF gốc", "VIF log", "Chênh lệch"))
 @
 
 Kết quả cho thấy phép biến đổi log ảnh hưởng đáng kể đến mức độ đa cộng
@@ -635,16 +669,23 @@ Bảng thống kê dưới đây được tính trên thang đo gốc, để cá
 nguyên đơn vị lâm sàng và có thể đối chiếu với khoảng tham chiếu xét
 nghiệm.
 
-<<group-stats, size="tiny">>=
-for (col in numeric_cols) {
+<<group-stats>>=
+group_stats <- do.call(rbind, lapply(numeric_cols, function(col) {
   s <- tapply(df_raw[[col]], df_raw$target, function(x) {
     x <- x[!is.na(x)]
-    c(min = min(x), max = max(x), mean = mean(x),
-      median = median(x), sd = sd(x))
+    c(Min = min(x), Max = max(x), Mean = mean(x),
+      Median = median(x), SD = sd(x))
   })
-  cat("\n", col, "\n")
-  print(round(do.call(rbind, s), 2))
-}
+  data.frame(Bien = col, Nhom = c("Không bệnh (0)", "Có bệnh (1)"),
+            round(do.call(rbind, s), 2), row.names = NULL)
+}))
+@
+
+<<group-stats-table, echo=FALSE, results='asis'>>=
+kbl_tab(group_stats,
+       "Thống kê mô tả các biến sinh hoá theo nhóm bệnh (thang đo gốc)",
+       "group-stats",
+       col.names = c("Biến", "Nhóm", "Min", "Max", "Mean", "Median", "SD"))
 @
 
 Bảng thống kê mô tả cho thấy nhóm bệnh nhân mắc bệnh gan (target = 1) có xu
@@ -725,7 +766,14 @@ fs_disp <- fs
 fs_disp$p_value <- signif(fs_disp$p_value, 3)
 fs_disp$effect_size <- round(fs_disp$effect_size, 3)
 fs_disp$p_fdr <- signif(fs_disp$p_fdr, 3)
-print(fs_disp, row.names = FALSE)
+@
+
+<<feature-select-table, echo=FALSE, results='asis'>>=
+kbl_tab(fs_disp,
+       "Kiểm định lựa chọn đặc trưng (Mann--Whitney U / Chi-square, hiệu chỉnh FDR)",
+       "feature-select",
+       col.names = c("Biến", "p-value", "Kích thước ảnh hưởng", "p (FDR)",
+                     "Có ý nghĩa"))
 @
 
 Kết quả cho thấy 8 trong số 10 biến vẫn đạt ý nghĩa thống kê sau hiệu chỉnh
@@ -1125,8 +1173,16 @@ for (i in seq_len(K)) {
   ))
 }
 rownames(cv_results) <- NULL
-print(round(cv_results, 4), row.names = FALSE)
+cv_results[-1] <- round(cv_results[-1], 4)
+@
 
+<<kfold-table, echo=FALSE, results='asis'>>=
+kbl_tab(cv_results, "Kết quả kiểm định chéo 5 fold cho mô hình nền", "kfold",
+       col.names = c("Fold", "n train", "n test", "Accuracy", "Recall",
+                     "Macro F1"))
+@
+
+<<kfold-summary>>=
 for (m in c("Accuracy", "Recall", "Macro_F1")) {
   cat(sprintf("  %-9s = %.3f +/- %.3f\n",
               m, mean(cv_results[[m]]), sd(cv_results[[m]])))
@@ -1191,7 +1247,16 @@ for (g in seq_len(nrow(param_grid))) {
 param_grid$macro_f1 <- grid_mean
 param_grid$sd_fold <- grid_sd
 
-print(head(param_grid[order(-param_grid$macro_f1), ], 5), row.names = FALSE)
+top5 <- head(param_grid[order(-param_grid$macro_f1), ], 5)
+top5$macro_f1 <- round(top5$macro_f1, 4)
+top5$sd_fold <- round(top5$sd_fold, 4)
+@
+
+<<grid-search-table, echo=FALSE, results='asis'>>=
+kbl_tab(top5,
+       "Năm cấu hình siêu tham số có macro F1 cao nhất (kiểm định chéo 5 fold)",
+       "grid-search-top5",
+       col.names = c("Lambda", "SMOTE k", "Macro F1", "SD giữa fold"))
 @
 
 Cấu hình có điểm trung bình cao nhất là $\lambda = 100$ và
@@ -1313,17 +1378,26 @@ cứu trực tiếp số ca bệnh bị bỏ sót (FN) và số người khoẻ 
 sel <- which(round(grid_thr, 3) %in% c(0.250, 0.300, 0.325, 0.330, 0.335,
                                        0.340, 0.345, 0.350, 0.400, 0.450,
                                        0.500))
-print(data.frame(
+thr_tbl <- data.frame(
   nguong = grid_thr[sel], FN = n_fn[sel], FP = n_fp[sel],
   recall_lop1 = round(rec1[sel], 3), recall_lop0 = round(rec0[sel], 3)
-), row.names = FALSE)
+)
 
 # Ngưỡng cao nhất còn thoả FN < FP trên tập huấn luyện là 0,345 - đây chính
 # là điểm giao (ngay sau đó, ở 0,350, FN đã vượt FP). Lùi một bước lưới
 # (0,005) để có khoảng đệm an toàn trước khi áp sang tập kiểm tra.
 threshold <- 0.340
 i_thr <- which(grid_thr == threshold)
+@
 
+<<threshold-lookup-table, echo=FALSE, results='asis'>>=
+kbl_tab(thr_tbl,
+       "Số ca bệnh bị bỏ sót (FN) và báo động nhầm (FP) trên out-of-fold quanh vùng ngưỡng giao nhau",
+       "threshold-lookup",
+       col.names = c("Ngưỡng", "FN", "FP", "Recall lớp 1", "Recall lớp 0"))
+@
+
+<<threshold-chosen>>=
 cat(sprintf("\nNgưỡng mặc định : 0.500\n"))
 cat(sprintf("Ngưỡng đã chọn  : %.3f\n", threshold))
 cat(sprintf("  Trên out-of-fold: FN = %d, FP = %d, recall1 = %.3f, recall0 = %.3f\n",
@@ -1343,6 +1417,36 @@ chọn ngưỡng $0{,}340$, cho FN = 58 và FP = 69 trên tập huấn luyện �
 khoảng cách rõ ràng thay vì bám sát biên, đồng thời recall lớp có bệnh vẫn
 đạt $0{,}826$ và recall lớp không bệnh $0{,}485$.
 
+Để tiện rà soát toàn cảnh trước khi chốt lựa chọn, bảng dưới đây liệt kê đủ
+sáu chỉ số trên các dự đoán out-of-fold của tập huấn luyện, tại các mức
+ngưỡng tròn giảm dần từ ngưỡng mặc định $0{,}50$ xuống $0{,}20$ theo bước
+$0{,}05$.
+
+<<threshold-coarse-sweep>>=
+coarse_thr <- seq(0.50, 0.20, by = -0.05)
+coarse_tbl <- data.frame(nguong = coarse_thr)
+for (i in seq_along(coarse_thr)) {
+  pr <- as.integer(oof_proba >= coarse_thr[i])
+  m <- compute_metrics(y_train, pr)
+  coarse_tbl$FN[i]         <- sum(y_train == 1 & pr == 0)
+  coarse_tbl$FP[i]         <- sum(y_train == 0 & pr == 1)
+  coarse_tbl$accuracy[i]   <- round(unname(m["accuracy"]), 3)
+  coarse_tbl$recall1[i]    <- round(unname(m["recall1"]), 3)
+  coarse_tbl$precision1[i] <- round(unname(m["precision1"]), 3)
+  coarse_tbl$recall0[i]    <- round(unname(m["recall0"]), 3)
+  coarse_tbl$precision0[i] <- round(unname(m["precision0"]), 3)
+  coarse_tbl$macro_f1[i]   <- round(unname(m["macro_f1"]), 3)
+}
+@
+
+<<threshold-coarse-sweep-table, echo=FALSE, results='asis'>>=
+kbl_tab(coarse_tbl,
+       "Các chỉ số trên out-of-fold theo ngưỡng, bước 0,05 từ 0,50 xuống 0,20",
+       "threshold-coarse",
+       col.names = c("Ngưỡng", "FN", "FP", "Accuracy", "Recall 1",
+                     "Precision 1", "Recall 0", "Precision 0", "Macro F1"))
+@
+
 \section{Đánh giá trên tập kiểm tra}
 
 Đây là lần đầu tiên tập kiểm tra được sử dụng kể từ đầu quy trình. Mô hình
@@ -1359,8 +1463,13 @@ pred_05 <- as.integer(proba_final >= 0.5)
 m_final <- print_confusion(y_test, pred_final,
                            sprintf("MA TRAN NHAM LAN (nguong %.3f)",
                                    threshold))
-cat("\nCác chỉ số trên tập kiểm tra:\n")
-print(round(m_final, 3))
+@
+
+<<final-eval-table, echo=FALSE, results='asis'>>=
+kbl_tab(as.data.frame(t(round(m_final, 3))),
+       "Các chỉ số trên tập kiểm tra với ngưỡng đã chọn", "final-metrics",
+       col.names = c("Accuracy", "Recall lớp 1", "Precision lớp 1",
+                     "Recall lớp 0", "Precision lớp 0", "Macro F1"))
 @
 
 <<final-tradeoff>>=
@@ -1368,7 +1477,16 @@ cmp <- rbind(
   `0.500 (mặc định)` = compute_metrics(y_test, pred_05),
   `đã chỉnh`         = compute_metrics(y_test, pred_final)
 )
-print(round(cmp, 3))
+cmp_tbl <- data.frame(Nguong = rownames(cmp), round(as.data.frame(cmp), 3),
+                      row.names = NULL)
+@
+
+<<final-tradeoff-table, echo=FALSE, results='asis'>>=
+kbl_tab(cmp_tbl,
+       "So sánh các chỉ số giữa ngưỡng mặc định và ngưỡng đã chọn",
+       "final-tradeoff",
+       col.names = c("Ngưỡng", "Accuracy", "Recall lớp 1", "Precision lớp 1",
+                     "Recall lớp 0", "Precision lớp 0", "Macro F1"))
 @
 
 <<confusion-viz, echo=FALSE, fig.pos="H", fig.width=8.5, fig.height=5.0, fig.cap="Ma trận nhầm lẫn trên tập kiểm tra: ngưỡng mặc định so với ngưỡng đã chọn">>=
@@ -1469,7 +1587,16 @@ ci_tbl <- data.frame(
   ci_tren = apply(boot_mat, 2, quantile, probs = 1 - tail2),
   sai_so_chuan = apply(boot_mat, 2, sd)
 )
-print(round(ci_tbl, 4))
+@
+
+<<final-boot-table, echo=FALSE, results='asis'>>=
+ci_tbl_disp <- data.frame(Chi_so = rownames(ci_tbl), round(ci_tbl, 4),
+                          row.names = NULL)
+kbl_tab(ci_tbl_disp,
+       "Khoảng tin cậy bootstrap 95\\% cho sáu chỉ số trên tập kiểm tra",
+       "bootstrap-ci",
+       col.names = c("Chỉ số", "Ước lượng điểm", "Cận dưới", "Cận trên",
+                     "Sai số chuẩn"))
 @
 
 Recall của lớp có bệnh đạt $0{,}795$, với khoảng tin cậy bootstrap 95\%

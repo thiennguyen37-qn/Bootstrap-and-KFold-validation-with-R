@@ -70,6 +70,19 @@
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
 
+% Co bảng vừa khít chiều rộng trang CHỈ KHI nó rộng hơn textwidth; bảng hẹp
+% giữ nguyên kích thước tự nhiên thay vì bị phóng to ra hết trang.
+\makeatletter
+\newcommand{\shrinktofit}[1]{%
+  \sbox0{#1}%
+  \ifdim\wd0>\linewidth
+    \resizebox{\linewidth}{!}{\usebox0}%
+  \else
+    \usebox0
+  \fi
+}
+\makeatother
+
 \title{Xây dựng mô hình dự đoán bệnh gan trên dữ liệu ILPD:\\
 Ứng dụng Bootstrap và K-fold Cross-Validation}
 \author{Nguyen Ho Bao Thien}
@@ -702,27 +715,44 @@ cứu được xây dựng trên dữ liệu sau biến đổi log, VIF được
 \hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{skewed_cols) X_vif_log[[col]]} \hlkwb{<-} \hlkwd{log1p}\hldef{(df_raw[[col]])}
 \hldef{vif_log} \hlkwb{<-} \hlkwd{compute_vif}\hldef{(X_vif_log)}
 
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(}\hlkwd{data.frame}\hldef{(}
-  \hlkwc{VIF_goc}    \hldef{= vif_raw,}
-  \hlkwc{VIF_log}    \hldef{= vif_log[}\hlkwd{names}\hldef{(vif_raw)],}
-  \hlkwc{chenh_lech} \hldef{= vif_log[}\hlkwd{names}\hldef{(vif_raw)]} \hlopt{-} \hldef{vif_raw}
-\hldef{)[}\hlkwd{order}\hldef{(}\hlopt{-}\hldef{vif_log[}\hlkwd{names}\hldef{(vif_raw)]), ],} \hlnum{2}\hldef{))}
+\hldef{vif_tbl} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}
+  \hlkwc{Bien} \hldef{=} \hlkwd{names}\hldef{(vif_raw),}
+  \hlkwc{VIF_goc} \hldef{=} \hlkwd{round}\hldef{(vif_raw,} \hlnum{2}\hldef{),}
+  \hlkwc{VIF_log} \hldef{=} \hlkwd{round}\hldef{(vif_log[}\hlkwd{names}\hldef{(vif_raw)],} \hlnum{2}\hldef{),}
+  \hlkwc{chenh_lech} \hldef{=} \hlkwd{round}\hldef{(vif_log[}\hlkwd{names}\hldef{(vif_raw)]} \hlopt{-} \hldef{vif_raw,} \hlnum{2}\hldef{),}
+  \hlkwc{row.names} \hldef{=} \hlkwa{NULL}
+\hldef{)}
+\hldef{vif_tbl} \hlkwb{<-} \hldef{vif_tbl[}\hlkwd{order}\hldef{(}\hlopt{-}\hldef{vif_tbl}\hlopt{$}\hldef{VIF_log), ]}
 \end{alltt}
-\begin{verbatim}
-##                            VIF_goc VIF_log chenh_lech
-## Total_Bilirubin               4.28   20.72      16.44
-## Direct_Bilirubin              4.53   20.55      16.03
-## Albumin                      10.12   10.62       0.49
-## Total_Protiens                5.55    5.65       0.10
-## Aspartate_Aminotransferase    2.81    4.18       1.37
-## Alamine_Aminotransferase      2.82    3.94       1.12
-## Albumin_and_Globulin_Ratio    3.68    3.75       0.07
-## Alkaline_Phosphotase          1.12    1.28       0.16
-## Age                           1.10    1.10       0.00
-## Gender                        1.03    1.06       0.03
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Hệ số VIF trên thang đo gốc và thang đo log}
+\label{tab:vif}
+\shrinktofit{%
+
+\begin{tabular}{lrrr}
+\toprule
+Biến & VIF gốc & VIF log & Chênh lệch\\
+\midrule
+Total\_Bilirubin & 4.28 & 20.72 & 16.44\\
+Direct\_Bilirubin & 4.53 & 20.55 & 16.03\\
+Albumin & 10.12 & 10.62 & 0.49\\
+Total\_Protiens & 5.55 & 5.65 & 0.10\\
+Aspartate\_Aminotransferase & 2.81 & 4.18 & 1.37\\
+\addlinespace
+Alamine\_Aminotransferase & 2.82 & 3.94 & 1.12\\
+Albumin\_and\_Globulin\_Ratio & 3.68 & 3.75 & 0.07\\
+Alkaline\_Phosphotase & 1.12 & 1.28 & 0.16\\
+Age & 1.10 & 1.10 & 0.00\\
+Gender & 1.03 & 1.06 & 0.03\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 Kết quả cho thấy phép biến đổi log ảnh hưởng đáng kể đến mức độ đa cộng
 tuyến của một số biến. Đáng chú ý nhất là hai biến
@@ -749,68 +779,58 @@ Bảng thống kê dưới đây được tính trên thang đo gốc, để cá
 nguyên đơn vị lâm sàng và có thể đối chiếu với khoảng tham chiếu xét
 nghiệm.
 
-\begin{knitrout}\tiny
+\begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlkwa{for} \hldef{(col} \hlkwa{in} \hldef{numeric_cols) \{}
+\hldef{group_stats} \hlkwb{<-} \hlkwd{do.call}\hldef{(rbind,} \hlkwd{lapply}\hldef{(numeric_cols,} \hlkwa{function}\hldef{(}\hlkwc{col}\hldef{) \{}
   \hldef{s} \hlkwb{<-} \hlkwd{tapply}\hldef{(df_raw[[col]], df_raw}\hlopt{$}\hldef{target,} \hlkwa{function}\hldef{(}\hlkwc{x}\hldef{) \{}
     \hldef{x} \hlkwb{<-} \hldef{x[}\hlopt{!}\hlkwd{is.na}\hldef{(x)]}
-    \hlkwd{c}\hldef{(}\hlkwc{min} \hldef{=} \hlkwd{min}\hldef{(x),} \hlkwc{max} \hldef{=} \hlkwd{max}\hldef{(x),} \hlkwc{mean} \hldef{=} \hlkwd{mean}\hldef{(x),}
-      \hlkwc{median} \hldef{=} \hlkwd{median}\hldef{(x),} \hlkwc{sd} \hldef{=} \hlkwd{sd}\hldef{(x))}
+    \hlkwd{c}\hldef{(}\hlkwc{Min} \hldef{=} \hlkwd{min}\hldef{(x),} \hlkwc{Max} \hldef{=} \hlkwd{max}\hldef{(x),} \hlkwc{Mean} \hldef{=} \hlkwd{mean}\hldef{(x),}
+      \hlkwc{Median} \hldef{=} \hlkwd{median}\hldef{(x),} \hlkwc{SD} \hldef{=} \hlkwd{sd}\hldef{(x))}
   \hldef{\})}
-  \hlkwd{cat}\hldef{(}\hlsng{"\textbackslash{}n"}\hldef{, col,} \hlsng{"\textbackslash{}n"}\hldef{)}
-  \hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(}\hlkwd{do.call}\hldef{(rbind, s),} \hlnum{2}\hldef{))}
-\hldef{\}}
+  \hlkwd{data.frame}\hldef{(}\hlkwc{Bien} \hldef{= col,} \hlkwc{Nhom} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"Không bệnh (0)"}\hldef{,} \hlsng{"Có bệnh (1)"}\hldef{),}
+            \hlkwd{round}\hldef{(}\hlkwd{do.call}\hldef{(rbind, s),} \hlnum{2}\hldef{),} \hlkwc{row.names} \hldef{=} \hlkwa{NULL}\hldef{)}
+\hldef{\}))}
 \end{alltt}
-\begin{verbatim}
-## 
-##  Age 
-##   min max  mean median    sd
-## 0   4  85 41.24     40 17.00
-## 1   7  90 46.15     46 15.65
-## 
-##  Total_Bilirubin 
-##   min  max mean median   sd
-## 0 0.5  7.3 1.14    0.8 1.00
-## 1 0.4 75.0 4.16    1.4 7.14
-## 
-##  Direct_Bilirubin 
-##   min  max mean median   sd
-## 0 0.1  3.6 0.40    0.2 0.52
-## 1 0.1 19.7 1.92    0.5 3.21
-## 
-##  Alkaline_Phosphotase 
-##   min  max   mean median     sd
-## 0  90 1580 219.75    186 140.99
-## 1  63 2110 319.01    229 268.31
-## 
-##  Alamine_Aminotransferase 
-##   min  max  mean median     sd
-## 0  10  181 33.65     27  25.06
-## 1  12 2000 99.61     41 212.77
-## 
-##  Aspartate_Aminotransferase 
-##   min  max   mean median     sd
-## 0  10  285  40.69   29.0  36.41
-## 1  11 4929 137.70   52.5 337.39
-## 
-##  Total_Protiens 
-##   min max mean median   sd
-## 0 3.7 9.2 6.54   6.60 1.06
-## 1 2.7 9.6 6.46   6.55 1.09
-## 
-##  Albumin 
-##   min max mean median   sd
-## 0 1.4 5.0 3.34    3.4 0.78
-## 1 0.9 5.5 3.06    3.0 0.79
-## 
-##  Albumin_and_Globulin_Ratio 
-##    min max mean median   sd
-## 0 0.37 1.9 1.03    1.0 0.29
-## 1 0.30 2.8 0.91    0.9 0.33
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Thống kê mô tả các biến sinh hoá theo nhóm bệnh (thang đo gốc)}
+\label{tab:group-stats}
+\shrinktofit{%
+
+\begin{tabular}{llrrrrr}
+\toprule
+Biến & Nhóm & Min & Max & Mean & Median & SD\\
+\midrule
+Age & Không bệnh (0) & 4.00 & 85.0 & 41.24 & 40.00 & 17.00\\
+Age & Có bệnh (1) & 7.00 & 90.0 & 46.15 & 46.00 & 15.65\\
+Total\_Bilirubin & Không bệnh (0) & 0.50 & 7.3 & 1.14 & 0.80 & 1.00\\
+Total\_Bilirubin & Có bệnh (1) & 0.40 & 75.0 & 4.16 & 1.40 & 7.14\\
+Direct\_Bilirubin & Không bệnh (0) & 0.10 & 3.6 & 0.40 & 0.20 & 0.52\\
+\addlinespace
+Direct\_Bilirubin & Có bệnh (1) & 0.10 & 19.7 & 1.92 & 0.50 & 3.21\\
+Alkaline\_Phosphotase & Không bệnh (0) & 90.00 & 1580.0 & 219.75 & 186.00 & 140.99\\
+Alkaline\_Phosphotase & Có bệnh (1) & 63.00 & 2110.0 & 319.01 & 229.00 & 268.31\\
+Alamine\_Aminotransferase & Không bệnh (0) & 10.00 & 181.0 & 33.65 & 27.00 & 25.06\\
+Alamine\_Aminotransferase & Có bệnh (1) & 12.00 & 2000.0 & 99.61 & 41.00 & 212.77\\
+\addlinespace
+Aspartate\_Aminotransferase & Không bệnh (0) & 10.00 & 285.0 & 40.69 & 29.00 & 36.41\\
+Aspartate\_Aminotransferase & Có bệnh (1) & 11.00 & 4929.0 & 137.70 & 52.50 & 337.39\\
+Total\_Protiens & Không bệnh (0) & 3.70 & 9.2 & 6.54 & 6.60 & 1.06\\
+Total\_Protiens & Có bệnh (1) & 2.70 & 9.6 & 6.46 & 6.55 & 1.09\\
+Albumin & Không bệnh (0) & 1.40 & 5.0 & 3.34 & 3.40 & 0.78\\
+\addlinespace
+Albumin & Có bệnh (1) & 0.90 & 5.5 & 3.06 & 3.00 & 0.79\\
+Albumin\_and\_Globulin\_Ratio & Không bệnh (0) & 0.37 & 1.9 & 1.03 & 1.00 & 0.29\\
+Albumin\_and\_Globulin\_Ratio & Có bệnh (1) & 0.30 & 2.8 & 0.91 & 0.90 & 0.33\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 Bảng thống kê mô tả cho thấy nhóm bệnh nhân mắc bệnh gan (target = 1) có xu
 hướng lớn tuổi hơn so với nhóm không mắc bệnh, với tuổi trung bình lần lượt
@@ -892,23 +912,36 @@ tỷ lệ phát hiện sai (False Discovery Rate -- FDR).
 \hldef{fs_disp}\hlopt{$}\hldef{p_value} \hlkwb{<-} \hlkwd{signif}\hldef{(fs_disp}\hlopt{$}\hldef{p_value,} \hlnum{3}\hldef{)}
 \hldef{fs_disp}\hlopt{$}\hldef{effect_size} \hlkwb{<-} \hlkwd{round}\hldef{(fs_disp}\hlopt{$}\hldef{effect_size,} \hlnum{3}\hldef{)}
 \hldef{fs_disp}\hlopt{$}\hldef{p_fdr} \hlkwb{<-} \hlkwd{signif}\hldef{(fs_disp}\hlopt{$}\hldef{p_fdr,} \hlnum{3}\hldef{)}
-\hlkwd{print}\hldef{(fs_disp,} \hlkwc{row.names} \hldef{=} \hlnum{FALSE}\hldef{)}
 \end{alltt}
-\begin{verbatim}
-##                     feature  p_value effect_size    p_fdr significant
-##  Aspartate_Aminotransferase 9.21e-14       0.394 9.21e-13        TRUE
-##             Total_Bilirubin 2.29e-13       0.387 1.14e-12        TRUE
-##            Direct_Bilirubin 7.43e-13       0.372 2.48e-12        TRUE
-##    Alamine_Aminotransferase 2.33e-12       0.371 5.83e-12        TRUE
-##        Alkaline_Phosphotase 4.35e-11       0.349 8.69e-11        TRUE
-##  Albumin_and_Globulin_Ratio 5.81e-06      -0.240 9.69e-06        TRUE
-##                     Albumin 5.57e-05      -0.213 7.95e-05        TRUE
-##                         Age 1.77e-03       0.165 2.22e-03        TRUE
-##                      Gender 5.97e-02       0.078 6.63e-02       FALSE
-##              Total_Protiens 4.37e-01      -0.041 4.37e-01       FALSE
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Kiểm định lựa chọn đặc trưng (Mann--Whitney U / Chi-square, hiệu chỉnh FDR)}
+\label{tab:feature-select}
+\shrinktofit{%
+
+\begin{tabular}{lrrrl}
+\toprule
+Biến & p-value & Kích thước ảnh hưởng & p (FDR) & Có ý nghĩa\\
+\midrule
+Aspartate\_Aminotransferase & 0.00e+00 & 0.394 & 0.00e+00 & TRUE\\
+Total\_Bilirubin & 0.00e+00 & 0.387 & 0.00e+00 & TRUE\\
+Direct\_Bilirubin & 0.00e+00 & 0.372 & 0.00e+00 & TRUE\\
+Alamine\_Aminotransferase & 0.00e+00 & 0.371 & 0.00e+00 & TRUE\\
+Alkaline\_Phosphotase & 0.00e+00 & 0.349 & 0.00e+00 & TRUE\\
+\addlinespace
+Albumin\_and\_Globulin\_Ratio & 5.80e-06 & -0.240 & 9.70e-06 & TRUE\\
+Albumin & 5.57e-05 & -0.213 & 7.95e-05 & TRUE\\
+Age & 1.77e-03 & 0.165 & 2.22e-03 & TRUE\\
+Gender & 5.97e-02 & 0.078 & 6.63e-02 & FALSE\\
+Total\_Protiens & 4.37e-01 & -0.041 & 4.37e-01 & FALSE\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 Kết quả cho thấy 8 trong số 10 biến vẫn đạt ý nghĩa thống kê sau hiệu chỉnh
 FDR. Hai biến không đạt mức ý nghĩa là \texttt{Gender}
@@ -1362,16 +1395,34 @@ kết quả trở nên hợp lý hơn.
   \hldef{))}
 \hldef{\}}
 \hlkwd{rownames}\hldef{(cv_results)} \hlkwb{<-} \hlkwa{NULL}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(cv_results,} \hlnum{4}\hldef{),} \hlkwc{row.names} \hldef{=} \hlnum{FALSE}\hldef{)}
+\hldef{cv_results[}\hlopt{-}\hlnum{1}\hldef{]} \hlkwb{<-} \hlkwd{round}\hldef{(cv_results[}\hlopt{-}\hlnum{1}\hldef{],} \hlnum{4}\hldef{)}
 \end{alltt}
-\begin{verbatim}
-##  Fold n_train n_test Accuracy Recall Macro_F1
-##     1     465    118   0.6186 0.5238   0.6124
-##     2     466    117   0.6923 0.6386   0.6776
-##     3     467    116   0.6466 0.6145   0.6263
-##     4     467    116   0.6466 0.6265   0.6230
-##     5     467    116   0.6897 0.6265   0.6758
-\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Kết quả kiểm định chéo 5 fold cho mô hình nền}
+\label{tab:kfold}
+\shrinktofit{%
+
+\begin{tabular}{rrrrrr}
+\toprule
+Fold & n train & n test & Accuracy & Recall & Macro F1\\
+\midrule
+1 & 465 & 118 & 0.6186 & 0.5238 & 0.6124\\
+2 & 466 & 117 & 0.6923 & 0.6386 & 0.6776\\
+3 & 467 & 116 & 0.6466 & 0.6145 & 0.6263\\
+4 & 467 & 116 & 0.6466 & 0.6265 & 0.6230\\
+5 & 467 & 116 & 0.6897 & 0.6265 & 0.6758\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlkwa{for} \hldef{(m} \hlkwa{in} \hlkwd{c}\hldef{(}\hlsng{"Accuracy"}\hldef{,} \hlsng{"Recall"}\hldef{,} \hlsng{"Macro_F1"}\hldef{)) \{}
   \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  %-9s = %.3f +/- %.3f\textbackslash{}n"}\hldef{,}
@@ -1446,18 +1497,33 @@ hình mất khả năng phân biệt giữa hai lớp. Macro F1 phù hợp hơn 
 \hldef{param_grid}\hlopt{$}\hldef{macro_f1} \hlkwb{<-} \hldef{grid_mean}
 \hldef{param_grid}\hlopt{$}\hldef{sd_fold} \hlkwb{<-} \hldef{grid_sd}
 
-\hlkwd{print}\hldef{(}\hlkwd{head}\hldef{(param_grid[}\hlkwd{order}\hldef{(}\hlopt{-}\hldef{param_grid}\hlopt{$}\hldef{macro_f1), ],} \hlnum{5}\hldef{),} \hlkwc{row.names} \hldef{=} \hlnum{FALSE}\hldef{)}
+\hldef{top5} \hlkwb{<-} \hlkwd{head}\hldef{(param_grid[}\hlkwd{order}\hldef{(}\hlopt{-}\hldef{param_grid}\hlopt{$}\hldef{macro_f1), ],} \hlnum{5}\hldef{)}
+\hldef{top5}\hlopt{$}\hldef{macro_f1} \hlkwb{<-} \hlkwd{round}\hldef{(top5}\hlopt{$}\hldef{macro_f1,} \hlnum{4}\hldef{)}
+\hldef{top5}\hlopt{$}\hldef{sd_fold} \hlkwb{<-} \hlkwd{round}\hldef{(top5}\hlopt{$}\hldef{sd_fold,} \hlnum{4}\hldef{)}
 \end{alltt}
-\begin{verbatim}
-##  lambda smote_k  macro_f1    sd_fold
-##     100       7 0.6440162 0.01687905
-##     100       5 0.6408597 0.01098893
-##     100       3 0.6407688 0.01654468
-##       1       7 0.6406804 0.03143136
-##      10       7 0.6398884 0.02943170
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Năm cấu hình siêu tham số có macro F1 cao nhất (kiểm định chéo 5 fold)}
+\label{tab:grid-search-top5}
+\shrinktofit{%
+
+\begin{tabular}{rrrr}
+\toprule
+Lambda & SMOTE k & Macro F1 & SD giữa fold\\
+\midrule
+100 & 7 & 0.6440 & 0.0169\\
+100 & 5 & 0.6409 & 0.0110\\
+100 & 3 & 0.6408 & 0.0165\\
+1 & 7 & 0.6407 & 0.0314\\
+10 & 7 & 0.6399 & 0.0294\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 Cấu hình có điểm trung bình cao nhất là $\lambda = 100$ và
 $k_{SMOTE} = 7$, với macro F1 bằng $0{,}6440$. Tuy nhiên, năm cấu hình đứng
@@ -1622,32 +1688,52 @@ cứu trực tiếp số ca bệnh bị bỏ sót (FN) và số người khoẻ 
 \hldef{sel} \hlkwb{<-} \hlkwd{which}\hldef{(}\hlkwd{round}\hldef{(grid_thr,} \hlnum{3}\hldef{)} \hlopt{%in%} \hlkwd{c}\hldef{(}\hlnum{0.250}\hldef{,} \hlnum{0.300}\hldef{,} \hlnum{0.325}\hldef{,} \hlnum{0.330}\hldef{,} \hlnum{0.335}\hldef{,}
                                        \hlnum{0.340}\hldef{,} \hlnum{0.345}\hldef{,} \hlnum{0.350}\hldef{,} \hlnum{0.400}\hldef{,} \hlnum{0.450}\hldef{,}
                                        \hlnum{0.500}\hldef{))}
-\hlkwd{print}\hldef{(}\hlkwd{data.frame}\hldef{(}
+\hldef{thr_tbl} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}
   \hlkwc{nguong} \hldef{= grid_thr[sel],} \hlkwc{FN} \hldef{= n_fn[sel],} \hlkwc{FP} \hldef{= n_fp[sel],}
   \hlkwc{recall_lop1} \hldef{=} \hlkwd{round}\hldef{(rec1[sel],} \hlnum{3}\hldef{),} \hlkwc{recall_lop0} \hldef{=} \hlkwd{round}\hldef{(rec0[sel],} \hlnum{3}\hldef{)}
-\hldef{),} \hlkwc{row.names} \hldef{=} \hlnum{FALSE}\hldef{)}
-\end{alltt}
-\begin{verbatim}
-##  nguong  FN  FP recall_lop1 recall_lop0
-##   0.250  21 115       0.937       0.142
-##   0.300  38  94       0.886       0.299
-##   0.325  49  80       0.853       0.403
-##   0.330  51  72       0.847       0.463
-##   0.335  55  71       0.835       0.470
-##   0.340  58  69       0.826       0.485
-##   0.345  60  67       0.820       0.500
-##   0.350  66  63       0.802       0.530
-##   0.400  90  51       0.730       0.619
-##   0.450 111  40       0.667       0.701
-##   0.500 129  31       0.613       0.769
-\end{verbatim}
-\begin{alltt}
+\hldef{)}
+
 \hlcom{# Ngưỡng cao nhất còn thoả FN < FP trên tập huấn luyện là 0,345 - đây chính}
 \hlcom{# là điểm giao (ngay sau đó, ở 0,350, FN đã vượt FP). Lùi một bước lưới}
 \hlcom{# (0,005) để có khoảng đệm an toàn trước khi áp sang tập kiểm tra.}
 \hldef{threshold} \hlkwb{<-} \hlnum{0.340}
 \hldef{i_thr} \hlkwb{<-} \hlkwd{which}\hldef{(grid_thr} \hlopt{==} \hldef{threshold)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
+\begin{table}[H]
+\centering
+\caption{Số ca bệnh bị bỏ sót (FN) và báo động nhầm (FP) trên out-of-fold quanh vùng ngưỡng giao nhau}
+\label{tab:threshold-lookup}
+\shrinktofit{%
+
+\begin{tabular}{rrrrr}
+\toprule
+Ngưỡng & FN & FP & Recall lớp 1 & Recall lớp 0\\
+\midrule
+0.250 & 21 & 115 & 0.937 & 0.142\\
+0.300 & 38 & 94 & 0.886 & 0.299\\
+0.325 & 49 & 80 & 0.853 & 0.403\\
+0.330 & 51 & 72 & 0.847 & 0.463\\
+0.335 & 55 & 71 & 0.835 & 0.470\\
+\addlinespace
+0.340 & 58 & 69 & 0.826 & 0.485\\
+0.345 & 60 & 67 & 0.820 & 0.500\\
+0.350 & 66 & 63 & 0.802 & 0.530\\
+0.400 & 90 & 51 & 0.730 & 0.619\\
+0.450 & 111 & 40 & 0.667 & 0.701\\
+\addlinespace
+0.500 & 129 & 31 & 0.613 & 0.769\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"\textbackslash{}nNgưỡng mặc định : 0.500\textbackslash{}n"}\hldef{))}
 \end{alltt}
 \begin{verbatim}
@@ -1680,6 +1766,56 @@ chọn ngưỡng $0{,}340$, cho FN = 58 và FP = 69 trên tập huấn luyện �
 khoảng cách rõ ràng thay vì bám sát biên, đồng thời recall lớp có bệnh vẫn
 đạt $0{,}826$ và recall lớp không bệnh $0{,}485$.
 
+Để tiện rà soát toàn cảnh trước khi chốt lựa chọn, bảng dưới đây liệt kê đủ
+sáu chỉ số trên các dự đoán out-of-fold của tập huấn luyện, tại các mức
+ngưỡng tròn giảm dần từ ngưỡng mặc định $0{,}50$ xuống $0{,}20$ theo bước
+$0{,}05$.
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{coarse_thr} \hlkwb{<-} \hlkwd{seq}\hldef{(}\hlnum{0.50}\hldef{,} \hlnum{0.20}\hldef{,} \hlkwc{by} \hldef{=} \hlopt{-}\hlnum{0.05}\hldef{)}
+\hldef{coarse_tbl} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}\hlkwc{nguong} \hldef{= coarse_thr)}
+\hlkwa{for} \hldef{(i} \hlkwa{in} \hlkwd{seq_along}\hldef{(coarse_thr)) \{}
+  \hldef{pr} \hlkwb{<-} \hlkwd{as.integer}\hldef{(oof_proba} \hlopt{>=} \hldef{coarse_thr[i])}
+  \hldef{m} \hlkwb{<-} \hlkwd{compute_metrics}\hldef{(y_train, pr)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{FN[i]}         \hlkwb{<-} \hlkwd{sum}\hldef{(y_train} \hlopt{==} \hlnum{1} \hlopt{&} \hldef{pr} \hlopt{==} \hlnum{0}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{FP[i]}         \hlkwb{<-} \hlkwd{sum}\hldef{(y_train} \hlopt{==} \hlnum{0} \hlopt{&} \hldef{pr} \hlopt{==} \hlnum{1}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{accuracy[i]}   \hlkwb{<-} \hlkwd{round}\hldef{(}\hlkwd{unname}\hldef{(m[}\hlsng{"accuracy"}\hldef{]),} \hlnum{3}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{recall1[i]}    \hlkwb{<-} \hlkwd{round}\hldef{(}\hlkwd{unname}\hldef{(m[}\hlsng{"recall1"}\hldef{]),} \hlnum{3}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{precision1[i]} \hlkwb{<-} \hlkwd{round}\hldef{(}\hlkwd{unname}\hldef{(m[}\hlsng{"precision1"}\hldef{]),} \hlnum{3}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{recall0[i]}    \hlkwb{<-} \hlkwd{round}\hldef{(}\hlkwd{unname}\hldef{(m[}\hlsng{"recall0"}\hldef{]),} \hlnum{3}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{precision0[i]} \hlkwb{<-} \hlkwd{round}\hldef{(}\hlkwd{unname}\hldef{(m[}\hlsng{"precision0"}\hldef{]),} \hlnum{3}\hldef{)}
+  \hldef{coarse_tbl}\hlopt{$}\hldef{macro_f1[i]}   \hlkwb{<-} \hlkwd{round}\hldef{(}\hlkwd{unname}\hldef{(m[}\hlsng{"macro_f1"}\hldef{]),} \hlnum{3}\hldef{)}
+\hldef{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Các chỉ số trên out-of-fold theo ngưỡng, bước 0,05 từ 0,50 xuống 0,20}
+\label{tab:threshold-coarse}
+\shrinktofit{%
+
+\begin{tabular}{rrrrrrrrr}
+\toprule
+Ngưỡng & FN & FP & Accuracy & Recall 1 & Precision 1 & Recall 0 & Precision 0 & Macro F1\\
+\midrule
+0.50 & 129 & 31 & 0.657 & 0.613 & 0.868 & 0.769 & 0.444 & 0.641\\
+0.45 & 111 & 40 & 0.677 & 0.667 & 0.847 & 0.701 & 0.459 & 0.650\\
+0.40 & 90 & 51 & 0.698 & 0.730 & 0.827 & 0.619 & 0.480 & 0.658\\
+0.35 & 66 & 63 & 0.724 & 0.802 & 0.809 & 0.530 & 0.518 & 0.665\\
+0.30 & 38 & 94 & 0.717 & 0.886 & 0.758 & 0.299 & 0.513 & 0.597\\
+\addlinespace
+0.25 & 21 & 115 & 0.709 & 0.937 & 0.731 & 0.142 & 0.475 & 0.520\\
+0.20 & 12 & 127 & 0.702 & 0.964 & 0.717 & 0.052 & 0.368 & 0.457\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
 \section{Đánh giá trên tập kiểm tra}
 
 Đây là lần đầu tiên tập kiểm tra được sử dụng kể từ đầu quy trình. Mô hình
@@ -1711,22 +1847,25 @@ sau đó áp dụng ngưỡng phân loại $0{,}340$.
 ##   FN =  17   có bệnh, bị bỏ sót
 ##   TP =  66   có bệnh, phát hiện được
 \end{verbatim}
-\begin{alltt}
-\hlkwd{cat}\hldef{(}\hlsng{"\textbackslash{}nCác chỉ số trên tập kiểm tra:\textbackslash{}n"}\hldef{)}
-\end{alltt}
-\begin{verbatim}
-## 
-## Các chỉ số trên tập kiểm tra:
-\end{verbatim}
-\begin{alltt}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(m_final,} \hlnum{3}\hldef{))}
-\end{alltt}
-\begin{verbatim}
-##   accuracy    recall1 precision1    recall0 precision0   macro_f1 
-##      0.707      0.795      0.795      0.485      0.485      0.640
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Các chỉ số trên tập kiểm tra với ngưỡng đã chọn}
+\label{tab:final-metrics}
+\shrinktofit{%
+
+\begin{tabular}{rrrrrr}
+\toprule
+Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
+\midrule
+0.707 & 0.795 & 0.795 & 0.485 & 0.485 & 0.64\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1735,18 +1874,29 @@ sau đó áp dụng ngưỡng phân loại $0{,}340$.
   \hlkwc{`0.500 (mặc định)`} \hldef{=} \hlkwd{compute_metrics}\hldef{(y_test, pred_05),}
   \hlkwc{`đã chỉnh`}         \hldef{=} \hlkwd{compute_metrics}\hldef{(y_test, pred_final)}
 \hldef{)}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(cmp,} \hlnum{3}\hldef{))}
+\hldef{cmp_tbl} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}\hlkwc{Nguong} \hldef{=} \hlkwd{rownames}\hldef{(cmp),} \hlkwd{round}\hldef{(}\hlkwd{as.data.frame}\hldef{(cmp),} \hlnum{3}\hldef{),}
+                      \hlkwc{row.names} \hldef{=} \hlkwa{NULL}\hldef{)}
 \end{alltt}
-\begin{verbatim}
-##                  accuracy recall1 precision1 recall0 precision0
-## 0.500 (mặc định)    0.681   0.614      0.911   0.848      0.467
-## đã chỉnh            0.707   0.795      0.795   0.485      0.485
-##                  macro_f1
-## 0.500 (mặc định)    0.668
-## đã chỉnh            0.640
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{So sánh các chỉ số giữa ngưỡng mặc định và ngưỡng đã chọn}
+\label{tab:final-tradeoff}
+\shrinktofit{%
+
+\begin{tabular}{lrrrrrr}
+\toprule
+Ngưỡng & Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
+\midrule
+0.500 (mặc định) & 0.681 & 0.614 & 0.911 & 0.848 & 0.467 & 0.668\\
+đã chỉnh & 0.707 & 0.795 & 0.795 & 0.485 & 0.485 & 0.640\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
@@ -1815,19 +1965,32 @@ giá.
   \hlkwc{ci_tren} \hldef{=} \hlkwd{apply}\hldef{(boot_mat,} \hlnum{2}\hldef{, quantile,} \hlkwc{probs} \hldef{=} \hlnum{1} \hlopt{-} \hldef{tail2),}
   \hlkwc{sai_so_chuan} \hldef{=} \hlkwd{apply}\hldef{(boot_mat,} \hlnum{2}\hldef{, sd)}
 \hldef{)}
-\hlkwd{print}\hldef{(}\hlkwd{round}\hldef{(ci_tbl,} \hlnum{4}\hldef{))}
 \end{alltt}
-\begin{verbatim}
-##            diem_uoc_luong ci_duoi ci_tren sai_so_chuan
-## accuracy           0.7069  0.6207  0.7845       0.0424
-## recall1            0.7952  0.7033  0.8781       0.0446
-## precision1         0.7952  0.7037  0.8795       0.0445
-## recall0            0.4848  0.3171  0.6562       0.0873
-## precision0         0.4848  0.3125  0.6571       0.0876
-## macro_f1           0.6400  0.5432  0.7302       0.0483
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra}
+\label{tab:bootstrap-ci}
+\shrinktofit{%
+
+\begin{tabular}{lrrrr}
+\toprule
+Chỉ số & Ước lượng điểm & Cận dưới & Cận trên & Sai số chuẩn\\
+\midrule
+accuracy & 0.7069 & 0.6207 & 0.7845 & 0.0424\\
+recall1 & 0.7952 & 0.7033 & 0.8781 & 0.0446\\
+precision1 & 0.7952 & 0.7037 & 0.8795 & 0.0445\\
+recall0 & 0.4848 & 0.3171 & 0.6562 & 0.0873\\
+precision0 & 0.4848 & 0.3125 & 0.6571 & 0.0876\\
+\addlinespace
+macro\_f1 & 0.6400 & 0.5432 & 0.7302 & 0.0483\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
 
 Recall của lớp có bệnh đạt $0{,}795$, với khoảng tin cậy bootstrap 95\%
 $[0{,}703;\ 0{,}878]$. Hình~\ref{fig:forest-plot} cho thấy độ rộng của các
