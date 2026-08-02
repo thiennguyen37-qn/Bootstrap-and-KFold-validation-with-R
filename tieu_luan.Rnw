@@ -804,15 +804,6 @@ X_all <- as.matrix(df[, model_cols])
 y_all <- df$target
 @
 
-Mặc dù vậy, đa cộng tuyến chưa được loại bỏ hoàn toàn. Cặp biến
-\texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn có mối liên
-hệ tương đốichặt chẽ do tỷ số albumin/globulin được tính trực tiếp từ nồng độ
-albumin. Tương tự, hai men gan
-\texttt{Alamine\_Aminotransferase} (ALT) và
-\texttt{Aspartate\_Aminotransferase} (AST) vẫn có hệ số tương quan khoảng
-$0{,}79$. Tuy nhiên, các biến này đều mang ý nghĩa lâm sàng riêng và mức độ
-đa cộng tuyến chưa đủ lớn để loại bỏ thêm biến nào, do đó được giữ lại trong
-mô hình cuối cùng.
 
 \subsection{Chia phân tầng (Stratified Sampling) và cân bằng lớp thiểu số bằng phương pháp SMOTE}
 
@@ -1115,26 +1106,31 @@ cat(sprintf("Sai số chuẩn         = %.3f\n", sd(recalls)))
 @
 
 <<boot-hist, echo=FALSE, fig.width=6.5, fig.height=4.2, fig.cap="Phân phối bootstrap của recall lớp có bệnh">>=
+layout(matrix(1:2, nrow = 2), heights = c(5, 1))
+
+par(mar = c(4, 4, 3, 1) + 0.1)
 hist(recalls, breaks = 40, col = "#66c2a5", border = "white",
      main = sprintf("Phân phối bootstrap của recall (B = %d)",
                     length(recalls)),
      xlab = "Recall lớp có bệnh", ylab = "Tần số")
 abline(v = recall_point, col = "#d53e4f", lwd = 2)
 abline(v = ci, col = "gray40", lty = 2, lwd = 1.5)
-legend("topright", bty = "n", cex = 0.85,
+
+par(mar = c(0, 4, 0, 1) + 0.1)
+plot.new()
+legend("center", horiz = TRUE, bty = "n", cex = 0.85,
        legend = c(sprintf("Ước lượng điểm = %.3f", recall_point),
                   sprintf("KTC %.0f%%", CONF * 100)),
        col = c("#d53e4f", "gray40"), lty = c(1, 2), lwd = 2)
 @
 
 Với ngưỡng phân loại mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$.
-Khoảng tin cậy bootstrap 95\% là $[0{,}511;\ 0{,}718]$, có bề rộng $0{,}207$,
-tương đương khoảng 21 điểm phần trăm. Kết quả này cho thấy recall có thể dao
-động đáng kể nếu tập kiểm tra thay đổi, vì vậy một giá trị ước lượng điểm duy
-nhất chưa phản ánh đầy đủ hiệu năng của mô hình. Điều này cũng phù hợp với quy
-mô tập kiểm tra chỉ gồm 116 quan sát, trong đó có 83 ca bệnh.
-Hình~\ref{fig:boot-hist} cho thấy phân phối bootstrap tương đối đối xứng, nên
-khoảng tin cậy phân vị là lựa chọn phù hợp để tóm tắt kết quả.
+Khoảng tin cậy bootstrap 95\% là $[0{,}511;\ 0{,}718]$, có bề rộng $0{,}207$.
+Khoảng tin cậy này cho thấy ước lượng recall vẫn còn mức độ biến thiên đáng
+kể do quá trình lấy mẫu từ tập kiểm tra. Điều này một phần phản ánh quy mô
+tập kiểm tra còn hạn chế (116 quan sát, trong đó có 83 ca bệnh), nên việc
+báo cáo khoảng tin cậy giúp mô tả đầy đủ hơn độ tin cậy của kết quả so với
+chỉ sử dụng một ước lượng điểm.
 
 \FloatBarrier
 \subsection{Kiểm định chéo phân tầng}
@@ -1189,19 +1185,18 @@ for (m in c("Accuracy", "Recall", "Macro_F1")) {
 }
 @
 
-Kết quả được báo cáo dưới dạng giá trị trung bình kèm độ lệch chuẩn giữa các
-fold. Giá trị trung bình phản ánh hiệu năng trung bình của mô hình, còn độ
-lệch chuẩn cho biết mức độ biến động của hiệu năng khi thay đổi cách chia dữ
-liệu. Trong ba chỉ số được xem xét, recall biến động lớn nhất, đạt
-$0{,}606 \pm 0{,}047$ và dao động từ $0{,}524$ đến $0{,}639$ giữa các fold.
-Trong khi đó, macro F1 ổn định hơn với giá trị trung bình $0{,}643$ và độ
-lệch chuẩn $0{,}031$.
+Kết quả được báo cáo dưới dạng giá trị trung bình và độ lệch chuẩn giữa các
+fold. Trong ba chỉ số được xem xét, recall có độ biến động
+lớn nhất với giá trị $0{,}606 \pm 0{,}047$, dao động từ $0{,}524$ đến
+$0{,}639$ giữa các fold. Trong khi đó, macro F1 ổn định hơn, đạt
+$0{,}643 \pm 0{,}031$.
 
-Recall trung bình của kiểm định chéo ($0{,}606$) rất gần với recall thu được
-từ phép chia 80:20 ($0{,}614$). Đồng thời, cả hai đều nằm trong khoảng tin
-cậy bootstrap 95\% $[0{,}511;\ 0{,}718]$. Kết quả nhất quán giữa bootstrap và
-kiểm định chéo cho thấy đánh giá về hiệu năng của mô hình nền tương đối ổn
-định và không phụ thuộc đáng kể vào một cách chia dữ liệu cụ thể.
+Recall trung bình của kiểm định chéo ($0{,}606$) cũng rất gần với recall thu
+được từ phép chia 80:20 ($0{,}614$). Đồng thời, cả hai giá trị đều nằm trong
+khoảng tin cậy bootstrap 95\% $[0{,}511;\ 0{,}718]$. Mặc dù bootstrap và kiểm
+định chéo đánh giá hai khía cạnh khác nhau của hiệu năng mô hình, kết quả của
+chúng nhìn chung phù hợp với nhau và cùng cho thấy mô hình nền có mức hiệu
+năng tương đối ổn định, không bị chi phối bởi một cách chia dữ liệu cụ thể.
 
 
 \section{Tinh chỉnh siêu tham số}
