@@ -1207,9 +1207,12 @@ luyện, thông qua kiểm định chéo phân tầng. Cách làm này giúp tr�
 trạng lựa chọn mô hình dựa trên thông tin của tập kiểm tra.
 
 Hai siêu tham số cần lựa chọn là cường độ điều chuẩn $\lambda$ của Ridge và
-số láng giềng $k$ trong bước SMOTE. Lưới tìm kiếm gồm 15 cấu hình, mỗi cấu
-hình được đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện, tương
-ứng với 75 lần khớp mô hình. Tiêu chí so sánh là macro F1 thay vì recall của
+số láng giềng $k$ trong bước SMOTE. Lưới $\lambda$ gồm ba giá
+trị $\{0{,}1;\ 1;\ 10\}$ đại diện cho mức điều chuẩn yếu, vừa và mạnh quanh
+vùng trung tâm. Kết hợp với ba giá trị
+$k_{SMOTE} \in \{3, 5, 7\}$, lưới tìm kiếm gồm 9 cấu hình, mỗi cấu hình được
+đánh giá bằng kiểm định chéo 5 fold trên tập huấn luyện, tương ứng với 45
+lần khớp mô hình. Tiêu chí so sánh là macro F1 thay vì recall của
 lớp có bệnh. Nếu chỉ tối đa hóa recall, mô hình có thể đạt điểm rất cao bằng
 cách dự đoán gần như mọi quan sát là có bệnh; khi đó recall tăng, nhưng mô
 hình mất khả năng phân biệt giữa hai lớp. Macro F1 phù hợp hơn vì cân bằng
@@ -1217,7 +1220,7 @@ hình mất khả năng phân biệt giữa hai lớp. Macro F1 phù hợp hơn 
 
 <<grid-search>>=
 param_grid <- expand.grid(
-  lambda  = c(0.01, 0.1, 1, 10, 100),   # cường độ điều chuẩn Ridge
+  lambda  = c(0.1, 1, 10),              # cường độ điều chuẩn Ridge
   smote_k = c(3, 5, 7)                  # số láng giềng SMOTE
 )
 
@@ -1254,20 +1257,12 @@ kbl_tab(top5,
        col.names = c("Lambda", "SMOTE k", "Macro F1", "SD giữa fold"))
 @
 
-Cấu hình có điểm trung bình cao nhất là $\lambda = 100$ và
-$k_{SMOTE} = 7$, với macro F1 bằng $0{,}6440$. Tuy nhiên, năm cấu hình đứng
-đầu chỉ chênh nhau khoảng $0{,}004$, trong khi sai số chuẩn của trung bình
-5 fold là $0{,}0075$. Mức chênh lệch này nhỏ hơn độ bất định của chính phép
-đánh giá, nên chưa đủ cơ sở để kết luận cấu hình đứng đầu thật sự tốt hơn
-các cấu hình còn lại.
-
-Vì vậy, báo cáo áp dụng quy tắc một sai số chuẩn: các cấu hình có điểm số
-nằm trong phạm vi một sai số chuẩn so với điểm cao nhất được xem là tương
-đương về mặt thực nghiệm. Có 14 trong 15 cấu hình thỏa điều kiện này. Trong
-nhóm tương đương, báo cáo chọn cấu hình có $\lambda$ nhỏ nhất. Lựa chọn này
-phù hợp với nhận xét ở Mục~\ref{sec:ridge}: khi $\lambda$ quá lớn, xác suất
-dự đoán bị kéo mạnh về quanh $0{,}5$, khiến bước lựa chọn ngưỡng phân loại ở
-phần sau kém linh hoạt hơn.
+Trong các cấu hình được khảo sát, cấu hình $\lambda=1$ và
+$k_{\text{SMOTE}}=7$ đạt macro F1 trung bình cao nhất, bằng $0{,}6407$.
+Tuy nhiên, chênh lệch macro F1 giữa năm cấu hình dẫn đầu chỉ khoảng $0{,}002$,
+trong khi độ lệch chuẩn giữa các fold đều xấp xỉ $0{,}03$. Điều này cho thấy
+sự khác biệt về hiệu năng giữa các cấu hình là rất nhỏ và khó có thể xem là
+đáng kể. 
 
 <<grid-best>>=
 i_top <- which.max(param_grid$macro_f1)
@@ -1626,10 +1621,10 @@ resampling.
 
 \textbf{Vai trò của kiểm định chéo trong lựa chọn mô hình.} Kiểm định chéo
 phân tầng 5 phần được sử dụng ở ba vị trí: đánh giá mô hình cơ sở với macro
-F1 đạt $0{,}643 \pm 0{,}031$, dò 15 cấu hình siêu tham số qua 75 lần khớp
+F1 đạt $0{,}643 \pm 0{,}031$, dò 9 cấu hình siêu tham số qua 45 lần khớp
 mô hình, và sinh dự đoán out-of-fold phục vụ lựa chọn ngưỡng phân loại.
 Ngoài giá trị trung bình, kiểm định chéo còn cung cấp độ lệch chuẩn giữa
-các fold. Chính đại lượng này cho thấy 14 trên 15 cấu hình siêu tham số nằm
+các fold. Chính đại lượng này cho thấy cả 9 cấu hình siêu tham số đều nằm
 trong phạm vi một sai số chuẩn của nhau, nghĩa là lưới tham số về cơ bản
 không phân biệt được chúng, và việc chọn cấu hình có điểm cao nhất sẽ là
 chọn theo nhiễu. Một lần chia train/test đơn lẻ không thể cung cấp thông
@@ -1644,7 +1639,7 @@ so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều cầ
 trong bối cảnh đó.
 
 \textbf{Về mô hình và ngưỡng phân loại.} Cấu hình cuối cùng là hồi quy
-logistic có điều chuẩn Ridge với $\lambda = 0{,}01$, kết hợp SMOTE với
+logistic có điều chuẩn Ridge với $\lambda = 0{,}1$, kết hợp SMOTE với
 $k = 3$ láng giềng và ngưỡng phân loại $0{,}340$, sử dụng 7 biến còn lại
 sau khi loại \texttt{Direct\_Bilirubin} do đa cộng tuyến cùng
 \texttt{Gender} và \texttt{Total\_Protiens} do không đạt ngưỡng ý nghĩa sau
@@ -1700,7 +1695,7 @@ mô hình trong từng lần lặp bootstrap để khoảng tin cậy bao gồm 
 thiên do quá trình huấn luyện, đổi lại chi phí tính toán cao hơn nhiều. Thứ
 hai, lặp lại toàn bộ quy trình kiểm định chéo với nhiều cách chia khác nhau
 nhằm giảm phương sai của ước lượng và kiểm tra xem kết luận về sự tương
-đương giữa 14 trên 15 cấu hình có ổn định hay không. Thứ ba, mở rộng sang các họ
+đương giữa cả 9 cấu hình có ổn định hay không. Thứ ba, mở rộng sang các họ
 mô hình phi tuyến như random forest hay gradient boosting, vốn có khả năng
 nắm bắt tương tác giữa các chỉ số men gan mà mô hình tuyến tính bỏ qua. Khi
 đó, chính khung kiểm định chéo đã thiết lập trong báo cáo này sẽ là công cụ
