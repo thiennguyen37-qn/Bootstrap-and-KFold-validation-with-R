@@ -1414,19 +1414,6 @@ ci_tbl <- data.frame(
 print(round(ci_tbl, 4))
 @
 
-<<forest-plot, echo=FALSE, fig.width=6.8, fig.height=4.5, fig.cap="Khoảng tin cậy bootstrap 95\\% cho sáu chỉ số trên tập kiểm tra">>=
-par(mar = c(5, 9, 4, 2))
-n_m <- nrow(ci_tbl)
-plot(ci_tbl$diem_uoc_luong, seq_len(n_m), pch = 19, col = "#3288bd",
-     cex = 1.3, xlim = c(0, 1), yaxt = "n", ylab = "", xlab = "Giá trị",
-     main = sprintf("Khoảng tin cậy bootstrap %.0f%%", CONF2 * 100))
-arrows(ci_tbl$ci_duoi, seq_len(n_m), ci_tbl$ci_tren, seq_len(n_m),
-       length = 0.05, angle = 90, code = 3, col = "gray40")
-axis(2, seq_len(n_m), rownames(ci_tbl), las = 2, cex.axis = 0.85)
-abline(v = 0.5, col = "#d53e4f", lty = 3)
-par(mar = c(5, 4, 4, 2) + 0.1)
-@
-
 Kết quả chính của báo cáo là recall lớp có bệnh đạt $0{,}819$ với khoảng
 tin cậy 95\% là $[0{,}731;\ 0{,}900]$. Hình~\ref{fig:forest-plot} cho thấy
 độ rộng các khoảng chênh nhau đáng kể, và sự chênh lệch đó phản ánh trực
@@ -1438,6 +1425,19 @@ số chuẩn gần $0{,}09$, do chỉ dựa trên 33 người khoẻ và 29 dự
 Nói cách khác, hai ước lượng $0{,}424$ và $0{,}483$ mang rất ít thông tin
 xác định, và đó là điều mà một ước lượng điểm đơn lẻ hoàn toàn không thể
 hiện được.
+
+<<forest-plot, echo=FALSE, fig.pos="H", fig.width=6.8, fig.height=4.5, fig.cap="Khoảng tin cậy bootstrap 95\\% cho sáu chỉ số trên tập kiểm tra">>=
+par(mar = c(5, 9, 4, 2))
+n_m <- nrow(ci_tbl)
+plot(ci_tbl$diem_uoc_luong, seq_len(n_m), pch = 19, col = "#3288bd",
+     cex = 1.3, xlim = c(0, 1), yaxt = "n", ylab = "", xlab = "Giá trị",
+     main = sprintf("Khoảng tin cậy bootstrap %.0f%%", CONF2 * 100))
+arrows(ci_tbl$ci_duoi, seq_len(n_m), ci_tbl$ci_tren, seq_len(n_m),
+       length = 0.05, angle = 90, code = 3, col = "gray40")
+axis(2, seq_len(n_m), rownames(ci_tbl), las = 2, cex.axis = 0.85)
+abline(v = 0.5, col = "#d53e4f", lty = 3)
+par(mar = c(5, 4, 4, 2) + 0.1)
+@
 
 \section{Kết luận}
 
