@@ -1654,93 +1654,9 @@ việc lựa chọn ngưỡng vẫn bảo đảm tính khách quan.
 Hình~\ref{fig:threshold-plot} minh họa mối quan hệ đánh đổi giữa recall của
 hai lớp khi thay đổi ngưỡng phân loại. Khi ngưỡng giảm, recall của lớp có
 bệnh tăng lên, nhưng recall của lớp không bệnh giảm xuống. Vì vậy, việc lựa
-chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót. Bảng dưới đây tra
-cứu trực tiếp số ca bệnh bị bỏ sót (FN) và số người khoẻ bị báo động nhầm
-(FP) quanh vùng ngưỡng mà hai đại lượng này giao nhau.
-
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hldef{sel} \hlkwb{<-} \hlkwd{which}\hldef{(}\hlkwd{round}\hldef{(grid_thr,} \hlnum{3}\hldef{)} \hlopt{%in%} \hlkwd{c}\hldef{(}\hlnum{0.250}\hldef{,} \hlnum{0.300}\hldef{,} \hlnum{0.325}\hldef{,} \hlnum{0.330}\hldef{,} \hlnum{0.335}\hldef{,}
-                                       \hlnum{0.340}\hldef{,} \hlnum{0.345}\hldef{,} \hlnum{0.350}\hldef{,} \hlnum{0.400}\hldef{,} \hlnum{0.450}\hldef{,}
-                                       \hlnum{0.500}\hldef{))}
-\hldef{thr_tbl} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}
-  \hlkwc{nguong} \hldef{= grid_thr[sel],} \hlkwc{FN} \hldef{= n_fn[sel],} \hlkwc{FP} \hldef{= n_fp[sel],}
-  \hlkwc{recall_lop1} \hldef{=} \hlkwd{round}\hldef{(rec1[sel],} \hlnum{3}\hldef{),} \hlkwc{recall_lop0} \hldef{=} \hlkwd{round}\hldef{(rec0[sel],} \hlnum{3}\hldef{)}
-\hldef{)}
-
-\hlcom{# Ngưỡng cao nhất còn thoả FN < FP trên tập huấn luyện là 0,345 - đây chính}
-\hlcom{# là điểm giao (ngay sau đó, ở 0,350, FN đã vượt FP). Lùi một bước lưới}
-\hlcom{# (0,005) để có khoảng đệm an toàn trước khi áp sang tập kiểm tra.}
-\hldef{threshold} \hlkwb{<-} \hlnum{0.340}
-\hldef{i_thr} \hlkwb{<-} \hlkwd{which}\hldef{(grid_thr} \hlopt{==} \hldef{threshold)}
-\end{alltt}
-\end{kframe}
-\end{knitrout}
-
-\begin{table}[H]
-\centering
-\caption{Số ca bệnh bị bỏ sót (FN) và báo động nhầm (FP) trên out-of-fold quanh vùng ngưỡng giao nhau}
-\label{tab:threshold-lookup}
-\shrinktofit{%
-
-\begin{tabular}{rrrrr}
-\toprule
-Ngưỡng & FN & FP & Recall lớp 1 & Recall lớp 0\\
-\midrule
-0.250 & 21 & 116 & 0.937 & 0.134\\
-0.300 & 38 & 94 & 0.886 & 0.299\\
-0.325 & 49 & 80 & 0.853 & 0.403\\
-0.330 & 51 & 74 & 0.847 & 0.448\\
-0.335 & 55 & 71 & 0.835 & 0.470\\
-\addlinespace
-0.340 & 58 & 69 & 0.826 & 0.485\\
-0.345 & 60 & 67 & 0.820 & 0.500\\
-0.350 & 66 & 63 & 0.802 & 0.530\\
-0.400 & 90 & 51 & 0.730 & 0.619\\
-0.450 & 111 & 40 & 0.667 & 0.701\\
-\addlinespace
-0.500 & 129 & 31 & 0.613 & 0.769\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
+chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót.
 
 
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"\textbackslash{}nNgưỡng mặc định : 0.500\textbackslash{}n"}\hldef{))}
-\end{alltt}
-\begin{verbatim}
-## 
-## Ngưỡng mặc định : 0.500
-\end{verbatim}
-\begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Ngưỡng đã chọn  : %.3f\textbackslash{}n"}\hldef{, threshold))}
-\end{alltt}
-\begin{verbatim}
-## Ngưỡng đã chọn  : 0.340
-\end{verbatim}
-\begin{alltt}
-\hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"  Trên out-of-fold: FN = %d, FP = %d, recall1 = %.3f, recall0 = %.3f\textbackslash{}n"}\hldef{,}
-            \hldef{n_fn[i_thr], n_fp[i_thr], rec1[i_thr], rec0[i_thr]))}
-\end{alltt}
-\end{kframe}
-\end{knitrout}
-
-Bảng tra cho thấy FN và FP tiến lại gần nhau khi ngưỡng tăng dần trong
-khoảng $0{,}30$ đến $0{,}35$: ở $0{,}300$, FN (38) còn kém xa FP (94); đến
-$0{,}345$, khoảng cách đã thu hẹp còn FN = 60 so với FP = 67; và sang
-$0{,}350$ thì FN (66) vượt qua FP (63). Điểm giao vì vậy nằm giữa $0{,}345$
-và $0{,}350$, còn $0{,}345$ là ngưỡng cao nhất trên lưới vẫn giữ được
-FN nhỏ hơn FP.
-
-Vì $0{,}345$ nằm sát điểm giao, một dao động nhỏ do đổi tập dữ liệu cũng đủ
-làm đảo ngược quan hệ giữa FN và FP. Báo cáo vì vậy lùi lại một bước lưới,
-chọn ngưỡng $0{,}340$, cho FN = 58 và FP = 69 trên tập huấn luyện — vẫn giữ
-khoảng cách rõ ràng thay vì bám sát biên, đồng thời recall lớp có bệnh vẫn
-đạt $0{,}826$ và recall lớp không bệnh $0{,}485$.
 
 Để tiện rà soát toàn cảnh trước khi chốt lựa chọn, bảng dưới đây liệt kê đủ
 sáu chỉ số trên các dự đoán out-of-fold của tập huấn luyện, tại các mức

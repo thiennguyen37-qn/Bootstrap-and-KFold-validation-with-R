@@ -1357,52 +1357,14 @@ par(op)
 Hình~\ref{fig:threshold-plot} minh họa mối quan hệ đánh đổi giữa recall của
 hai lớp khi thay đổi ngưỡng phân loại. Khi ngưỡng giảm, recall của lớp có
 bệnh tăng lên, nhưng recall của lớp không bệnh giảm xuống. Vì vậy, việc lựa
-chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót. Bảng dưới đây tra
-cứu trực tiếp số ca bệnh bị bỏ sót (FN) và số người khoẻ bị báo động nhầm
-(FP) quanh vùng ngưỡng mà hai đại lượng này giao nhau.
+chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót.
 
-<<threshold-lookup>>=
-sel <- which(round(grid_thr, 3) %in% c(0.250, 0.300, 0.325, 0.330, 0.335,
-                                       0.340, 0.345, 0.350, 0.400, 0.450,
-                                       0.500))
-thr_tbl <- data.frame(
-  nguong = grid_thr[sel], FN = n_fn[sel], FP = n_fp[sel],
-  recall_lop1 = round(rec1[sel], 3), recall_lop0 = round(rec0[sel], 3)
-)
-
+<<threshold-lookup, echo=FALSE>>=
 # Ngưỡng cao nhất còn thoả FN < FP trên tập huấn luyện là 0,345 - đây chính
 # là điểm giao (ngay sau đó, ở 0,350, FN đã vượt FP). Lùi một bước lưới
 # (0,005) để có khoảng đệm an toàn trước khi áp sang tập kiểm tra.
 threshold <- 0.340
-i_thr <- which(grid_thr == threshold)
 @
-
-<<threshold-lookup-table, echo=FALSE, results='asis'>>=
-kbl_tab(thr_tbl,
-       "Số ca bệnh bị bỏ sót (FN) và báo động nhầm (FP) trên out-of-fold quanh vùng ngưỡng giao nhau",
-       "threshold-lookup",
-       col.names = c("Ngưỡng", "FN", "FP", "Recall lớp 1", "Recall lớp 0"))
-@
-
-<<threshold-chosen>>=
-cat(sprintf("\nNgưỡng mặc định : 0.500\n"))
-cat(sprintf("Ngưỡng đã chọn  : %.3f\n", threshold))
-cat(sprintf("  Trên out-of-fold: FN = %d, FP = %d, recall1 = %.3f, recall0 = %.3f\n",
-            n_fn[i_thr], n_fp[i_thr], rec1[i_thr], rec0[i_thr]))
-@
-
-Bảng tra cho thấy FN và FP tiến lại gần nhau khi ngưỡng tăng dần trong
-khoảng $0{,}30$ đến $0{,}35$: ở $0{,}300$, FN (38) còn kém xa FP (94); đến
-$0{,}345$, khoảng cách đã thu hẹp còn FN = 60 so với FP = 67; và sang
-$0{,}350$ thì FN (66) vượt qua FP (63). Điểm giao vì vậy nằm giữa $0{,}345$
-và $0{,}350$, còn $0{,}345$ là ngưỡng cao nhất trên lưới vẫn giữ được
-FN nhỏ hơn FP.
-
-Vì $0{,}345$ nằm sát điểm giao, một dao động nhỏ do đổi tập dữ liệu cũng đủ
-làm đảo ngược quan hệ giữa FN và FP. Báo cáo vì vậy lùi lại một bước lưới,
-chọn ngưỡng $0{,}340$, cho FN = 58 và FP = 69 trên tập huấn luyện — vẫn giữ
-khoảng cách rõ ràng thay vì bám sát biên, đồng thời recall lớp có bệnh vẫn
-đạt $0{,}826$ và recall lớp không bệnh $0{,}485$.
 
 Để tiện rà soát toàn cảnh trước khi chốt lựa chọn, bảng dưới đây liệt kê đủ
 sáu chỉ số trên các dự đoán out-of-fold của tập huấn luyện, tại các mức
