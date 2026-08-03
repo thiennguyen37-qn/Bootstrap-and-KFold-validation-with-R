@@ -1723,7 +1723,7 @@ trị ứng dụng của mô hình.
 
 Đây là lần đầu tiên tập kiểm tra được sử dụng kể từ đầu quy trình. Mô hình
 được huấn luyện lại trên toàn bộ tập huấn luyện với bộ siêu tham số đã chọn,
-sau đó áp dụng ngưỡng phân loại $0{,}340$.
+sau đó áp dụng ngưỡng phân loại $0{,}350$.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1740,15 +1740,15 @@ sau đó áp dụng ngưỡng phân loại $0{,}340$.
 \end{alltt}
 \begin{verbatim}
 ## 
-## MA TRAN NHAM LAN (nguong 0.340)
+## MA TRAN NHAM LAN (nguong 0.350)
 ##             Dự đoán
 ## Thực tế  Không bệnh Có bệnh
-##   Không bệnh         16      17
-##   Có bệnh            17      66
-##   TN =  16   không bệnh, dự đoán đúng
-##   FP =  17   không bệnh, dự đoán nhầm là có bệnh
-##   FN =  17   có bệnh, bị bỏ sót
-##   TP =  66   có bệnh, phát hiện được
+##   Không bệnh         18      15
+##   Có bệnh            21      62
+##   TN =  18   không bệnh, dự đoán đúng
+##   FP =  15   không bệnh, dự đoán nhầm là có bệnh
+##   FN =  21   có bệnh, bị bỏ sót
+##   TP =  62   có bệnh, phát hiện được
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1763,7 +1763,7 @@ sau đó áp dụng ngưỡng phân loại $0{,}340$.
 \toprule
 Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
 \midrule
-0.707 & 0.795 & 0.795 & 0.485 & 0.485 & 0.64\\
+0.69 & 0.747 & 0.805 & 0.545 & 0.462 & 0.637\\
 \bottomrule
 \end{tabular}
 }
@@ -1794,7 +1794,7 @@ Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp
 Ngưỡng & Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
 \midrule
 0.500 (mặc định) & 0.681 & 0.614 & 0.911 & 0.848 & 0.467 & 0.668\\
-đã chỉnh & 0.707 & 0.795 & 0.795 & 0.485 & 0.485 & 0.640\\
+đã chỉnh & 0.690 & 0.747 & 0.805 & 0.545 & 0.462 & 0.637\\
 \bottomrule
 \end{tabular}
 }
@@ -1815,30 +1815,26 @@ Ngưỡng & Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Pre
 
 Hình~\ref{fig:confusion-viz} trực quan hoá hai ma trận nhầm lẫn cùng lúc,
 với sắc độ đậm nhạt của ô phản ánh số lượng quan sát rơi vào ô đó. So với
-ngưỡng mặc định $0{,}500$, ngưỡng $0{,}340$ làm giảm số
-ca bệnh bị bỏ sót từ 32 xuống 17, tức phát hiện thêm 15 bệnh nhân mắc bệnh.
-Đổi lại,
-số người khỏe bị báo động nhầm tăng từ 5 lên 17 — bằng đúng số ca bệnh bị
-bỏ sót. Recall của lớp có bệnh tăng từ $0{,}614$ lên $0{,}795$, còn độ
-chính xác tổng thể tăng từ $0{,}681$ lên $0{,}707$.
+ngưỡng mặc định $0{,}500$, ngưỡng $0{,}350$ làm giảm số
+ca bệnh bị bỏ sót từ 32 xuống 21, tức phát hiện thêm 11 bệnh nhân mắc bệnh.
+Đổi lại, số người khỏe bị báo động nhầm tăng từ 5 lên 15. Recall của lớp có
+bệnh tăng từ $0{,}614$ lên $0{,}747$, trong khi độ chính xác tổng thể gần
+như không đổi, từ $0{,}681$ lên $0{,}690$.
 
-Việc FN và FP bằng nhau tuyệt đối (17 mỗi loại) trên tập kiểm tra là một sự
-trùng hợp của riêng lần chia dữ liệu này, nhưng nó minh hoạ đúng điều tiêu
-chí lựa chọn ngưỡng nhắm tới: hai loại sai sót không còn nghiêng hẳn về
-phía bỏ sót ca bệnh như ở ngưỡng mặc định (32 so với 5), mà đã tiến sát lại
-gần nhau. Vì FN bằng FP, recall và precision của lớp có bệnh trùng khớp
-tuyệt đối ($0{,}795$), tương tự với recall và precision của lớp không bệnh
-($0{,}485$). Cái giá phải trả là độ đặc hiệu giảm khá nhiều, từ $0{,}848$
-xuống $0{,}485$, còn macro F1 giảm nhẹ từ $0{,}668$ xuống $0{,}640$.
+Hai loại sai sót không còn nghiêng hẳn về phía bỏ sót ca bệnh như ở ngưỡng
+mặc định (32 so với 5), mà khoảng cách giữa chúng đã thu hẹp đáng kể (21 so
+với 15). Recall và precision của lớp có bệnh lần lượt là $0{,}747$ và
+$0{,}805$; recall và precision của lớp không bệnh lần lượt là $0{,}545$ và
+$0{,}462$. Cái giá phải trả là độ đặc hiệu giảm khá nhiều, từ $0{,}848$
+xuống $0{,}545$, còn macro F1 giảm nhẹ từ $0{,}668$ xuống $0{,}637$.
 
-Cả hai chỉ số đều khớp tốt giữa hai tập. Recall của lớp có bệnh đạt
-$0{,}826$ trên các dự đoán \emph{out-of-fold} của tập huấn luyện so với
-$0{,}795$ trên tập kiểm tra, còn độ đặc hiệu gần như trùng khít tuyệt đối:
-$0{,}485$ ở cả hai nơi. Đây là bằng chứng cho thấy khoảng đệm an toàn quanh
-điểm giao đã hoạt động đúng như kỳ vọng — ngưỡng dò được trên tập huấn
-luyện tái lập tốt trên dữ liệu chưa từng được dùng để chọn nó, khác với
-trường hợp bám sát điểm giao mà một dao động mẫu nhỏ cũng đủ đảo ngược kết
-quả.
+Cả hai chỉ số đều khớp khá tốt giữa hai tập. Recall của lớp có bệnh đạt
+$0{,}802$ trên các dự đoán \emph{out-of-fold} của tập huấn luyện so với
+$0{,}747$ trên tập kiểm tra, còn độ đặc hiệu là $0{,}530$ trên tập huấn
+luyện so với $0{,}545$ trên tập kiểm tra. Sai lệch vài điểm phần trăm giữa
+hai tập là mức dao động bình thường của một tập kiểm tra chỉ có 116 quan
+sát, và cho thấy ngưỡng dò được trên tập huấn luyện tái lập khá tốt trên dữ
+liệu chưa từng được dùng để chọn nó.
 
 Tuy nhiên, các chỉ số trên đều là những ước lượng điểm được tính từ tập kiểm
 tra gồm 116 quan sát nên chưa phản ánh mức độ bất định của kết quả. Vì vậy,
@@ -1882,29 +1878,28 @@ giá.
 \toprule
 Chỉ số & Ước lượng điểm & Cận dưới & Cận trên & Sai số chuẩn\\
 \midrule
-accuracy & 0.7069 & 0.6207 & 0.7845 & 0.0424\\
-recall1 & 0.7952 & 0.7033 & 0.8781 & 0.0446\\
-precision1 & 0.7952 & 0.7037 & 0.8795 & 0.0445\\
-recall0 & 0.4848 & 0.3171 & 0.6562 & 0.0873\\
-precision0 & 0.4848 & 0.3125 & 0.6571 & 0.0876\\
+accuracy & 0.6897 & 0.6034 & 0.7759 & 0.0433\\
+recall1 & 0.7470 & 0.6493 & 0.8391 & 0.0482\\
+precision1 & 0.8052 & 0.7125 & 0.8902 & 0.0456\\
+recall0 & 0.5455 & 0.3750 & 0.7143 & 0.0878\\
+precision0 & 0.4615 & 0.3056 & 0.6216 & 0.0806\\
 \addlinespace
-macro\_f1 & 0.6400 & 0.5432 & 0.7302 & 0.0483\\
+macro\_f1 & 0.6375 & 0.5423 & 0.7276 & 0.0478\\
 \bottomrule
 \end{tabular}
 }
 \end{table}
 
 
-Recall của lớp có bệnh đạt $0{,}795$, với khoảng tin cậy bootstrap 95\%
-$[0{,}703;\ 0{,}878]$. Hình~\ref{fig:forest-plot} cho thấy độ rộng của các
+Recall của lớp có bệnh đạt $0{,}747$, với khoảng tin cậy bootstrap 95\%
+$[0{,}649;\ 0{,}839]$. Hình~\ref{fig:forest-plot} cho thấy độ rộng của các
 khoảng tin cậy khác nhau đáng kể giữa các chỉ số. Accuracy có khoảng tin
-cậy hẹp nhất, với sai số chuẩn $0{,}042$, vì được tính trên toàn bộ 116
-quan sát của tập kiểm tra. Recall và precision của lớp có bệnh có khoảng
-tin cậy gần như trùng nhau ($[0{,}703;\ 0{,}878]$ và
-$[0{,}704;\ 0{,}880]$) — hệ quả trực tiếp của việc FN bằng FP trên tập kiểm
-tra. Ngược lại, độ đặc hiệu và precision của lớp không bệnh có khoảng tin
-cậy rộng nhất, xấp xỉ $[0{,}317;\ 0{,}656]$, với sai số chuẩn gần $0{,}09$,
-do chỉ dựa trên 33 người khoẻ và 33 dự đoán âm tính.
+cậy hẹp nhất, với sai số chuẩn $0{,}043$, vì được tính trên toàn bộ 116
+quan sát của tập kiểm tra. Ngược lại, độ đặc hiệu (recall của lớp không
+bệnh) có khoảng tin cậy rộng nhất, $[0{,}375;\ 0{,}714]$, với sai số chuẩn
+$0{,}088$, do chỉ dựa trên 33 người khoẻ trong tập kiểm tra; precision của
+lớp không bệnh cũng có khoảng tin cậy rộng tương tự, $[0{,}306;\ 0{,}622]$,
+sai số chuẩn $0{,}081$, vì chỉ dựa trên 39 dự đoán âm tính.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
@@ -1924,89 +1919,57 @@ Báo cáo đã xây dựng một quy trình phân loại hoàn chỉnh trên b�
 và, quan trọng hơn, minh hoạ sự phân công vai trò rõ ràng giữa hai kỹ thuật
 resampling.
 
-\textbf{Vai trò của kiểm định chéo trong lựa chọn mô hình.} Kiểm định chéo
-phân tầng 5 phần được sử dụng ở ba vị trí: đánh giá mô hình cơ sở với macro
-F1 đạt $0{,}643 \pm 0{,}031$, dò 9 cấu hình siêu tham số qua 45 lần khớp
-mô hình, và sinh dự đoán out-of-fold phục vụ lựa chọn ngưỡng phân loại.
-Ngoài giá trị trung bình, kiểm định chéo còn cung cấp độ lệch chuẩn giữa
-các fold. Chính đại lượng này cho thấy cả 9 cấu hình siêu tham số đều nằm
-trong phạm vi một sai số chuẩn của nhau, nghĩa là lưới tham số về cơ bản
-không phân biệt được chúng, và việc chọn cấu hình có điểm cao nhất sẽ là
-chọn theo nhiễu. Một lần chia train/test đơn lẻ không thể cung cấp thông
-tin này.
+\textbf{Kiểm định chéo} phân tầng 5 phần được dùng ở ba vị trí: đánh giá mô
+hình cơ sở (macro F1 $0{,}643 \pm 0{,}031$), dò 9 cấu hình siêu tham số, và
+sinh dự đoán out-of-fold để chọn ngưỡng phân loại. Độ lệch chuẩn giữa các
+fold cho thấy cả 9 cấu hình nằm trong phạm vi một sai số chuẩn của nhau —
+khác biệt giữa chúng không đáng kể, điều một lần chia train/test đơn lẻ
+không thể phát hiện.
 
-\textbf{Vai trò của Bootstrap trong định lượng độ tin cậy.} Mô hình cuối
-đạt recall $0{,}795$ trên tập kiểm tra, nhưng khoảng tin cậy 95\% trải từ
-$0{,}703$ tới $0{,}878$. Bề rộng gần 18 điểm phần trăm này là thông tin
-thiết yếu, bởi nó cho thấy với cỡ mẫu hiện có, không thể phân biệt được mô
-hình này với một mô hình có recall thực sự bằng $0{,}70$ hay $0{,}88$. Mọi
-so sánh với các nghiên cứu khác trên cùng bộ dữ liệu đều cần được diễn giải
-trong bối cảnh đó.
+\textbf{Bootstrap} cho thấy recall $0{,}747$ trên tập kiểm tra đi kèm
+khoảng tin cậy 95\% khá rộng, $[0{,}649;\ 0{,}839]$ (gần 19 điểm phần
+trăm), nghĩa là với cỡ mẫu hiện có không thể phân biệt mô hình này với một
+mô hình có recall thực từ $0{,}65$ đến $0{,}84$.
 
-\textbf{Về mô hình và ngưỡng phân loại.} Cấu hình cuối cùng là hồi quy
-logistic có điều chuẩn Ridge với $\lambda = 0{,}1$, kết hợp SMOTE với
-$k = 3$ láng giềng và ngưỡng phân loại $0{,}340$, sử dụng 7 biến còn lại
-sau khi loại \texttt{Direct\_Bilirubin} do đa cộng tuyến cùng
-\texttt{Gender} và \texttt{Total\_Protiens} do không đạt ngưỡng ý nghĩa sau
-hiệu chỉnh FDR. Nhóm biến quan trọng nhất là các men gan và bilirubin, với
-kích thước ảnh hưởng rank-biserial trong khoảng $0{,}35$ đến $0{,}39$.
-
-Ngưỡng $0{,}340$ được chọn theo tiêu chí số ca bệnh bị bỏ sót không nhiều
-hơn số người khoẻ bị báo động nhầm trên tập huấn luyện, thay vì tối ưu tự
-do một chỉ số tỉ lệ duy nhất. Ngưỡng cao nhất còn thoả điều kiện này trên
-tập huấn luyện là $0{,}345$, nhưng vì đây là điểm giao giữa hai đường cong
-FN và FP, báo cáo lùi lại một bước lưới để có khoảng đệm an toàn trước dao
-động của một tập kiểm tra chỉ có 33 người khoẻ. Kết quả trên tập kiểm tra
-là 17 ca bệnh bị bỏ sót và đúng 17 người khoẻ bị báo nhầm — hai loại sai
-sót cân bằng tuyệt đối, khác hẳn tỉ lệ 32 so với 5 ở ngưỡng mặc định. Đổi
-lại, độ đặc hiệu giảm từ $0{,}848$ xuống $0{,}485$ và macro F1 giảm nhẹ từ
-$0{,}668$ xuống $0{,}640$; đây là cái giá trực tiếp của việc ưu tiên cân
-bằng hai loại lỗi thay vì tối ưu một chỉ số tổng hợp.
+\textbf{Mô hình cuối cùng} là hồi quy logistic Ridge ($\lambda = 0{,}1$)
+kết hợp SMOTE ($k = 3$) trên 7 biến còn lại sau khi loại
+\texttt{Direct\_Bilirubin} (đa cộng tuyến), \texttt{Gender} và
+\texttt{Total\_Protiens} (không đạt ngưỡng ý nghĩa sau FDR); nhóm biến quan
+trọng nhất là men gan và bilirubin. Ngưỡng phân loại $0{,}350$ được chọn vì
+cân bằng hợp lý hai loại sai sót trên out-of-fold. Trên tập kiểm tra, kết
+quả là 21 ca bệnh bị bỏ sót và 15 người khoẻ bị báo nhầm (so với 32 và 5 ở
+ngưỡng mặc định), đổi lại độ đặc hiệu giảm từ $0{,}848$ xuống $0{,}545$ và
+macro F1 giảm nhẹ xuống $0{,}637$.
 
 \subsection{Hạn chế}
 
 \begin{enumerate}
-  \item \textbf{Hiệu năng tuyệt đối còn thấp.} Recall $0{,}795$ vẫn đồng
-        nghĩa với việc bỏ sót 17 trên 83 bệnh nhân trong tập kiểm tra. Ở
-        chiều ngược lại, độ đặc hiệu chỉ đạt $0{,}485$ nên 17 trên 33 người
-        khoẻ mạnh bị báo nhầm, kéo theo chi phí xét nghiệm bổ sung đáng kể
-        nếu triển khai thực tế. Precision của lớp không bệnh cũng chỉ đạt
-        $0{,}485$, nghĩa là trong số những người mô hình kết luận không mắc
-        bệnh, hơn một nửa thực tế có bệnh.
-  \item \textbf{Khoảng tin cậy chỉ phản ánh một nguồn bất định.} Do mô hình
-        được giữ cố định trong suốt vòng lặp và chỉ tập kiểm tra được lấy
-        mẫu lại, khoảng thu được phản ánh biến thiên do lấy mẫu bệnh nhân
-        kiểm tra, chứ không tính tới biến thiên do thay đổi tập huấn luyện.
-        Độ bất định thực tế vì vậy rộng hơn con số đã công bố.
-  \item \textbf{Cỡ mẫu hạn chế.} Bộ dữ liệu chỉ có 583 quan sát, trong đó
-        tập kiểm tra gồm 116 quan sát. Đây là nguyên nhân trực tiếp của các
-        khoảng tin cậy rộng và của việc nhiều so sánh không đạt mức phân
-        biệt thống kê.
-  \item \textbf{Tính đại diện.} Dữ liệu được thu thập tại một vùng địa lý
-        duy nhất là đông bắc bang Andhra Pradesh, Ấn Độ, nên kết quả chưa
-        chắc tổng quát hoá được sang quần thể khác.
-  \item \textbf{Đa cộng tuyến chưa được loại bỏ hoàn toàn.} Hai biến
-        \texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn liên
-        quan chặt về mặt định nghĩa. Điều chuẩn Ridge làm giảm ảnh hưởng
-        của vấn đề này nhưng không loại bỏ được nó, và hệ quả là các hệ số
-        riêng lẻ của mô hình không nên được diễn giải như mức độ quan trọng
-        của từng biến.
+  \item Hiệu năng tuyệt đối còn thấp: bỏ sót 21/83 bệnh nhân, báo nhầm
+        15/33 người khoẻ; precision lớp không bệnh chỉ $0{,}462$.
+  \item Khoảng tin cậy bootstrap chỉ phản ánh biến thiên do lấy mẫu tập
+        kiểm tra, chưa tính biến thiên do thay đổi tập huấn luyện, nên độ
+        bất định thực tế rộng hơn con số đã công bố.
+  \item Cỡ mẫu nhỏ (583 quan sát, 116 dùng để kiểm tra) khiến khoảng tin
+        cậy rộng và nhiều so sánh không đạt mức phân biệt thống kê.
+  \item Dữ liệu chỉ thu thập tại một vùng địa lý duy nhất (đông bắc bang
+        Andhra Pradesh, Ấn Độ), nên kết quả chưa chắc tổng quát hoá được.
+  \item \texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn đa
+        cộng tuyến về định nghĩa; Ridge làm giảm nhưng không loại bỏ hoàn
+        toàn ảnh hưởng này, nên các hệ số riêng lẻ không nên được diễn giải
+        như mức độ quan trọng của từng biến.
 \end{enumerate}
 
 \subsection{Hướng mở rộng}
 
-Ba hướng mở rộng được đề xuất theo thứ tự ưu tiên. Thứ nhất, huấn luyện lại
-mô hình trong từng lần lặp bootstrap để khoảng tin cậy bao gồm cả biến
-thiên do quá trình huấn luyện, đổi lại chi phí tính toán cao hơn nhiều. Thứ
-hai, lặp lại toàn bộ quy trình kiểm định chéo với nhiều cách chia khác nhau
-nhằm giảm phương sai của ước lượng và kiểm tra xem kết luận về sự tương
-đương giữa cả 9 cấu hình có ổn định hay không. Thứ ba, mở rộng sang các họ
-mô hình phi tuyến như random forest hay gradient boosting, vốn có khả năng
-nắm bắt tương tác giữa các chỉ số men gan mà mô hình tuyến tính bỏ qua. Khi
-đó, chính khung kiểm định chéo đã thiết lập trong báo cáo này sẽ là công cụ
-so sánh khách quan giữa các họ mô hình.
+Ba hướng ưu tiên: huấn luyện lại mô hình trong từng vòng bootstrap để
+khoảng tin cậy bao quát cả biến thiên huấn luyện; lặp lại kiểm định chéo
+với nhiều cách chia để kiểm tra độ ổn định của kết luận về 9 cấu hình; và
+mở rộng sang các mô hình phi tuyến (random forest, gradient boosting) có
+khả năng nắm bắt tương tác giữa các chỉ số men gan.
 
-\section{Tài liệu tham khảo}
+\clearpage
+\section*{Tài liệu tham khảo}
+\addcontentsline{toc}{section}{Tài liệu tham khảo}
 
 \begin{enumerate}
   \item Benjamini, Y., \& Hochberg, Y. (1995). Controlling the False
