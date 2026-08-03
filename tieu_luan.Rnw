@@ -1366,9 +1366,9 @@ chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót.
 threshold <- 0.340
 @
 
-Để tiện rà soát toàn cảnh trước khi chốt lựa chọn, bảng dưới đây liệt kê đủ
-sáu chỉ số trên các dự đoán out-of-fold của tập huấn luyện, tại các mức
-ngưỡng tròn giảm dần từ ngưỡng mặc định $0{,}50$ xuống $0{,}20$ theo bước
+Bảng dưới đây liệt kê đủ
+sáu chỉ số trên các dự đoán out-of-fold của tập huấn luyện, tại các ngưỡng
+giảm dần từ ngưỡng mặc định $0{,}50$ xuống $0{,}20$ với bước nhảy
 $0{,}05$.
 
 <<threshold-coarse-sweep>>=
@@ -1390,11 +1390,22 @@ for (i in seq_along(coarse_thr)) {
 
 <<threshold-coarse-sweep-table, echo=FALSE, results='asis'>>=
 kbl_tab(coarse_tbl,
-       "Các chỉ số trên out-of-fold theo ngưỡng, bước 0,05 từ 0,50 xuống 0,20",
+       "Các chỉ số trên out-of-fold theo ngưỡng, bước nhảy 0,05 từ 0,50 xuống 0,20",
        "threshold-coarse",
        col.names = c("Ngưỡng", "FN", "FP", "Accuracy", "Recall 1",
                      "Precision 1", "Recall 0", "Precision 0", "Macro F1"))
 @
+
+Bảng~\ref{tab:threshold-coarse} cho thấy khi giảm ngưỡng phân loại, mô hình phát hiện
+được nhiều ca bệnh hơn: số ca bệnh bị bỏ sót (FN) giảm từ 129 xuống còn 12,
+đồng thời recall của lớp có bệnh tăng từ $0{,}613$ lên $0{,}964$. Tuy nhiên,
+đổi lại số người khỏe bị báo động nhầm (FP) tăng nhanh từ 31 lên 127, khiến
+khả năng nhận diện lớp không bệnh suy giảm đáng kể.
+
+Ngưỡng $0{,}35$ được lựa chọn vì tạo ra sự đánh đổi hợp lý giữa hai loại sai
+sót. So với ngưỡng mặc định, ngưỡng này giúp giảm đáng kể số ca bệnh bị bỏ
+sót, trong khi số người khỏe bị báo động nhầm chưa tăng đến mức làm mất giá
+trị ứng dụng của mô hình.
 
 \section{Đánh giá trên tập kiểm tra}
 
