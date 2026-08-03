@@ -1577,57 +1577,51 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 \section{Kết luận}
 
-Báo cáo đã xây dựng một quy trình phân loại hoàn chỉnh trên bộ dữ liệu ILPD
-và, quan trọng hơn, minh hoạ sự phân công vai trò rõ ràng giữa hai kỹ thuật
-resampling.
+Báo cáo đã xây dựng một quy trình phân loại hoàn chỉnh trên bộ dữ liệu ILPD,
+đồng thời làm rõ vai trò của hai kỹ thuật resampling trong quá trình xây dựng
+và đánh giá mô hình.
 
-\textbf{Kiểm định chéo} phân tầng 5 phần được dùng ở ba vị trí: đánh giá mô
-hình cơ sở (macro F1 $0{,}643 \pm 0{,}031$), dò 9 cấu hình siêu tham số, và
-sinh dự đoán out-of-fold để chọn ngưỡng phân loại. Độ lệch chuẩn giữa các
-fold cho thấy cả 9 cấu hình nằm trong phạm vi một sai số chuẩn của nhau —
-khác biệt giữa chúng không đáng kể, điều một lần chia train/test đơn lẻ
-không thể phát hiện.
+\textbf{Kiểm định chéo} phân tầng 5 fold được sử dụng ở ba giai đoạn: đánh
+giá mô hình nền (macro F1 $0{,}643 \pm 0{,}031$), lựa chọn siêu tham số và
+tạo dự đoán out-of-fold để xác định ngưỡng phân loại. Kết quả cho thấy sự
+khác biệt giữa các cấu hình là rất nhỏ; toàn bộ 9 cấu hình đều nằm trong
+phạm vi một sai số chuẩn của cấu hình tốt nhất, cho thấy việc lựa chọn cấu
+hình không quá nhạy với cách chia dữ liệu.
 
-\textbf{Bootstrap} cho thấy recall $0{,}747$ trên tập kiểm tra đi kèm
-khoảng tin cậy 95\% khá rộng, $[0{,}649;\ 0{,}839]$ (gần 19 điểm phần
-trăm), nghĩa là với cỡ mẫu hiện có không thể phân biệt mô hình này với một
-mô hình có recall thực từ $0{,}65$ đến $0{,}84$.
+\textbf{Bootstrap} được sử dụng để lượng hóa độ bất định của các chỉ số đánh
+giá. Trên tập kiểm tra, recall của lớp có bệnh đạt $0{,}747$ với khoảng tin
+cậy bootstrap 95\% là $[0{,}649;\ 0{,}839]$, có bề rộng gần 19 điểm phần
+trăm. Kết quả này cho thấy một giá trị ước lượng điểm chưa phản ánh đầy đủ
+hiệu năng của mô hình, đặc biệt khi kích thước tập kiểm tra còn hạn chế.
 
-\textbf{Mô hình cuối cùng} là hồi quy logistic Ridge ($\lambda = 0{,}1$)
-kết hợp SMOTE ($k = 3$) trên 7 biến còn lại sau khi loại
-\texttt{Direct\_Bilirubin} (đa cộng tuyến), \texttt{Gender} và
-\texttt{Total\_Protiens} (không đạt ngưỡng ý nghĩa sau FDR); nhóm biến quan
-trọng nhất là men gan và bilirubin. Ngưỡng phân loại $0{,}350$ được chọn vì
-cân bằng hợp lý hai loại sai sót trên out-of-fold. Trên tập kiểm tra, kết
-quả là 21 ca bệnh bị bỏ sót và 15 người khoẻ bị báo nhầm (so với 32 và 5 ở
-ngưỡng mặc định), đổi lại độ đặc hiệu giảm từ $0{,}848$ xuống $0{,}545$ và
-macro F1 giảm nhẹ xuống $0{,}637$.
+\textbf{Mô hình cuối cùng} sử dụng hồi quy logistic Ridge
+($\lambda = 0{,}1$) kết hợp SMOTE ($k = 3$) trên 7 biến sau khi loại bỏ
+\texttt{Direct\_Bilirubin} do đa cộng tuyến, cùng
+\texttt{Gender} và \texttt{Total\_Protiens} do không còn ý nghĩa thống kê sau
+hiệu chỉnh FDR. Ngưỡng phân loại $0{,}350$ được lựa chọn dựa trên các dự đoán
+out-of-fold nhằm cân bằng giữa số ca bệnh bị bỏ sót và số trường hợp báo
+động nhầm. Trên tập kiểm tra, mô hình bỏ sót 21 ca bệnh và báo động nhầm 15
+người khỏe (so với 32 và 5 ở ngưỡng mặc định), đổi lại độ đặc hiệu giảm từ
+$0{,}848$ xuống $0{,}545$ và macro F1 giảm nhẹ xuống $0{,}637$.
 
-\subsection{Hạn chế}
+\textbf{Hạn chế.} Hiệu năng của mô hình vẫn còn khiêm tốn: còn bỏ sót
+21/83 bệnh nhân, báo động nhầm 15/33 người khỏe và precision của lớp không
+bệnh chỉ đạt $0{,}462$. Khoảng tin cậy bootstrap trong báo cáo chỉ phản ánh
+độ bất định do lấy mẫu lại tập kiểm tra, chưa bao gồm biến thiên do thay đổi
+tập huấn luyện hoặc huấn luyện lại mô hình. Ngoài ra, bộ dữ liệu chỉ gồm 583
+quan sát và được thu thập tại một khu vực duy nhất ở đông bắc bang Andhra
+Pradesh (Ấn Độ), nên khả năng khái quát hóa còn hạn chế. Cặp biến
+\texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} cũng vẫn tồn tại
+đa cộng tuyến về mặt định nghĩa; điều chuẩn Ridge chỉ làm giảm chứ không loại
+bỏ hoàn toàn ảnh hưởng này, vì vậy không nên diễn giải các hệ số hồi quy như
+mức độ quan trọng của từng biến.
 
-\begin{enumerate}
-  \item Hiệu năng tuyệt đối còn thấp: bỏ sót 21/83 bệnh nhân, báo nhầm
-        15/33 người khoẻ; precision lớp không bệnh chỉ $0{,}462$.
-  \item Khoảng tin cậy bootstrap chỉ phản ánh biến thiên do lấy mẫu tập
-        kiểm tra, chưa tính biến thiên do thay đổi tập huấn luyện, nên độ
-        bất định thực tế rộng hơn con số đã công bố.
-  \item Cỡ mẫu nhỏ (583 quan sát, 116 dùng để kiểm tra) khiến khoảng tin
-        cậy rộng và nhiều so sánh không đạt mức phân biệt thống kê.
-  \item Dữ liệu chỉ thu thập tại một vùng địa lý duy nhất (đông bắc bang
-        Andhra Pradesh, Ấn Độ), nên kết quả chưa chắc tổng quát hoá được.
-  \item \texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio} vẫn đa
-        cộng tuyến về định nghĩa; Ridge làm giảm nhưng không loại bỏ hoàn
-        toàn ảnh hưởng này, nên các hệ số riêng lẻ không nên được diễn giải
-        như mức độ quan trọng của từng biến.
-\end{enumerate}
-
-\subsection{Hướng mở rộng}
-
-Ba hướng ưu tiên: huấn luyện lại mô hình trong từng vòng bootstrap để
-khoảng tin cậy bao quát cả biến thiên huấn luyện; lặp lại kiểm định chéo
-với nhiều cách chia để kiểm tra độ ổn định của kết luận về 9 cấu hình; và
-mở rộng sang các mô hình phi tuyến (random forest, gradient boosting) có
-khả năng nắm bắt tương tác giữa các chỉ số men gan.
+\textbf{Hướng phát triển.} Trong tương lai, có thể huấn luyện lại mô hình ở
+mỗi vòng bootstrap để khoảng tin cậy phản ánh cả biến thiên do quá trình
+huấn luyện; lặp lại kiểm định chéo với nhiều cách chia dữ liệu nhằm đánh giá
+độ ổn định của kết quả lựa chọn siêu tham số; đồng thời mở rộng sang các mô
+hình phi tuyến như Random Forest hoặc Gradient Boosting để khai thác tốt hơn
+các mối quan hệ phi tuyến giữa các chỉ số sinh hóa.
 
 \clearpage
 \section*{Tài liệu tham khảo}
@@ -1641,23 +1635,13 @@ khả năng nắm bắt tương tác giữa các chỉ số men gan.
   \item Chawla, N. V., Bowyer, K. W., Hall, L. O., \& Kegelmeyer, W. P.
         (2002). SMOTE: Synthetic Minority Over-sampling Technique.
         \emph{Journal of Artificial Intelligence Research}, 16, 321--357.
-  \item Efron, B. (1979). Bootstrap Methods: Another Look at the
-        Jackknife. \emph{The Annals of Statistics}, 7(1), 1--26.
-  \item Efron, B., \& Tibshirani, R. J. (1993). \emph{An Introduction to
-        the Bootstrap}. Chapman \& Hall.
-  \item Hastie, T., Tibshirani, R., \& Friedman, J. (2009). \emph{The
-        Elements of Statistical Learning} (2nd ed.). Springer.
+  \item Efron, B., \& Tibshirani, R. J. (2000). An introduction to the
+        bootstrap (pp. p-436). Boca Raton, Florida.
+  \item Kohavi, R. (1995, August). A study of cross-validation and bootstrap 
+        for accuracy estimation and model selection. In Ijcai (Vol. 14, No. 2, pp. 1137-1145).
   \item Hoerl, A. E., \& Kennard, R. W. (1970). Ridge Regression: Biased
         Estimation for Nonorthogonal Problems. \emph{Technometrics},
         12(1), 55--67.
-  \item James, G., Witten, D., Hastie, T., \& Tibshirani, R. (2013).
-        \emph{An Introduction to Statistical Learning}. Springer.
-  \item Kohavi, R. (1995). A Study of Cross-Validation and Bootstrap for
-        Accuracy Estimation and Model Selection. \emph{Proceedings of
-        IJCAI}, 1137--1143.
-  \item R Core Team (2026). \emph{R: A Language and Environment for
-        Statistical Computing} (version 4.6.1). R Foundation for
-        Statistical Computing, Vienna, Austria.
   \item Ramana, B., \& Venkateswarlu, N. (2022). ILPD (Indian Liver
         Patient Dataset) [Dataset]. UCI Machine Learning Repository.
         \url{https://doi.org/10.24432/C5D02C}
