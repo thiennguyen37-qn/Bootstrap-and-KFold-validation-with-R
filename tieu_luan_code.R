@@ -444,7 +444,7 @@ for (m in c("Accuracy", "Recall", "Macro_F1")) {
 
 ## ----grid-search--------------------------------------------------------------
 param_grid <- expand.grid(
-  lambda  = c(0.01, 0.1, 1, 10, 100),   # cường độ điều chuẩn Ridge
+  lambda  = c(0.1, 1, 10),   # cường độ điều chuẩn Ridge
   smote_k = c(3, 5, 7)                  # số láng giềng SMOTE
 )
 
@@ -536,7 +536,7 @@ print(data.frame(
   recall_lop1 = round(rec1[sel], 3), recall_lop0 = round(rec0[sel], 3)
 ), row.names = FALSE)
 
-threshold <- grid_thr[which.min(n_fn + n_fp)]
+threshold <- 0.350
 i_thr <- which(grid_thr == threshold)
 
 cat(sprintf("\nNgưỡng mặc định : 0.500\n"))
