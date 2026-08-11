@@ -6,6 +6,13 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
 options(width = 72)
 set.seed(42)
 
+if (!interactive()) {
+  grDevices::cairo_pdf("Rplots.pdf", width = 8, height = 6, onefile = TRUE)
+  on.exit({
+    if (grDevices::dev.cur() > 1) grDevices::dev.off()
+  }, add = TRUE)
+}
+
 
 ## ----load-data----------------------------------------------------------------
 col_names <- c(
