@@ -8,6 +8,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{placeins}     % \FloatBarrier: chặn hình trôi qua mục khác
+\usepackage{needspace}
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{microtype}
@@ -1633,9 +1634,9 @@ các mối quan hệ phi tuyến giữa các chỉ số sinh hóa.
 knitr::opts_chunk$set(eval = TRUE)
 @
 
-\section{Thiết kế quy trình xây dựng mô hình}
+\section{Thiết kế và lựa chọn mô hình}
 
-\subsection{Tập biến sử dụng}
+\Needspace{4\baselineskip}\noindent\textbf{Tập biến sử dụng}\par\smallskip
 
 Sau bước phân tích khám phá, mô hình sử dụng bảy biến: \texttt{Age},
 \texttt{Total\_Bilirubin}, \texttt{Alkaline\_Phosphotase},
@@ -1696,7 +1697,7 @@ metric_order <- c("accuracy", "recall1", "precision1",
 m_final <- unlist(final_metrics[1, metric_order], use.names = TRUE)
 @
 
-\subsection{Chia dữ liệu và phòng ngừa rò rỉ}
+\Needspace{4\baselineskip}\medskip\noindent\textbf{Chia dữ liệu và phòng ngừa rò rỉ}\par\smallskip
 \label{sec:pipeline}
 
 Dữ liệu được chia phân tầng theo tỷ lệ 80:20, gồm 466 quan sát huấn luyện và
@@ -1709,7 +1710,7 @@ tham số tiền xử lý chỉ được ước lượng từ phần huấn luy�
 SMOTE cũng chỉ được áp dụng sau khi chia fold, do đó mẫu tổng hợp không chứa
 thông tin từ phần xác thực hoặc tập kiểm tra.
 
-\subsection{Mô hình và chỉ số đánh giá}
+\Needspace{4\baselineskip}\medskip\noindent\textbf{Mô hình và chỉ số đánh giá}\par\smallskip
 
 Mô hình được sử dụng là hồi quy logistic có điều chuẩn, kết hợp với SMOTE để
 giảm ảnh hưởng của chênh lệch số lượng giữa hai lớp. Đây là mô hình tương đối
@@ -1722,7 +1723,7 @@ diện từng lớp. Báo cáo vì vậy sử dụng recall và precision cho c�
 chọn mô hình. Macro F1 cho hai lớp trọng số ngang nhau nên hạn chế việc một
 lớp đông hơn chi phối hoàn toàn kết quả.
 
-\section{Lựa chọn mô hình bằng kiểm định chéo}
+\Needspace{4\baselineskip}\medskip\noindent\textbf{Lựa chọn mô hình bằng kiểm định chéo}\par\smallskip
 
 Mô hình được lựa chọn hoàn toàn từ tập huấn luyện bằng kiểm định chéo phân
 tầng 5 fold. Ở mỗi lượt, bốn fold được dùng để huấn luyện và fold còn lại
@@ -1759,6 +1760,19 @@ kbl_tab(grid_tbl,
 \section{Lựa chọn ngưỡng phân loại}
 \label{sec:threshold-new}
 
+Việc khảo sát ngưỡng tập trung trước hết vào recall của lớp có bệnh. Chỉ số
+này là tỷ lệ ca bệnh được phát hiện trên tổng số ca bệnh thực tế, nên phản ánh
+trực tiếp mức độ bỏ sót bệnh nhân. Trong bối cảnh hỗ trợ sàng lọc, âm tính giả
+cần được ưu tiên kiểm soát vì có thể khiến một ca bệnh không được xem xét kịp
+thời; trong khi cảnh báo nhầm vẫn có thể được kiểm tra lại bằng các bước xác
+nhận tiếp theo. Accuracy không thể hiện riêng loại sai sót này.
+
+Recall lớp có bệnh không được tối đa hóa một cách độc lập. Nếu hạ ngưỡng quá
+thấp, mô hình có thể báo bệnh cho gần như mọi quan sát và mất khả năng nhận
+diện người không bệnh. Vì vậy, recall lớp không bệnh được theo dõi song song;
+ngưỡng cao nhất còn đáp ứng recall mục tiêu được chọn để vừa giảm bỏ sót, vừa
+hạn chế số cảnh báo nhầm tăng thêm.
+
 Sau khi chọn mô hình, xác suất out-of-fold của tập huấn luyện được tạo
 bằng cùng kiểm định chéo 5 fold. Ngưỡng không được dò trên tập kiểm tra. Với
 mục tiêu phát hiện ít nhất 70\% ca bệnh trên dự đoán out-of-fold, quy tắc lựa
@@ -1781,7 +1795,7 @@ kbl_tab(threshold_tbl,
        col.names = c("Recall mục tiêu", "Ngưỡng", "Recall lớp 1", "Recall lớp 0"))
 @
 
-<<ref-threshold-plot, echo=FALSE, fig.width=6.8, fig.height=4.8, fig.cap="Đánh đổi giữa recall của hai lớp theo ngưỡng phân loại">>=
+<<ref-threshold-plot, echo=FALSE, fig.pos="H", fig.width=6.8, fig.height=4.8, fig.cap="Đánh đổi giữa recall của hai lớp theo ngưỡng phân loại">>=
 op <- par(mar = c(7, 4, 4, 2) + 0.1)
 plot(threshold_curve$threshold, threshold_curve$recall1,
      type = "l", col = "#d53e4f", lwd = 2, ylim = c(0, 1),

@@ -58,6 +58,7 @@
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{placeins}     % \FloatBarrier: chặn hình trôi qua mục khác
+\usepackage{needspace}
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{microtype}
@@ -860,8 +861,8 @@ albumin/globulin.
 
 \subsection{Lựa chọn đặc trưng}
 
-Mục tiêu của bước này là xác định những đặc trưng có mối liên hệ với biến mục tiêu - tức tình trạng 
-mắc bệnh gan. Quá trình thực hiện kiểm định giả thuyết được xem như một bước sàng lọc ban đầu 
+Mục tiêu của bước này là xác định những đặc trưng có mối liên hệ với biến mục tiêu - tức tình trạng
+mắc bệnh gan. Quá trình thực hiện kiểm định giả thuyết được xem như một bước sàng lọc ban đầu
 nhằm loại bỏ các biến không có bằng chứng thống kê về mối liên hệ với biến mục tiêu.
 Ta tiến hành kiểm định với cặp giả thuyết sau:
 
@@ -1250,9 +1251,9 @@ Cách thực hiện được giữ nhất quán với mục tiêu trên. Mô hì
 một lần trên tập huấn luyện của phép chia 80:20, sau đó dự đoán trên tập
 kiểm tra. Trong các vòng bootstrap, mô hình không được huấn luyện lại; chỉ
 các cặp gồm nhãn thực tế và nhãn dự đoán trên tập kiểm tra được lấy mẫu lại
-có hoàn lại. Vì mô hình chỉ được huấn luyện một lần, khoảng tin cậy bootstrap 
-chỉ phản ánh mức độ thay đổi của recall khi thành phần của tập kiểm tra thay đổi. 
-Nó không phản ánh sự thay đổi của recall nếu mô hình được huấn luyện lại 
+có hoàn lại. Vì mô hình chỉ được huấn luyện một lần, khoảng tin cậy bootstrap
+chỉ phản ánh mức độ thay đổi của recall khi thành phần của tập kiểm tra thay đổi.
+Nó không phản ánh sự thay đổi của recall nếu mô hình được huấn luyện lại
 trên một tập huấn luyện khác.
 
 \begin{knitrout}\scriptsize
@@ -1449,7 +1450,7 @@ $k_{\text{SMOTE}}=7$ đạt macro F1 trung bình cao nhất, bằng $0{,}6407$.
 Tuy nhiên, chênh lệch macro F1 giữa năm cấu hình dẫn đầu chỉ khoảng $0{,}002$,
 trong khi độ lệch chuẩn giữa các fold đều xấp xỉ $0{,}03$. Điều này cho thấy
 sự khác biệt về hiệu năng giữa các cấu hình là rất nhỏ và khó có thể xem là
-đáng kể. 
+đáng kể.
 
 \begin{knitrout}\scriptsize
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1759,9 +1760,9 @@ các mối quan hệ phi tuyến giữa các chỉ số sinh hóa.
 
 
 
-\section{Thiết kế quy trình xây dựng mô hình}
+\section{Thiết kế và lựa chọn mô hình}
 
-\subsection{Tập biến sử dụng}
+\Needspace{4\baselineskip}\noindent\textbf{Tập biến sử dụng}\par\smallskip
 
 Sau bước phân tích khám phá, mô hình sử dụng bảy biến: \texttt{Age},
 \texttt{Total\_Bilirubin}, \texttt{Alkaline\_Phosphotase},
@@ -1773,7 +1774,7 @@ phân phối lệch phải được biến đổi $\log(1+x)$. Ba biến
 
 
 
-\subsection{Chia dữ liệu và phòng ngừa rò rỉ}
+\Needspace{4\baselineskip}\medskip\noindent\textbf{Chia dữ liệu và phòng ngừa rò rỉ}\par\smallskip
 \label{sec:pipeline}
 
 Dữ liệu được chia phân tầng theo tỷ lệ 80:20, gồm 466 quan sát huấn luyện và
@@ -1786,7 +1787,7 @@ tham số tiền xử lý chỉ được ước lượng từ phần huấn luy�
 SMOTE cũng chỉ được áp dụng sau khi chia fold, do đó mẫu tổng hợp không chứa
 thông tin từ phần xác thực hoặc tập kiểm tra.
 
-\subsection{Mô hình và chỉ số đánh giá}
+\Needspace{4\baselineskip}\medskip\noindent\textbf{Mô hình và chỉ số đánh giá}\par\smallskip
 
 Mô hình được sử dụng là hồi quy logistic có điều chuẩn, kết hợp với SMOTE để
 giảm ảnh hưởng của chênh lệch số lượng giữa hai lớp. Đây là mô hình tương đối
@@ -1799,7 +1800,7 @@ diện từng lớp. Báo cáo vì vậy sử dụng recall và precision cho c�
 chọn mô hình. Macro F1 cho hai lớp trọng số ngang nhau nên hạn chế việc một
 lớp đông hơn chi phối hoàn toàn kết quả.
 
-\section{Lựa chọn mô hình bằng kiểm định chéo}
+\Needspace{4\baselineskip}\medskip\noindent\textbf{Lựa chọn mô hình bằng kiểm định chéo}\par\smallskip
 
 Mô hình được lựa chọn hoàn toàn từ tập huấn luyện bằng kiểm định chéo phân
 tầng 5 fold. Ở mỗi lượt, bốn fold được dùng để huấn luyện và fold còn lại
@@ -1819,6 +1820,19 @@ trình lựa chọn mô hình.
 
 \section{Lựa chọn ngưỡng phân loại}
 \label{sec:threshold-new}
+
+Việc khảo sát ngưỡng tập trung trước hết vào recall của lớp có bệnh. Chỉ số
+này là tỷ lệ ca bệnh được phát hiện trên tổng số ca bệnh thực tế, nên phản ánh
+trực tiếp mức độ bỏ sót bệnh nhân. Trong bối cảnh hỗ trợ sàng lọc, âm tính giả
+cần được ưu tiên kiểm soát vì có thể khiến một ca bệnh không được xem xét kịp
+thời; trong khi cảnh báo nhầm vẫn có thể được kiểm tra lại bằng các bước xác
+nhận tiếp theo. Accuracy không thể hiện riêng loại sai sót này.
+
+Recall lớp có bệnh không được tối đa hóa một cách độc lập. Nếu hạ ngưỡng quá
+thấp, mô hình có thể báo bệnh cho gần như mọi quan sát và mất khả năng nhận
+diện người không bệnh. Vì vậy, recall lớp không bệnh được theo dõi song song;
+ngưỡng cao nhất còn đáp ứng recall mục tiêu được chọn để vừa giảm bỏ sót, vừa
+hạn chế số cảnh báo nhầm tăng thêm.
 
 Sau khi chọn mô hình, xác suất out-of-fold của tập huấn luyện được tạo
 bằng cùng kiểm định chéo 5 fold. Ngưỡng không được dò trên tập kiểm tra. Với
@@ -1852,7 +1866,7 @@ Recall mục tiêu & Ngưỡng & Recall lớp 1 & Recall lớp 0\\
 
 
 \begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
 
 {\centering \includegraphics[width=\maxwidth]{figure/tl-ref-threshold-plot-1}
 
@@ -2067,7 +2081,7 @@ tiêu chí đánh giá để kết quả so sánh có ý nghĩa.
         \emph{Journal of Artificial Intelligence Research}, 16, 321--357.
   \item Efron, B., \& Tibshirani, R. J. (2000). An introduction to the
         bootstrap (pp. p-436). Boca Raton, Florida.
-  \item Kohavi, R. (1995, August). A study of cross-validation and bootstrap 
+  \item Kohavi, R. (1995, August). A study of cross-validation and bootstrap
         for accuracy estimation and model selection. In Ijcai (Vol. 14, No. 2, pp. 1137-1145).
   \item Hoerl, A. E., \& Kennard, R. W. (1970). Ridge Regression: Biased
         Estimation for Nonorthogonal Problems. \emph{Technometrics},
