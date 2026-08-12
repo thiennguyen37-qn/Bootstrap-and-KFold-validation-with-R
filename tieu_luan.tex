@@ -951,6 +951,9 @@ nhóm chỉ số bilirubin và men gan có kích thước ảnh hưởng lớn n
 (effect size khoảng $0{,}35$--$0{,}39$), cho thấy khả năng phân biệt tốt giữa
 hai nhóm bệnh.
 
+
+\iffalse
+
 \section{Thiết kế quy trình xây dựng mô hình}
 
 \subsection{Tập biến đưa vào mô hình}
@@ -1261,11 +1264,7 @@ trên một tập huấn luyện khác.
 \hldef{X_test}  \hlkwb{<-} \hldef{X_all[sp}\hlopt{$}\hldef{test,  ,} \hlkwc{drop} \hldef{=} \hlnum{FALSE}\hldef{]; y_test}  \hlkwb{<-} \hldef{y_all[sp}\hlopt{$}\hldef{test]}
 
 \hlkwd{cat}\hldef{(}\hlsng{"Train:"}\hldef{,} \hlkwd{nrow}\hldef{(X_train),} \hlsng{"mẫu | Test:"}\hldef{,} \hlkwd{nrow}\hldef{(X_test),} \hlsng{"mẫu\textbackslash{}n"}\hldef{)}
-\end{alltt}
-\begin{verbatim}
-## Train: 467 mẫu | Test: 116 mẫu
-\end{verbatim}
-\begin{alltt}
+
 \hlcom{# Huấn luyện MỘT lần, dự đoán MỘT lần}
 \hldef{fit_80} \hlkwb{<-} \hlkwd{fit_pipeline}\hldef{(X_train, y_train,} \hlkwc{lambda} \hldef{=} \hlnum{1}\hldef{,} \hlkwc{smote_k} \hldef{=} \hlnum{5}\hldef{)}
 \hldef{proba_test} \hlkwb{<-} \hlkwd{pipeline_proba}\hldef{(fit_80, X_test)}
@@ -1300,43 +1299,15 @@ trên một tập huấn luyện khác.
 \hldef{ci} \hlkwb{<-} \hlkwd{quantile}\hldef{(recalls,} \hlkwd{c}\hldef{(tail_pct,} \hlnum{1} \hlopt{-} \hldef{tail_pct))}
 
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Recall lớp có bệnh   = %.3f\textbackslash{}n"}\hldef{, recall_point))}
-\end{alltt}
-\begin{verbatim}
-## Recall lớp có bệnh   = 0.614
-\end{verbatim}
-\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Khoảng tin cậy %.0f%%   = [%.3f, %.3f]\textbackslash{}n"}\hldef{,}
             \hldef{CONF} \hlopt{*} \hlnum{100}\hldef{, ci[}\hlnum{1}\hldef{], ci[}\hlnum{2}\hldef{]))}
-\end{alltt}
-\begin{verbatim}
-## Khoảng tin cậy 95%   = [0.511, 0.718]
-\end{verbatim}
-\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Bề rộng khoảng       = %.3f\textbackslash{}n"}\hldef{, ci[}\hlnum{2}\hldef{]} \hlopt{-} \hldef{ci[}\hlnum{1}\hldef{]))}
-\end{alltt}
-\begin{verbatim}
-## Bề rộng khoảng       = 0.207
-\end{verbatim}
-\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Sai số chuẩn         = %.3f\textbackslash{}n"}\hldef{,} \hlkwd{sd}\hldef{(recalls)))}
 \end{alltt}
-\begin{verbatim}
-## Sai số chuẩn         = 0.054
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
 
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
 
-{\centering \includegraphics[width=\maxwidth]{figure/tl-boot-hist-1} 
-
-}
-
-\caption[Phân phối bootstrap của recall lớp có bệnh]{Phân phối bootstrap của recall lớp có bệnh}\label{fig:boot-hist}
-\end{figure}
-
-\end{knitrout}
 
 Với ngưỡng phân loại mặc định $0{,}5$, recall của lớp có bệnh đạt $0{,}614$.
 Khoảng tin cậy bootstrap 95\% là $[0{,}511;\ 0{,}718]$, có bề rộng $0{,}207$.
@@ -1390,25 +1361,6 @@ kết quả trở nên hợp lý hơn.
 \end{kframe}
 \end{knitrout}
 
-\begin{table}[H]
-\centering
-\caption{Kết quả kiểm định chéo 5 fold cho mô hình nền}
-\label{tab:kfold}
-\shrinktofit{%
-
-\begin{tabular}{rrrrrr}
-\toprule
-Fold & n train & n test & Accuracy & Recall & Macro F1\\
-\midrule
-1 & 465 & 118 & 0.6186 & 0.5238 & 0.6124\\
-2 & 466 & 117 & 0.6923 & 0.6386 & 0.6776\\
-3 & 467 & 116 & 0.6466 & 0.6145 & 0.6263\\
-4 & 467 & 116 & 0.6466 & 0.6265 & 0.6230\\
-5 & 467 & 116 & 0.6897 & 0.6265 & 0.6758\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
 
 
 \begin{knitrout}\scriptsize
@@ -1419,11 +1371,6 @@ Fold & n train & n test & Accuracy & Recall & Macro F1\\
               \hldef{m,} \hlkwd{mean}\hldef{(cv_results[[m]]),} \hlkwd{sd}\hldef{(cv_results[[m]])))}
 \hldef{\}}
 \end{alltt}
-\begin{verbatim}
-##   Accuracy  = 0.659 +/- 0.032
-##   Recall    = 0.606 +/- 0.047
-##   Macro_F1  = 0.643 +/- 0.031
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
 
@@ -1496,25 +1443,6 @@ hình mất khả năng phân biệt giữa hai lớp. Macro F1 phù hợp hơn 
 \end{kframe}
 \end{knitrout}
 
-\begin{table}[H]
-\centering
-\caption{Năm cấu hình siêu tham số có macro F1 cao nhất (kiểm định chéo 5 fold)}
-\label{tab:grid-search-top5}
-\shrinktofit{%
-
-\begin{tabular}{rrrr}
-\toprule
-Lambda & SMOTE k & Macro F1 & SD giữa fold\\
-\midrule
-1.0 & 7 & 0.6407 & 0.0314\\
-10.0 & 7 & 0.6399 & 0.0294\\
-0.1 & 3 & 0.6397 & 0.0243\\
-0.1 & 7 & 0.6388 & 0.0301\\
-10.0 & 5 & 0.6387 & 0.0285\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
 
 
 Trong các cấu hình được khảo sát, cấu hình $\lambda=1$ và
@@ -1539,32 +1467,13 @@ sự khác biệt về hiệu năng giữa các cấu hình là rất nhỏ và 
 \hldef{best} \hlkwb{<-} \hldef{param_grid[best_idx, ]}
 
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"\textbackslash{}nSai số chuẩn của trung bình 5 fold: %.4f\textbackslash{}n"}\hldef{, se_top))}
-\end{alltt}
-\begin{verbatim}
-## 
-## Sai số chuẩn của trung bình 5 fold: 0.0141
-\end{verbatim}
-\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Số cấu hình tương đương: %d/%d\textbackslash{}n"}\hldef{,}
             \hlkwd{length}\hldef{(tied),} \hlkwd{nrow}\hldef{(param_grid)))}
-\end{alltt}
-\begin{verbatim}
-## Số cấu hình tương đương: 9/9
-\end{verbatim}
-\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Cấu hình được chọn: lambda = %g, smote_k = %g (macro F1 = %.4f)\textbackslash{}n"}\hldef{,}
             \hldef{best}\hlopt{$}\hldef{lambda, best}\hlopt{$}\hldef{smote_k, best}\hlopt{$}\hldef{macro_f1))}
-\end{alltt}
-\begin{verbatim}
-## Cấu hình được chọn: lambda = 0.1, smote_k = 3 (macro F1 = 0.6397)
-\end{verbatim}
-\begin{alltt}
 \hlkwd{cat}\hldef{(}\hlkwd{sprintf}\hldef{(}\hlsng{"Đã thử %d cấu hình x 5 fold = %d lần khớp mô hình\textbackslash{}n"}\hldef{,}
             \hlkwd{nrow}\hldef{(param_grid),} \hlkwd{nrow}\hldef{(param_grid)} \hlopt{*} \hlnum{5}\hldef{))}
 \end{alltt}
-\begin{verbatim}
-## Đã thử 9 cấu hình x 5 fold = 45 lần khớp mô hình
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
 
@@ -1638,15 +1547,7 @@ việc lựa chọn ngưỡng vẫn bảo đảm tính khách quan.
        \hlkwc{col} \hldef{=} \hlkwd{c}\hldef{(}\hlsng{"#d53e4f"}\hldef{,} \hlsng{"#3288bd"}\hldef{,} \hlsng{"gray50"}\hldef{),} \hlkwc{lty} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{1}\hldef{,} \hlnum{1}\hldef{,} \hlnum{3}\hldef{),}
        \hlkwc{horiz} \hldef{=} \hlnum{TRUE}\hldef{,} \hlkwc{xpd} \hldef{=} \hlnum{NA}\hldef{,} \hlkwc{seg.len} \hldef{=} \hlnum{1.8}\hldef{,} \hlkwc{x.intersp} \hldef{=} \hlnum{0.7}\hldef{)}
 \end{alltt}
-\end{kframe}\begin{figure}[ht]
-
-{\centering \includegraphics[width=\maxwidth]{figure/tl-threshold-plot-1} 
-
-}
-
-\caption[Đánh đổi giữa độ nhạy và độ đặc hiệu khi thay đổi ngưỡng phân loại]{Đánh đổi giữa độ nhạy và độ đặc hiệu khi thay đổi ngưỡng phân loại}\label{fig:threshold-plot}
-\end{figure}
-
+\end{kframe}
 \end{knitrout}
 
 
@@ -1684,28 +1585,6 @@ $0{,}05$.
 \end{kframe}
 \end{knitrout}
 
-\begin{table}[H]
-\centering
-\caption{Các chỉ số trên out-of-fold theo ngưỡng, bước nhảy 0,05 từ 0,50 xuống 0,20}
-\label{tab:threshold-coarse}
-\shrinktofit{%
-
-\begin{tabular}{rrrrrrrrr}
-\toprule
-Ngưỡng & FN & FP & Accuracy & Recall 1 & Precision 1 & Recall 0 & Precision 0 & Macro F1\\
-\midrule
-0.50 & 129 & 31 & 0.657 & 0.613 & 0.868 & 0.769 & 0.444 & 0.641\\
-0.45 & 111 & 40 & 0.677 & 0.667 & 0.847 & 0.701 & 0.459 & 0.650\\
-0.40 & 90 & 51 & 0.698 & 0.730 & 0.827 & 0.619 & 0.480 & 0.658\\
-0.35 & 66 & 63 & 0.724 & 0.802 & 0.809 & 0.530 & 0.518 & 0.665\\
-0.30 & 38 & 94 & 0.717 & 0.886 & 0.758 & 0.299 & 0.513 & 0.597\\
-\addlinespace
-0.25 & 21 & 116 & 0.707 & 0.937 & 0.729 & 0.134 & 0.462 & 0.514\\
-0.20 & 12 & 127 & 0.702 & 0.964 & 0.717 & 0.052 & 0.368 & 0.457\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
 
 
 Bảng~\ref{tab:threshold-coarse} cho thấy khi giảm ngưỡng phân loại, mô hình phát hiện
@@ -1738,36 +1617,9 @@ sau đó áp dụng ngưỡng phân loại $0{,}350$.
                            \hlkwd{sprintf}\hldef{(}\hlsng{"MA TRAN NHAM LAN (nguong %.3f)"}\hldef{,}
                                    \hldef{threshold))}
 \end{alltt}
-\begin{verbatim}
-## 
-## MA TRAN NHAM LAN (nguong 0.350)
-##             Dự đoán
-## Thực tế  Không bệnh Có bệnh
-##   Không bệnh         18      15
-##   Có bệnh            21      62
-##   TN =  18   không bệnh, dự đoán đúng
-##   FP =  15   không bệnh, dự đoán nhầm là có bệnh
-##   FN =  21   có bệnh, bị bỏ sót
-##   TP =  62   có bệnh, phát hiện được
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
 
-\begin{table}[H]
-\centering
-\caption{Các chỉ số trên tập kiểm tra với ngưỡng đã chọn}
-\label{tab:final-metrics}
-\shrinktofit{%
-
-\begin{tabular}{rrrrrr}
-\toprule
-Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
-\midrule
-0.69 & 0.747 & 0.805 & 0.545 & 0.462 & 0.637\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
 
 
 \begin{knitrout}\scriptsize
@@ -1783,35 +1635,9 @@ Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp
 \end{kframe}
 \end{knitrout}
 
-\begin{table}[H]
-\centering
-\caption{So sánh các chỉ số giữa ngưỡng mặc định và ngưỡng đã chọn}
-\label{tab:final-tradeoff}
-\shrinktofit{%
-
-\begin{tabular}{lrrrrrr}
-\toprule
-Ngưỡng & Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
-\midrule
-0.500 (mặc định) & 0.681 & 0.614 & 0.911 & 0.848 & 0.467 & 0.668\\
-đã chỉnh & 0.690 & 0.747 & 0.805 & 0.545 & 0.462 & 0.637\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
 
 
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
 
-{\centering \includegraphics[width=\maxwidth]{figure/tl-confusion-viz-1} 
-
-}
-
-\caption[Ma trận nhầm lẫn trên tập kiểm tra]{Ma trận nhầm lẫn trên tập kiểm tra: ngưỡng mặc định so với ngưỡng đã chọn}\label{fig:confusion-viz}
-\end{figure}
-
-\end{knitrout}
 
 Hình~\ref{fig:confusion-viz} trực quan hoá hai ma trận nhầm lẫn cùng lúc,
 với sắc độ đậm nhạt của ô phản ánh số lượng quan sát rơi vào ô đó. So với
@@ -1868,27 +1694,6 @@ giá.
 \end{kframe}
 \end{knitrout}
 
-\begin{table}[H]
-\centering
-\caption{Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra}
-\label{tab:bootstrap-ci}
-\shrinktofit{%
-
-\begin{tabular}{lrrrr}
-\toprule
-Chỉ số & Ước lượng điểm & Cận dưới & Cận trên & Sai số chuẩn\\
-\midrule
-accuracy & 0.6897 & 0.6034 & 0.7759 & 0.0433\\
-recall1 & 0.7470 & 0.6493 & 0.8391 & 0.0482\\
-precision1 & 0.8052 & 0.7125 & 0.8902 & 0.0456\\
-recall0 & 0.5455 & 0.3750 & 0.7143 & 0.0878\\
-precision0 & 0.4615 & 0.3056 & 0.6216 & 0.0806\\
-\addlinespace
-macro\_f1 & 0.6375 & 0.5423 & 0.7276 & 0.0478\\
-\bottomrule
-\end{tabular}
-}
-\end{table}
 
 
 Recall của lớp có bệnh đạt $0{,}747$, với khoảng tin cậy bootstrap 95\%
@@ -1901,17 +1706,7 @@ $0{,}088$, do chỉ dựa trên 33 người khoẻ trong tập kiểm tra; preci
 lớp không bệnh cũng có khoảng tin cậy rộng tương tự, $[0{,}306;\ 0{,}622]$,
 sai số chuẩn $0{,}081$, vì chỉ dựa trên 39 dự đoán âm tính.
 
-\begin{knitrout}\scriptsize
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
 
-{\centering \includegraphics[width=\maxwidth]{figure/tl-forest-plot-1} 
-
-}
-
-\caption[Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra]{Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra}\label{fig:forest-plot}
-\end{figure}
-
-\end{knitrout}
 
 \section{Kết luận}
 
@@ -1960,6 +1755,304 @@ huấn luyện; lặp lại kiểm định chéo với nhiều cách chia dữ l
 độ ổn định của kết quả lựa chọn siêu tham số; đồng thời mở rộng sang các mô
 hình phi tuyến như Random Forest hoặc Gradient Boosting để khai thác tốt hơn
 các mối quan hệ phi tuyến giữa các chỉ số sinh hóa.
+
+\fi
+
+
+
+\section{Thiết kế quy trình xây dựng mô hình}
+
+\subsection{Tập biến sử dụng}
+
+Sau bước phân tích khám phá, mô hình sử dụng bảy biến: \texttt{Age},
+\texttt{Total\_Bilirubin}, \texttt{Alkaline\_Phosphotase},
+\texttt{Alamine\_Aminotransferase}, \texttt{Aspartate\_Aminotransferase},
+\texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio}. Năm biến có
+phân phối lệch phải được biến đổi $\log(1+x)$. Ba biến
+\texttt{Direct\_Bilirubin}, \texttt{Gender} và \texttt{Total\_Protiens}
+được loại theo kết quả lựa chọn đặc trưng đã trình bày ở phần trước.
+
+
+
+\subsection{Chia dữ liệu và phòng ngừa rò rỉ}
+\label{sec:pipeline}
+
+Dữ liệu được chia phân tầng theo tỷ lệ 80:20, gồm 466 quan sát huấn luyện và
+117 quan sát kiểm tra; lớp có bệnh lần lượt có 333 và 83 quan sát. Tập kiểm
+tra được giữ nguyên cho đến bước đánh giá cuối cùng.
+
+Trong mỗi fold huấn luyện, quy trình lần lượt điền giá trị thiếu bằng trung
+vị, chuẩn hóa biến, cân bằng lớp bằng SMOTE và khớp hồi quy logistic. Mọi
+tham số tiền xử lý chỉ được ước lượng từ phần huấn luyện của fold tương ứng.
+SMOTE cũng chỉ được áp dụng sau khi chia fold, do đó mẫu tổng hợp không chứa
+thông tin từ phần xác thực hoặc tập kiểm tra.
+
+\subsection{Mô hình và chỉ số đánh giá}
+
+Mô hình được sử dụng là hồi quy logistic có điều chuẩn, kết hợp với SMOTE để
+giảm ảnh hưởng của chênh lệch số lượng giữa hai lớp. Đây là mô hình tương đối
+gọn, cho phép ước lượng xác suất mắc bệnh và thuận tiện cho việc điều chỉnh
+ngưỡng phân loại theo mục tiêu phát hiện ca bệnh.
+
+Do lớp có bệnh chiếm đa số, Accuracy không đủ để mô tả riêng khả năng nhận
+diện từng lớp. Báo cáo vì vậy sử dụng recall và precision cho cả lớp có bệnh
+(lớp 1) lẫn lớp không bệnh (lớp 0), đồng thời dùng Macro F1 làm tiêu chí lựa
+chọn mô hình. Macro F1 cho hai lớp trọng số ngang nhau nên hạn chế việc một
+lớp đông hơn chi phối hoàn toàn kết quả.
+
+\section{Lựa chọn mô hình bằng kiểm định chéo}
+
+Mô hình được lựa chọn hoàn toàn từ tập huấn luyện bằng kiểm định chéo phân
+tầng 5 fold. Ở mỗi lượt, bốn fold được dùng để huấn luyện và fold còn lại
+được dùng để đánh giá. Toàn bộ các bước điền khuyết, chuẩn hóa và SMOTE đều
+được thực hiện lại bên trong từng lượt, nhờ đó phần xác thực không tham gia
+vào quá trình học mô hình.
+
+Macro F1 trung bình được dùng làm tiêu chí lựa chọn vì phản ánh đồng thời
+khả năng nhận diện lớp có bệnh và lớp không bệnh. Phương án đạt kết quả tốt
+nhất trên năm fold sau đó được huấn luyện lại bằng toàn bộ tập huấn luyện.
+Tập kiểm tra vẫn được giữ riêng, nên kết quả cuối không bị tác động bởi quá
+trình lựa chọn mô hình.
+
+
+
+
+
+\section{Lựa chọn ngưỡng phân loại}
+\label{sec:threshold-new}
+
+Sau khi chọn mô hình, xác suất out-of-fold của tập huấn luyện được tạo
+bằng cùng kiểm định chéo 5 fold. Ngưỡng không được dò trên tập kiểm tra. Với
+mục tiêu phát hiện ít nhất 70\% ca bệnh trên dự đoán out-of-fold, quy tắc lựa
+chọn lấy ngưỡng cao nhất vẫn thỏa điều kiện recall. Cách làm này ưu tiên độ
+nhạy nhưng tránh hạ ngưỡng sâu hơn mức cần thiết.
+
+
+
+\begin{table}[H]
+\centering
+\caption{Ngưỡng cao nhất đáp ứng từng mức recall mục tiêu trên tập huấn luyện}
+\label{tab:ref-threshold-lookup}
+\shrinktofit{%
+
+\begin{tabular}{lrrr}
+\toprule
+Recall mục tiêu & Ngưỡng & Recall lớp 1 & Recall lớp 0\\
+\midrule
+70\% & 0.402 & 0.703 & 0.586\\
+75\% & 0.372 & 0.751 & 0.489\\
+80\% & 0.350 & 0.802 & 0.406\\
+85\% & 0.324 & 0.853 & 0.338\\
+90\% & 0.283 & 0.901 & 0.241\\
+\addlinespace
+95\% & 0.246 & 0.952 & 0.150\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
+
+{\centering \includegraphics[width=\maxwidth]{figure/tl-ref-threshold-plot-1}
+
+}
+
+\caption[Đánh đổi giữa recall của hai lớp theo ngưỡng phân loại]{Đánh đổi giữa recall của hai lớp theo ngưỡng phân loại}\label{fig:ref-threshold-plot}
+\end{figure}
+
+\end{knitrout}
+
+Ngưỡng được chọn là $0{,}402$. Trên dự đoán out-of-fold của tập huấn luyện,
+ngưỡng này cho recall lớp có bệnh $0{,}703$ và recall lớp không bệnh
+$0{,}586$. Bảng~\ref{tab:ref-threshold-lookup} cũng cho thấy nếu nâng mục tiêu
+recall từ 70\% lên 80\%, ngưỡng phải giảm còn khoảng $0{,}350$ và recall của
+lớp không bệnh giảm xuống $0{,}406$. Vì vậy, mức mục tiêu 70\% tạo ra điểm
+khởi đầu thận trọng hơn cho bài toán sàng lọc, thay vì đánh đổi quá mạnh độ
+đặc hiệu chỉ để tối đa hóa độ nhạy.
+
+\section{Đánh giá trên tập kiểm tra}
+
+Mô hình tốt nhất được huấn luyện lại trên toàn bộ 466 quan sát huấn luyện,
+sau đó đánh giá đúng một lần trên 117 quan sát kiểm tra. Ở ngưỡng $0{,}402$,
+ma trận nhầm lẫn gồm 24 trường hợp không bệnh được nhận diện đúng, 10 báo
+động nhầm, 14 ca bệnh bị bỏ sót và 69 ca bệnh được phát hiện.
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{verbatim}
+##             Dự đoán
+## Thực tế  Không bệnh Có bệnh
+##   Không bệnh         24      10
+##   Có bệnh            14      69
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+\begin{table}[H]
+\centering
+\caption{Các chỉ số trên tập kiểm tra với ngưỡng 0,402}
+\label{tab:ref-final-metrics}
+\shrinktofit{%
+
+\begin{tabular}{rrrrrr}
+\toprule
+Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
+\midrule
+0.795 & 0.831 & 0.873 & 0.706 & 0.632 & 0.759\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+
+
+\begin{table}[H]
+\centering
+\caption{So sánh ngưỡng mặc định và ngưỡng được chọn trên tập kiểm tra}
+\label{tab:ref-final-tradeoff}
+\shrinktofit{%
+
+\begin{tabular}{lrrrrrr}
+\toprule
+Ngưỡng & Accuracy & Recall lớp 1 & Precision lớp 1 & Recall lớp 0 & Precision lớp 0 & Macro F1\\
+\midrule
+0,500 (mặc định) & 0.769 & 0.747 & 0.912 & 0.824 & 0.571 & 0.748\\
+0,402 (đã chọn) & 0.795 & 0.831 & 0.873 & 0.706 & 0.632 & 0.759\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
+
+{\centering \includegraphics[width=\maxwidth]{figure/tl-ref-confusion-viz-1}
+
+}
+
+\caption[Ma trận nhầm lẫn trên tập kiểm tra ở hai ngưỡng phân loại]{Ma trận nhầm lẫn trên tập kiểm tra ở hai ngưỡng phân loại}\label{fig:ref-confusion-viz}
+\end{figure}
+
+\end{knitrout}
+
+So với ngưỡng mặc định, ngưỡng $0{,}402$ làm số âm tính giả giảm từ 21
+xuống 14, nghĩa là phát hiện thêm bảy ca bệnh. Số dương tính giả tăng từ 6
+lên 10, nhưng mức tăng này nhỏ hơn số dự đoán đúng thu hồi được ở lớp có
+bệnh. Do đó Accuracy tăng từ $0{,}769$ lên $0{,}795$ và Macro F1 tăng từ
+$0{,}748$ lên $0{,}759$, thay vì phải hy sinh hiệu năng tổng thể để đổi lấy
+độ nhạy.
+
+Recall của lớp có bệnh tăng từ $0{,}747$ lên $0{,}831$, trong khi recall của
+lớp không bệnh giảm từ $0{,}824$ xuống $0{,}706$. Precision lớp có bệnh vẫn
+ở mức cao, $0{,}873$, cho thấy phần lớn cảnh báo dương tính là đúng trong
+tập kiểm tra này. Đồng thời, precision của lớp không bệnh tăng từ $0{,}571$
+lên $0{,}632$ vì số ca bệnh bị xếp nhầm vào nhóm âm tính đã giảm rõ rệt. Như
+vậy, ngưỡng mới tạo ra một ma trận sai số cân đối hơn và phù hợp hơn với mục
+tiêu hạn chế bỏ sót ca bệnh.
+
+\section{Khoảng tin cậy Bootstrap}
+\label{sec:boot-new}
+
+Các chỉ số trên vẫn là ước lượng từ một tập kiểm tra hữu hạn. Báo cáo lấy mẫu
+lại có hoàn lại 2.000 lần từ các cặp nhãn thực tế và dự đoán cuối cùng, mỗi
+lần giữ nguyên cỡ mẫu 117. Mô hình không được huấn luyện lại trong từng vòng,
+do đó khoảng tin cậy phản ánh bất định do thành phần tập kiểm tra, không bao
+gồm biến thiên phát sinh khi thay đổi tập huấn luyện.
+
+
+
+\begin{table}[H]
+\centering
+\caption{Khoảng tin cậy bootstrap 95\% cho các chỉ số trên tập kiểm tra}
+\label{tab:ref-bootstrap-ci}
+\shrinktofit{%
+
+\begin{tabular}{lrrrr}
+\toprule
+Chỉ số & Ước lượng điểm & Cận dưới & Cận trên & Sai số chuẩn\\
+\midrule
+Accuracy & 0.7949 & 0.7179 & 0.8718 & 0.0378\\
+Recall lớp 1 & 0.8313 & 0.7439 & 0.9103 & 0.0420\\
+Precision lớp 1 & 0.8734 & 0.7949 & 0.9419 & 0.0377\\
+Recall lớp 0 & 0.7059 & 0.5455 & 0.8485 & 0.0780\\
+Precision lớp 0 & 0.6316 & 0.4857 & 0.7858 & 0.0784\\
+\addlinespace
+Macro F1 & 0.7593 & 0.6762 & 0.8403 & 0.0430\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[ht]
+
+{\centering \includegraphics[width=\maxwidth]{figure/tl-ref-boot-hist-1}
+
+}
+
+\caption[Phân phối bootstrap của recall lớp có bệnh]{Phân phối bootstrap của recall lớp có bệnh}\label{fig:ref-boot-hist}
+\end{figure}
+
+\end{knitrout}
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}[H]
+
+{\centering \includegraphics[width=\maxwidth]{figure/tl-ref-forest-plot-1}
+
+}
+
+\caption[Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra]{Khoảng tin cậy bootstrap 95\% cho sáu chỉ số trên tập kiểm tra}\label{fig:ref-forest-plot}
+\end{figure}
+
+\end{knitrout}
+
+Recall lớp có bệnh đạt $0{,}831$, với khoảng tin cậy bootstrap 95\%
+$[0{,}744;0{,}910]$. Accuracy và Macro F1 lần lượt có khoảng tin cậy
+$[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$. Kết quả cho thấy lợi thế của mô
+hình không chỉ nằm ở một giá trị điểm cao hơn: ngay cả cận dưới của recall
+lớp có bệnh cũng xấp xỉ $0{,}744$ trong phép bootstrap này.
+
+Độ bất định lớn nhất vẫn nằm ở lớp không bệnh. Recall lớp 0 có khoảng tin cậy
+$[0{,}545;0{,}849]$, còn precision lớp 0 có khoảng
+$[0{,}486;0{,}786]$. Nguyên nhân chính là tập kiểm tra chỉ có 34 người không
+bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể. Vì vậy,
+không nên diễn giải riêng ước lượng điểm $0{,}706$ như một đại lượng đã ổn
+định ở quần thể rộng hơn.
+
+\section{Kết luận}
+
+Báo cáo đã xây dựng và đánh giá một quy trình hồi quy logistic có điều chuẩn
+trên dữ liệu ILPD, đồng thời sử dụng kiểm định chéo và bootstrap cho hai mục
+đích khác nhau. Kiểm định chéo phân tầng 5 fold được dùng để lựa chọn mô hình
+và tạo dự đoán out-of-fold cho bước chọn ngưỡng; bootstrap được dùng để
+lượng hóa độ bất định của các chỉ số trên tập kiểm tra độc lập.
+
+Ngưỡng $0{,}402$ được chọn từ tập huấn luyện theo mục tiêu recall tối thiểu
+70\%. Trên tập kiểm tra, mô hình đạt Accuracy $0{,}795$, recall lớp có bệnh
+$0{,}831$, precision lớp có bệnh $0{,}873$ và Macro F1 $0{,}759$. Mô hình
+phát hiện đúng 69/83 ca bệnh, bỏ sót 14 ca và báo động nhầm 10/34 người không
+bệnh. So với ngưỡng $0{,}5$, ngưỡng mới đồng thời tăng recall lớp bệnh và
+Macro F1, cho thấy điều chỉnh ngưỡng đã cải thiện đúng mục tiêu mà không làm
+suy giảm chất lượng tổng hợp.
+
+\textbf{Hạn chế.} Bộ dữ liệu chỉ có 583 quan sát và tập kiểm tra có 34 trường
+hợp không bệnh, khiến khoảng tin cậy của các chỉ số lớp 0 còn rộng. Bootstrap
+trong báo cáo giữ cố định mô hình nên chưa phản ánh biến thiên do huấn luyện
+lại. Ngoài ra, đây là dữ liệu quan sát từ một khu vực cụ thể; kết quả hiện tại
+chỉ có ý nghĩa đánh giá mô hình trên bộ ILPD, chưa đủ để suy rộng thành hiệu
+quả chẩn đoán lâm sàng.
+
+\textbf{Hướng phát triển.} Các nghiên cứu tiếp theo có thể lặp lại quá trình
+huấn luyện trên nhiều cách chia dữ liệu, huấn luyện lại mô hình trong từng
+vòng bootstrap và kiểm định trên một tập dữ liệu ngoài. Việc so sánh với các
+mô hình phi tuyến cũng nên được thực hiện với cùng cách chia dữ liệu và cùng
+tiêu chí đánh giá để kết quả so sánh có ý nghĩa.
 
 \clearpage
 \section*{Tài liệu tham khảo}
