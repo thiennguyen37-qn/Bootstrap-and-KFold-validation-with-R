@@ -2001,8 +2001,8 @@ tiêu hạn chế bỏ sót ca bệnh.
 \section{Khoảng tin cậy Bootstrap}
 \label{sec:boot-new}
 
-Do các chỉ số đánh giá được ước lượng từ một tập kiểm tra có kích thước hữu hạn, phương pháp Bootstrap được sử dụng để lượng hóa 
-mức độ bất định của các kết quả. Cụ thể, 2.000 mẫu Bootstrap được tạo bằng cách lấy mẫu có hoàn lại từ các cặp gồm nhãn thực tế 
+Do các chỉ số đánh giá được ước lượng từ một tập kiểm tra có kích thước hữu hạn, phương pháp Bootstrap được sử dụng để ước lượng  
+khoảng tin cậy của các kết quả. Cụ thể, 2.000 mẫu Bootstrap được tạo bằng cách lấy mẫu có hoàn lại từ các cặp gồm nhãn thực tế 
 và dự đoán cuối cùng, với kích thước mỗi mẫu được giữ nguyên là 117 quan sát.
 
 Trong quá trình này, mô hình không được huấn luyện lại ở từng lần lấy mẫu. Vì vậy, khoảng tin cậy thu được phản ánh sự biến thiên
@@ -2058,34 +2058,46 @@ Macro F1 & 0.7593 & 0.6762 & 0.8403 & 0.0430\\
 
 \end{knitrout}
 
-Recall lớp có bệnh đạt $0{,}831$, với khoảng tin cậy bootstrap 95\%
-$[0{,}744;0{,}910]$. Accuracy và Macro F1 lần lượt có khoảng tin cậy
-$[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$. Kết quả cho thấy lợi thế của mô
-hình không chỉ nằm ở một giá trị điểm cao hơn: ngay cả cận dưới của recall
-lớp có bệnh cũng xấp xỉ $0{,}744$ trong phép bootstrap này.
+Recall của lớp có bệnh đạt $0{,}831$, với khoảng tin cậy Bootstrap 95\% từ $0{,}744$ đến $0{,}910$.
+Đối với Accuracy và Macro F1, các khoảng tin cậy tương ứng lần lượt là $[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$.
+Đáng chú ý, cận dưới của khoảng tin cậy đối với Recall lớp có bệnh vẫn đạt khoảng $0{,}744$, cho thấy khả năng phát hiện
+các trường hợp mắc bệnh của mô hình được duy trì ở mức tương đối cao ngay cả khi xét đến biến thiên do thành phần của tập kiểm tra.
+
 
 Độ bất định lớn nhất vẫn nằm ở lớp không bệnh. Recall lớp 0 có khoảng tin cậy
 $[0{,}545;0{,}849]$, còn precision lớp 0 có khoảng
 $[0{,}486;0{,}786]$. Nguyên nhân chính là tập kiểm tra chỉ có 34 người không
-bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể. Vì vậy,
-không nên diễn giải riêng ước lượng điểm $0{,}706$ như một đại lượng đã ổn
-định ở quần thể rộng hơn.
+bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể.
 
 \section{Kết luận}
 
-Báo cáo đã xây dựng và đánh giá một quy trình hồi quy logistic có điều chuẩn
-trên dữ liệu ILPD, đồng thời sử dụng kiểm định chéo và bootstrap cho hai mục
-đích khác nhau. Kiểm định chéo phân tầng 5 fold được dùng để lựa chọn mô hình
-và tạo dự đoán out-of-fold cho bước chọn ngưỡng; bootstrap được dùng để
-lượng hóa độ bất định của các chỉ số trên tập kiểm tra độc lập.
+Nghiên cứu này đã xây dựng và đánh giá một quy trình phân loại nguy cơ mắc
+bệnh gan trên bộ dữ liệu ILPD bằng hồi quy logistic. Bên cạnh
+việc lựa chọn mô hình, nghiên cứu thiết lập một quy trình đánh giá nhất quán:
+kiểm định chéo phân tầng năm phần được dùng để lựa chọn cấu hình và tạo dự
+đoán \emph{out-of-fold} phục vụ lựa chọn ngưỡng, còn bootstrap được áp dụng trên
+tập kiểm tra độc lập để ước lượng khoảng tin cậy của các chỉ số đánh giá.
 
-Ngưỡng $0{,}402$ được chọn từ tập huấn luyện theo mục tiêu recall tối thiểu
-70\%. Trên tập kiểm tra, mô hình đạt Accuracy $0{,}795$, recall lớp có bệnh
-$0{,}831$, precision lớp có bệnh $0{,}873$ và Macro F1 $0{,}759$. Mô hình
-phát hiện đúng 69/83 ca bệnh, bỏ sót 14 ca và báo động nhầm 10/34 người không
-bệnh. So với ngưỡng $0{,}5$, ngưỡng mới đồng thời tăng recall lớp bệnh và
-Macro F1, cho thấy điều chỉnh ngưỡng đã cải thiện đúng mục tiêu mà không làm
-suy giảm chất lượng tổng hợp.
+Trên tập kiểm tra độc lập gồm 117 quan sát, mô hình đạt Accuracy $0{,}795$,
+recall lớp có bệnh $0{,}831$, precision lớp có bệnh $0{,}873$ và Macro F1
+$0{,}759$. Mô hình phát hiện đúng 69/83 ca bệnh, bỏ sót 14 ca và cảnh báo
+nhầm 10/34 người không bệnh. So với ngưỡng mặc định $0{,}5$, recall lớp có
+bệnh tăng từ $0{,}747$ lên $0{,}831$ và Macro F1 tăng từ $0{,}748$ lên
+$0{,}759$, trong khi recall lớp không bệnh giảm từ $0{,}824$ xuống $0{,}706$.
+Như vậy, điều chỉnh ngưỡng đã giảm số ca bệnh bị bỏ sót mà không làm suy giảm
+chất lượng phân loại tổng hợp; đánh đổi chủ yếu là số cảnh báo nhầm tăng lên.
+
+Phân tích bootstrap với 2.000 mẫu ước lượng khoảng tin cậy 95\% của recall
+lớp có bệnh là $[0{,}744;0{,}910]$; các khoảng tương ứng của Accuracy và
+Macro F1 lần lượt là $[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$. Kết quả này
+cho thấy khả năng phát hiện ca bệnh được duy trì ở mức tương đối tốt trên dữ
+liệu khảo sát. Tuy nhiên, các chỉ số của lớp không bệnh còn có khoảng tin cậy
+rộng do tập kiểm tra chỉ gồm 34 quan sát ở lớp này. Vì vậy, ước lượng điểm
+cần được diễn giải cùng khoảng tin cậy và không nên suy rộng trực tiếp cho
+một quần thể lớn hơn.
+
+Nhìn chung, hồi quy logistic kết hợp SMOTE cho thấy tiềm năng hỗ trợ sàng lọc trên bộ dữ liệu ILPD, 
+đặc biệt khi ngưỡng phân loại được xác định theo ưu tiên giảm bỏ sót ca bệnh. 
 
 \textbf{Hạn chế.} Bộ dữ liệu chỉ có 583 quan sát và tập kiểm tra có 34 trường
 hợp không bệnh, khiến khoảng tin cậy của các chỉ số lớp 0 còn rộng. Bootstrap
