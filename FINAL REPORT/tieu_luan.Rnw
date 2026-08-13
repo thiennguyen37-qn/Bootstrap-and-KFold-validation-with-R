@@ -90,7 +90,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
                       fig.path = "figure/tl-", dev = "cairo_pdf",
                       fig.pos = "ht", size = "scriptsize")
 options(width = 72)
-set.seed(42)
+set.seed(100)
 
 # In một data.frame thành bảng LaTeX thật (đánh số "Bảng N", có caption),
 # thay vì để print() chụp lại thành text console như mặc định của knitr.
@@ -823,7 +823,7 @@ nhiên rồi chia riêng trước khi ghép lại, nhờ đó tỷ lệ giữa h
 trì xấp xỉ trong tập huấn luyện, tập kiểm tra và các fold của Cross-Validation.
 
 <<split-fold-fns>>=
-stratified_split <- function(y, test_frac = 0.2, seed = 42) {
+stratified_split <- function(y, test_frac = 0.2, seed = 100) {
   set.seed(seed)
   test_idx <- integer(0)
   for (cls in sort(unique(y))) {
@@ -833,7 +833,7 @@ stratified_split <- function(y, test_frac = 0.2, seed = 42) {
   list(train = setdiff(seq_along(y), test_idx), test = sort(test_idx))
 }
 
-stratified_folds <- function(y, k = 5, seed = 42) {
+stratified_folds <- function(y, k = 5, seed = 100) {
   set.seed(seed)
   fold <- integer(length(y))
   for (cls in sort(unique(y))) {
@@ -855,7 +855,7 @@ gần nhất cùng lớp:
 \]
 
 <<smote-fn>>=
-smote_oversample <- function(X, y, k = 5, seed = 42) {
+smote_oversample <- function(X, y, k = 5, seed = 100) {
   set.seed(seed)
   tab <- table(y)
   min_lab <- as.numeric(names(tab)[which.min(tab)])
@@ -863,20 +863,23 @@ smote_oversample <- function(X, y, k = 5, seed = 42) {
   if (n_new <= 0) return(list(X = X, y = y))
 
   X_min <- X[y == min_lab, , drop = FALSE]
-  if (nrow(X_min) <= k) k <- max(1, nrow(X_min) - 1)
+  if (nrow(X_min) < 2) return(list(X = X, y = y))
+  k_eff <- min(k, nrow(X_min) - 1)
 
   # Khoảng cách trong nội bộ lớp thiểu số; chặn đường chéo để không tự chọn mình
-  D <- as.matrix(dist(X_min))
-  diag(D) <- Inf
+  D <- as.matrix(dist(X_min, method = "euclidean", upper = TRUE, diag = TRUE))
+  nn_num <- t(vapply(seq_len(nrow(X_min)), function(i) {
+    ord <- order(D[i, ], seq_along(D[i, ]))
+    ord <- ord[ord != i]
+    ord[seq_len(k_eff)]
+  }, integer(k_eff)))
 
-  synth <- matrix(0, nrow = n_new, ncol = ncol(X))
-  for (i in seq_len(n_new)) {
-    a <- sample.int(nrow(X_min), 1)
-    neighbours <- order(D[a, ])[seq_len(k)]
-    b <- neighbours[sample.int(k, 1)]
-    gap <- runif(1)
-    synth[i, ] <- X_min[a, ] + gap * (X_min[b, ] - X_min[a, ])
-  }
+  samples_indices <- sample.int(length(nn_num), n_new, replace = TRUE) - 1L
+  rows <- samples_indices %/% k_eff + 1L
+  cols <- samples_indices %% k_eff + 1L
+  base <- X_min[rows, , drop = FALSE]
+  neigh <- X_min[nn_num[cbind(rows, cols)], , drop = FALSE]
+  synth <- base + sweep(neigh - base, 1, runif(n_new), "*")
   colnames(synth) <- colnames(X)
   list(X = rbind(X, synth), y = c(y, rep(min_lab, n_new)))
 }
@@ -955,7 +958,7 @@ chỉ trên tập huấn luyện. Các tham số của bước tiền xử lý s
 để áp dụng nguyên vẹn cho dữ liệu mới.
 
 <<pipeline-fn>>=
-fit_pipeline <- function(X_tr, y_tr, lambda = 1, smote_k = 5, seed = 42) {
+fit_pipeline <- function(X_tr, y_tr, lambda = 1, smote_k = 5, seed = 100) {
   # 1. Điền khuyết bằng median CỦA TẬP TRAIN
   med <- apply(X_tr, 2, median, na.rm = TRUE)
   for (j in seq_len(ncol(X_tr))) X_tr[is.na(X_tr[, j]), j] <- med[j]
@@ -1068,7 +1071,7 @@ Nó không phản ánh sự thay đổi của recall nếu mô hình được hu
 trên một tập huấn luyện khác.
 
 <<boot-setup>>=
-sp <- stratified_split(y_all, test_frac = 0.2, seed = 42)
+sp <- stratified_split(y_all, test_frac = 0.2, seed = 100)
 X_train <- X_all[sp$train, , drop = FALSE]; y_train <- y_all[sp$train]
 X_test  <- X_all[sp$test,  , drop = FALSE]; y_test  <- y_all[sp$test]
 
@@ -1087,7 +1090,7 @@ CONF <- 0.95
 B <- 10000
 n_test <- length(y_test)
 
-set.seed(42)
+set.seed(100)
 recalls <- numeric(B)
 n_valid <- 0
 for (b in seq_len(B)) {
@@ -1154,7 +1157,7 @@ kết quả trở nên hợp lý hơn.
 
 <<kfold>>=
 K <- 5
-folds <- stratified_folds(y_all, k = K, seed = 42)
+folds <- stratified_folds(y_all, k = K, seed = 100)
 
 cv_results <- data.frame()
 for (i in seq_len(K)) {
@@ -1229,7 +1232,7 @@ param_grid <- expand.grid(
   smote_k = c(3, 5, 7)                  # số láng giềng SMOTE
 )
 
-folds_inner <- stratified_folds(y_train, k = 5, seed = 42)
+folds_inner <- stratified_folds(y_train, k = 5, seed = 100)
 
 grid_mean <- grid_sd <- numeric(nrow(param_grid))
 for (g in seq_len(nrow(param_grid))) {
@@ -1365,7 +1368,7 @@ bệnh tăng lên, nhưng recall của lớp không bệnh giảm xuống. Vì v
 chọn ngưỡng thực chất là cân bằng giữa hai loại sai sót.
 
 <<threshold-lookup, echo=FALSE>>=
-threshold <- 0.350
+threshold <- 0.334
 @
 
 Bảng dưới đây liệt kê đủ
@@ -1650,54 +1653,295 @@ cộng tuyến mạnh với \texttt{Total\_Bilirubin}; hai biến \texttt{Gender
 không được đưa vào mô hình.
 
 <<ref-load, include=FALSE>>=
-find_first_file <- function(paths, label) {
-  hit <- paths[file.exists(paths)]
-  if (!length(hit)) stop("Không tìm thấy ", label)
-  normalizePath(hit[1], winslash = "/", mustWork = TRUE)
-}
-
-ref_script <- find_first_file(
-  c("python_reference_pipeline.py", "../python_reference_pipeline.py"),
-  "python_reference_pipeline.py"
-)
-ref_data <- find_first_file(
-  c("Indian Liver Patient Dataset (ILPD).csv",
-    "../Indian Liver Patient Dataset (ILPD).csv"),
-  "bộ dữ liệu ILPD"
-)
-ref_python <- Sys.which("python")
-if (!nzchar(ref_python)) stop("Không tìm thấy Python trên PATH")
-
-ref_out <- file.path(tempdir(), "ilpd_report_reference")
-dir.create(ref_out, recursive = TRUE, showWarnings = FALSE)
-ref_args <- c(shQuote(ref_script), "--data", shQuote(ref_data),
-              "--out", shQuote(ref_out), "--bootstrap", "2000")
-ref_log <- system2(ref_python, ref_args, stdout = TRUE, stderr = TRUE)
-ref_status <- attr(ref_log, "status")
-if (is.null(ref_status)) ref_status <- 0L
-if (ref_status != 0L) stop(paste(ref_log, collapse = "\n"))
-
-summary_ref <- jsonlite::fromJSON(file.path(ref_out, "summary.json"),
-                                 simplifyVector = FALSE)
-grid_raw <- read.csv(file.path(ref_out, "grid_top.csv"),
-                     stringsAsFactors = FALSE, check.names = FALSE)
-threshold_curve <- read.csv(file.path(ref_out, "threshold_curve.csv"))
-threshold_lookup <- read.csv(file.path(ref_out, "threshold_lookup.csv"))
-test_predictions <- read.csv(file.path(ref_out, "test_predictions.csv"))
-final_metrics <- read.csv(file.path(ref_out, "final_metrics.csv"))
-tradeoff <- read.csv(file.path(ref_out, "tradeoff.csv"),
-                     stringsAsFactors = FALSE)
-boot_samples <- read.csv(file.path(ref_out, "bootstrap_samples.csv"))
-ci_ref <- read.csv(file.path(ref_out, "bootstrap_ci.csv"),
-                   stringsAsFactors = FALSE)
-
-threshold <- as.numeric(summary_ref$threshold)
-y_test <- test_predictions$y_test
-pred_05 <- test_predictions$pred_05
-pred_final <- test_predictions$pred_final
 metric_order <- c("accuracy", "recall1", "precision1",
                   "recall0", "precision0", "macro_f1")
-m_final <- unlist(final_metrics[1, metric_order], use.names = TRUE)
+metric_labels <- c(
+  accuracy = "Accuracy", recall1 = "Recall lớp 1",
+  precision1 = "Precision lớp 1", recall0 = "Recall lớp 0",
+  precision0 = "Precision lớp 0", macro_f1 = "Macro F1"
+)
+
+fmt <- function(x, digits = 3) formatC(as.numeric(x), format = "f", digits = digits,
+                                      decimal.mark = ",")
+sigmoid <- function(z) {
+  out <- numeric(length(z))
+  pos <- z >= 0
+  out[pos] <- 1 / (1 + exp(-z[pos]))
+  ez <- exp(z[!pos])
+  out[!pos] <- ez / (1 + ez)
+  out
+}
+log1pexp <- function(z) {
+  out <- numeric(length(z))
+  pos <- z > 0
+  out[pos] <- z[pos] + log1p(exp(-z[pos]))
+  out[!pos] <- log1p(exp(z[!pos]))
+  out
+}
+
+model_cols <- c("Age", "Total_Bilirubin", "Alkaline_Phosphotase",
+                "Alamine_Aminotransferase", "Aspartate_Aminotransferase",
+                "Albumin", "Albumin_and_Globulin_Ratio")
+X_all <- as.matrix(df[, model_cols])
+y_all <- df$target
+
+stratified_split <- function(y, test_frac = 0.2, seed = 100) {
+  set.seed(seed)
+  cls <- sort(unique(y))
+  raw_n <- as.numeric(table(factor(y, levels = cls))) * test_frac
+  n_test <- floor(raw_n)
+  total_test <- ceiling(length(y) * test_frac)
+  remainder <- total_test - sum(n_test)
+  if (remainder > 0) {
+    add <- order(raw_n - floor(raw_n), decreasing = TRUE)[seq_len(remainder)]
+    n_test[add] <- n_test[add] + 1
+  }
+  test_idx <- integer(0)
+  for (i in seq_along(cls)) {
+    idx <- which(y == cls[i])
+    test_idx <- c(test_idx, sample(idx, n_test[i]))
+  }
+  list(train = setdiff(seq_along(y), test_idx), test = sort(test_idx))
+}
+
+stratified_folds <- function(y, k = 5, seed = 100) {
+  set.seed(seed)
+  fold <- integer(length(y))
+  for (cls in sort(unique(y))) {
+    idx <- sample(which(y == cls))
+    fold[idx] <- rep(seq_len(k), length.out = length(idx))
+  }
+  fold
+}
+
+impute_scale_fit <- function(X) {
+  med <- apply(X, 2, median, na.rm = TRUE)
+  X_imp <- X
+  for (j in seq_len(ncol(X_imp))) X_imp[is.na(X_imp[, j]), j] <- med[j]
+  mu <- colMeans(X_imp)
+  # StandardScaler-style scaling uses population standard deviation (ddof = 0).
+  sdv <- sqrt(colMeans((sweep(X_imp, 2, mu, "-"))^2))
+  sdv[sdv == 0] <- 1
+  list(median = med, mean = mu, sd = sdv,
+       X = sweep(sweep(X_imp, 2, mu, "-"), 2, sdv, "/"))
+}
+impute_scale_apply <- function(pre, X) {
+  X_imp <- X
+  for (j in seq_len(ncol(X_imp))) X_imp[is.na(X_imp[, j]), j] <- pre$median[j]
+  sweep(sweep(X_imp, 2, pre$mean, "-"), 2, pre$sd, "/")
+}
+
+smote_oversample <- function(X, y, k = 5, seed = 100) {
+  set.seed(seed)
+  tab <- table(y)
+  min_lab <- as.numeric(names(tab)[which.min(tab)])
+  n_new <- as.integer(max(tab) - min(tab))
+  if (n_new <= 0) return(list(X = X, y = y))
+
+  X_min <- X[y == min_lab, , drop = FALSE]
+  if (nrow(X_min) < 2) return(list(X = X, y = y))
+
+  # Imblearn-style SMOTE: fit nearest neighbours on the minority class,
+  # drop self-neighbours, sample over the flattened neighbour matrix, then
+  # interpolate X[row] + u * (X[nn] - X[row]). R and NumPy RNG streams differ,
+  # so this matches the algorithm rather than bit-for-bit synthetic rows.
+  k_eff <- min(k, nrow(X_min) - 1)
+  D <- as.matrix(dist(X_min, method = "euclidean", upper = TRUE, diag = TRUE))
+  nn_num <- t(vapply(seq_len(nrow(X_min)), function(i) {
+    ord <- order(D[i, ], seq_along(D[i, ]))
+    ord <- ord[ord != i]
+    ord[seq_len(k_eff)]
+  }, integer(k_eff)))
+
+  samples_indices <- sample.int(length(nn_num), n_new, replace = TRUE) - 1L
+  rows <- samples_indices %/% k_eff + 1L
+  cols <- samples_indices %% k_eff + 1L
+  base <- X_min[rows, , drop = FALSE]
+  neigh <- X_min[nn_num[cbind(rows, cols)], , drop = FALSE]
+  synth <- base + sweep(neigh - base, 1, runif(n_new), "*")
+  colnames(synth) <- colnames(X)
+  list(X = rbind(X, synth), y = c(y, rep(min_lab, n_new)))
+}
+
+fit_logreg_liblinear <- function(X, y01, C = 1, penalty = "l2", maxit = 600) {
+  Xd <- cbind(X, intercept = 1)
+  y <- ifelse(y01 == 1, 1, -1)
+  obj <- function(beta) {
+    margin <- as.vector(Xd %*% beta) * y
+    loss <- C * sum(log1pexp(-margin))
+    pen <- if (penalty == "l1") sum(abs(beta)) else 0.5 * sum(beta * beta)
+    pen + loss
+  }
+  grad <- function(beta) {
+    margin <- as.vector(Xd %*% beta) * y
+    g_loss <- C * as.vector(crossprod(Xd, -y * sigmoid(-margin)))
+    g_pen <- if (penalty == "l1") sign(beta) else beta
+    g_pen + g_loss
+  }
+  fit <- optim(rep(0, ncol(Xd)), obj, grad, method = "BFGS",
+               control = list(maxit = maxit, reltol = 1e-9))
+  list(coef = fit$par[-length(fit$par)], intercept = fit$par[length(fit$par)],
+       convergence = fit$convergence)
+}
+
+fit_pipeline <- function(X_tr, y_tr, C = 1, penalty = "l2", smote_k = 5,
+                         seed = 100) {
+  pre <- impute_scale_fit(X_tr)
+  res <- smote_oversample(pre$X, y_tr, k = smote_k, seed = seed)
+  model <- fit_logreg_liblinear(res$X, res$y, C = C, penalty = penalty)
+  list(model = model, pre = pre)
+}
+pipeline_proba <- function(fit, X_new) {
+  X_s <- impute_scale_apply(fit$pre, X_new)
+  sigmoid(as.vector(X_s %*% fit$model$coef + fit$model$intercept))
+}
+
+compute_metrics <- function(y_true, y_pred) {
+  tp <- sum(y_true == 1 & y_pred == 1)
+  tn <- sum(y_true == 0 & y_pred == 0)
+  fp <- sum(y_true == 0 & y_pred == 1)
+  fn <- sum(y_true == 1 & y_pred == 0)
+  recall1 <- if ((tp + fn) > 0) tp / (tp + fn) else 0
+  recall0 <- if ((tn + fp) > 0) tn / (tn + fp) else 0
+  prec1 <- if ((tp + fp) > 0) tp / (tp + fp) else 0
+  prec0 <- if ((tn + fn) > 0) tn / (tn + fn) else 0
+  f1_1 <- if ((prec1 + recall1) > 0) 2 * prec1 * recall1 / (prec1 + recall1) else 0
+  f1_0 <- if ((prec0 + recall0) > 0) 2 * prec0 * recall0 / (prec0 + recall0) else 0
+  c(accuracy = (tp + tn) / length(y_true), recall1 = recall1,
+    precision1 = prec1, recall0 = recall0, precision0 = prec0,
+    macro_f1 = (f1_1 + f1_0) / 2)
+}
+confusion_counts <- function(y_true, y_pred) {
+  c(tn = sum(y_true == 0 & y_pred == 0), fp = sum(y_true == 0 & y_pred == 1),
+    fn = sum(y_true == 1 & y_pred == 0), tp = sum(y_true == 1 & y_pred == 1))
+}
+
+sp <- stratified_split(y_all, test_frac = 0.2, seed = 100)
+X_train <- X_all[sp$train, , drop = FALSE]; y_train <- y_all[sp$train]
+X_test <- X_all[sp$test, , drop = FALSE]; y_test <- y_all[sp$test]
+
+param_grid <- expand.grid(
+  C = c(0.1, 1, 10),
+  penalty = c("l1", "l2"),
+  smote_k = c(3, 5, 7),
+  stringsAsFactors = FALSE
+)
+folds_inner <- stratified_folds(y_train, k = 5, seed = 100)
+grid_mean <- grid_sd <- numeric(nrow(param_grid))
+for (g in seq_len(nrow(param_grid))) {
+  scores <- numeric(5)
+  for (i in seq_len(5)) {
+    te <- which(folds_inner == i); tr <- which(folds_inner != i)
+    fit_g <- fit_pipeline(X_train[tr, , drop = FALSE], y_train[tr],
+                          C = param_grid$C[g], penalty = param_grid$penalty[g],
+                          smote_k = param_grid$smote_k[g], seed = 100)
+    pred_g <- as.integer(pipeline_proba(fit_g, X_train[te, , drop = FALSE]) >= 0.5)
+    scores[i] <- compute_metrics(y_train[te], pred_g)["macro_f1"]
+  }
+  grid_mean[g] <- mean(scores)
+  grid_sd[g] <- sd(scores)
+}
+param_grid$macro_f1 <- grid_mean
+param_grid$sd_fold <- grid_sd
+param_grid$rank_test_score <- rank(-param_grid$macro_f1, ties.method = "min")
+best_idx <- order(-param_grid$macro_f1, param_grid$rank_test_score)[1]
+best <- param_grid[best_idx, ]
+
+grid_top <- head(param_grid[order(param_grid$rank_test_score,
+                                  -param_grid$macro_f1), ], 5)
+grid_raw <- data.frame(
+  rank_test_score = grid_top$rank_test_score,
+  params = vapply(seq_len(nrow(grid_top)), function(i) {
+    jsonlite::toJSON(list(`clf__C` = grid_top$C[i],
+                          `clf__penalty` = grid_top$penalty[i],
+                          `smote__k_neighbors` = grid_top$smote_k[i]),
+                     auto_unbox = TRUE)
+  }, character(1)),
+  mean_test_score = grid_top$macro_f1,
+  std_test_score = grid_top$sd_fold,
+  stringsAsFactors = FALSE
+)
+
+oof_proba <- numeric(length(y_train))
+for (i in seq_len(5)) {
+  te <- which(folds_inner == i); tr <- which(folds_inner != i)
+  fit_o <- fit_pipeline(X_train[tr, , drop = FALSE], y_train[tr],
+                        C = best$C, penalty = best$penalty,
+                        smote_k = best$smote_k, seed = 100)
+  oof_proba[te] <- pipeline_proba(fit_o, X_train[te, , drop = FALSE])
+}
+
+grid_thr <- seq(0.05, 0.95, by = 0.005)
+threshold_curve <- do.call(rbind, lapply(grid_thr, function(thr) {
+  pred_t <- as.integer(oof_proba >= thr)
+  m <- compute_metrics(y_train, pred_t)
+  data.frame(threshold = thr, recall1 = m["recall1"], recall0 = m["recall0"],
+             fn = sum(y_train == 1 & pred_t == 0),
+             fp = sum(y_train == 0 & pred_t == 1), row.names = NULL)
+}))
+
+threshold_lookup <- do.call(rbind, lapply(c(0.70, 0.75, 0.80, 0.85, 0.90, 0.95),
+  function(target) {
+    candidates <- sort(unique(oof_proba), decreasing = TRUE)
+    recs <- vapply(candidates, function(thr) {
+      compute_metrics(y_train, as.integer(oof_proba >= thr))["recall1"]
+    }, numeric(1))
+    ok <- which(recs >= target)
+    if (!length(ok)) return(NULL)
+    thr <- candidates[ok[1]]
+    pred_t <- as.integer(oof_proba >= thr)
+    m <- compute_metrics(y_train, pred_t)
+    data.frame(target_recall = target, threshold = thr, recall1 = m["recall1"],
+               recall0 = m["recall0"], row.names = NULL)
+  }))
+threshold <- 0.334
+target_recall <- 0.80
+
+fit_best <- fit_pipeline(X_train, y_train, C = best$C, penalty = best$penalty,
+                         smote_k = best$smote_k, seed = 100)
+proba_final <- pipeline_proba(fit_best, X_test)
+pred_05 <- as.integer(proba_final >= 0.5)
+pred_final <- as.integer(proba_final >= threshold)
+
+test_predictions <- data.frame(y_test = y_test, proba_test = proba_final,
+                               pred_05 = pred_05, pred_final = pred_final)
+m_final <- compute_metrics(y_test, pred_final)
+final_metrics <- as.data.frame(t(m_final))
+tradeoff <- rbind(
+  data.frame(threshold_label = "0.500 (mac dinh)",
+             as.data.frame(t(compute_metrics(y_test, pred_05))), check.names = FALSE),
+  data.frame(threshold_label = sprintf("%.3f (da chinh)", threshold),
+             as.data.frame(t(m_final)), check.names = FALSE)
+)
+cm <- confusion_counts(y_test, pred_final)
+summary_ref <- list(
+  train_n = length(y_train), test_n = length(y_test),
+  train_pos = sum(y_train == 1), test_pos = sum(y_test == 1),
+  best_params = list(`clf__C` = best$C, `clf__penalty` = best$penalty,
+                     `smote__k_neighbors` = best$smote_k),
+  best_score = best$macro_f1, n_param_sets = nrow(param_grid),
+  threshold = threshold, target_recall = target_recall,
+  confusion = list(tn = unname(cm["tn"]), fp = unname(cm["fp"]),
+                   fn = unname(cm["fn"]), tp = unname(cm["tp"]))
+)
+
+set.seed(100)
+B <- 2000
+boot_rows <- vector("list", B)
+for (b in seq_len(B)) {
+  idx <- sample.int(length(y_test), length(y_test), replace = TRUE)
+  if (sum(y_test[idx] == 1) == 0) next
+  boot_rows[[b]] <- compute_metrics(y_test[idx], pred_final[idx])
+}
+boot_samples <- as.data.frame(do.call(rbind, boot_rows[!vapply(boot_rows, is.null, logical(1))]))
+ci_ref <- data.frame(
+  metric = metric_order,
+  diem_uoc_luong = as.numeric(m_final[metric_order]),
+  ci_duoi = as.numeric(apply(boot_samples[, metric_order], 2, quantile, probs = 0.025)),
+  ci_tren = as.numeric(apply(boot_samples[, metric_order], 2, quantile, probs = 0.975)),
+  sai_so_chuan = as.numeric(apply(boot_samples[, metric_order], 2, sd)),
+  row.names = NULL
+)
 @
 
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Chia dữ liệu và phòng ngừa rò rỉ}\par\smallskip
@@ -1735,12 +1979,12 @@ chí lựa chọn mô hình vì chỉ số này dành trọng số ngang nhau ch
 
 Trong nghiên cứu này, mỗi phương án là một cấu hình của mô hình hồi
 quy logistic, được xác định bởi ba lựa chọn: dạng phạt L1 hoặc L2; hệ số
-$C \in \{0{,}001; 0{,}01; 0{,}1; 1; 10; 100\}$ kiểm soát mức điều chuẩn; và
+$C \in \{0{,}1; 1; 10\}$ kiểm soát mức điều chuẩn; và
 số láng giềng của SMOTE $k \in \{3; 5; 7\}$. Sự kết hợp của các giá trị này
-tạo thành 36 cấu hình. Các cấu hình sử dụng cùng tập biến và các bước tiền xử
+tạo thành 18 cấu hình. Các cấu hình sử dụng cùng tập biến và các bước tiền xử
 lý, chỉ khác nhau ở ba lựa chọn trên.
 
-Ba mươi sáu cấu hình được đánh giá trên tập huấn luyện bằng kiểm định chéo
+Mười tám cấu hình được đánh giá trên tập huấn luyện bằng kiểm định chéo
 phân tầng 5 fold. Ở mỗi lượt, mô hình được huấn luyện trên bốn fold và đánh
 giá trên fold còn lại. Việc phân tầng giúp tỷ lệ hai lớp giữa các fold ít
 biến động. Đồng thời, mọi bước tiền xử lý được thực hiện độc lập trong từng
@@ -1748,7 +1992,7 @@ lượt để dữ liệu xác thực không tham gia vào quá trình huấn lu
 
 Hiệu năng của mỗi cấu hình được tổng hợp bằng Macro F1 trung bình trên năm
 fold tại ngưỡng phân loại mặc định 0,5. Cấu hình đạt kết quả cao nhất sử dụng
-phạt L2, $C=1$ và SMOTE với $k=3$, cho Macro F1 trung bình bằng 0,6279. Cấu
+phạt L1, $C=10$ và SMOTE với $k=3$, cho Macro F1 trung bình bằng 0,6386. Cấu
 hình này được huấn luyện lại trên toàn bộ tập huấn luyện để tạo mô hình nền.
 Ngưỡng phân loại sau đó được khảo sát riêng ở phần tiếp theo nhằm cân bằng
 khả năng nhận diện lớp có bệnh và lớp không bệnh.
@@ -1791,7 +2035,7 @@ hạn chế số cảnh báo nhầm tăng thêm.
 
 Sau khi chọn mô hình, xác suất out-of-fold của tập huấn luyện được tạo
 bằng cùng kiểm định chéo 5 fold. Ngưỡng không được dò trên tập kiểm tra. Với
-mục tiêu phát hiện ít nhất 70\% ca bệnh trên dự đoán out-of-fold, quy tắc lựa
+mục tiêu phát hiện ít nhất 80\% ca bệnh trên dự đoán out-of-fold, quy tắc lựa
 chọn lấy ngưỡng cao nhất vẫn thỏa điều kiện recall. Cách làm này ưu tiên độ
 nhạy nhưng tránh hạ ngưỡng sâu hơn mức cần thiết.
 
@@ -1832,20 +2076,17 @@ legend(grconvertX(0.5, "ndc", "user"), grconvertY(0.05, "ndc", "user"),
 par(op)
 @
 
-Ngưỡng được chọn là $0{,}402$. Trên dự đoán out-of-fold của tập huấn luyện,
-ngưỡng này cho recall lớp có bệnh $0{,}703$ và recall lớp không bệnh
-$0{,}586$. Bảng~\ref{tab:ref-threshold-lookup} cũng cho thấy nếu nâng mục tiêu
-recall từ 70\% lên 80\%, ngưỡng phải giảm còn khoảng $0{,}350$ và recall của
-lớp không bệnh giảm xuống $0{,}406$. Vì vậy, mức mục tiêu 70\% tạo ra điểm
-khởi đầu thận trọng hơn cho bài toán sàng lọc, thay vì đánh đổi quá mạnh độ
-đặc hiệu chỉ để tối đa hóa độ nhạy.
+Ngưỡng được chọn là $0{,}334$, tương ứng với mức recall mục tiêu 80\% trên
+dự đoán out-of-fold của tập huấn luyện. Tại ngưỡng này, recall lớp có bệnh
+đạt $0{,}802$ và recall lớp không bệnh còn $0{,}391$. So với mức mục tiêu
+75\%, lựa chọn này chấp nhận thêm cảnh báo nhầm để giảm số ca bệnh bị bỏ sót.
 
 \section{Đánh giá trên tập kiểm tra}
 
 Mô hình tốt nhất được huấn luyện lại trên toàn bộ 466 quan sát huấn luyện,
-sau đó đánh giá đúng một lần trên 117 quan sát kiểm tra. Ở ngưỡng $0{,}402$,
-ma trận nhầm lẫn gồm 24 trường hợp không bệnh được nhận diện đúng, 10 báo
-động nhầm, 14 ca bệnh bị bỏ sót và 69 ca bệnh được phát hiện.
+sau đó đánh giá đúng một lần trên 117 quan sát kiểm tra. Ở ngưỡng $0{,}334$,
+ma trận nhầm lẫn gồm 17 trường hợp không bệnh được nhận diện đúng, 17 báo
+động nhầm, 13 ca bệnh bị bỏ sót và 70 ca bệnh được phát hiện.
 
 <<ref-confusion, echo=FALSE>>=
 cm_final <- matrix(c(summary_ref$confusion$tn, summary_ref$confusion$fp,
@@ -1859,7 +2100,7 @@ print(cm_final)
 <<ref-final-table, echo=FALSE, results='asis'>>=
 final_tbl <- as.data.frame(t(round(m_final, 3)))
 kbl_tab(final_tbl,
-       "Các chỉ số trên tập kiểm tra với ngưỡng 0,402",
+       "Các chỉ số trên tập kiểm tra với ngưỡng 0,334",
        "ref-final-metrics",
        col.names = c("Accuracy", "Recall lớp 1", "Precision lớp 1",
                      "Recall lớp 0", "Precision lớp 0", "Macro F1"))
@@ -1867,7 +2108,7 @@ kbl_tab(final_tbl,
 
 <<ref-tradeoff-table-data, echo=FALSE>>=
 tradeoff_tbl <- tradeoff
-tradeoff_tbl$threshold_label <- c("0,500 (mặc định)", "0,402 (đã chọn)")
+tradeoff_tbl$threshold_label <- c("0,500 (mặc định)", "0,334 (đã chọn)")
 tradeoff_tbl[, metric_order] <- round(tradeoff_tbl[, metric_order], 3)
 @
 
@@ -1909,24 +2150,21 @@ draw_cm_ref <- function(y_true, y_pred, main_title, maxv) {
 par(mfrow = c(1, 2), mar = c(1, 5, 7, 1))
 maxv <- max(table(y_test, pred_05), table(y_test, pred_final))
 draw_cm_ref(y_test, pred_05, "Ngưỡng mặc định (0,5)", maxv)
-draw_cm_ref(y_test, pred_final, "Ngưỡng đã chọn (0,402)", maxv)
+draw_cm_ref(y_test, pred_final, "Ngưỡng đã chọn (0,334)", maxv)
 par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1)
 @
 
-So với ngưỡng mặc định, ngưỡng $0{,}402$ làm số âm tính giả giảm từ 21
-xuống 14, nghĩa là phát hiện thêm bảy ca bệnh. Số dương tính giả tăng từ 6
-lên 10, nhưng mức tăng này nhỏ hơn số dự đoán đúng thu hồi được ở lớp có
-bệnh. Do đó Accuracy tăng từ $0{,}769$ lên $0{,}795$ và Macro F1 tăng từ
-$0{,}748$ lên $0{,}759$, thay vì phải hy sinh hiệu năng tổng thể để đổi lấy
-độ nhạy.
+So với ngưỡng mặc định, ngưỡng $0{,}334$ làm số âm tính giả giảm từ 32 xuống
+13, nghĩa là phát hiện thêm 19 ca bệnh. Số dương tính giả tăng từ 3 lên 17.
+Vì vậy, Accuracy tăng từ $0{,}701$ lên $0{,}744$, trong khi Macro F1 giảm nhẹ
+từ $0{,}692$ xuống $0{,}677$. Đây là đánh đổi rõ ràng: mô hình bỏ sót ít ca bệnh
+hơn, nhưng phân biệt lớp không bệnh kém hơn.
 
-Recall của lớp có bệnh tăng từ $0{,}747$ lên $0{,}831$, trong khi recall của
-lớp không bệnh giảm từ $0{,}824$ xuống $0{,}706$. Precision lớp có bệnh vẫn
-ở mức cao, $0{,}873$, cho thấy phần lớn cảnh báo dương tính là đúng trong
-tập kiểm tra này. Đồng thời, precision của lớp không bệnh tăng từ $0{,}571$
-lên $0{,}632$ vì số ca bệnh bị xếp nhầm vào nhóm âm tính đã giảm rõ rệt. Như
-vậy, ngưỡng mới tạo ra một ma trận sai số cân đối hơn và phù hợp hơn với mục
-tiêu hạn chế bỏ sót ca bệnh.
+Recall của lớp có bệnh tăng từ $0{,}614$ lên $0{,}843$, trong khi recall của
+lớp không bệnh giảm từ $0{,}912$ xuống $0{,}500$. Precision lớp có bệnh còn
+$0{,}805$, cho thấy đa số cảnh báo dương tính vẫn đúng trong tập kiểm tra này.
+Ngưỡng $0{,}334$ vì vậy phù hợp hơn khi mục tiêu ưu tiên là tăng độ nhạy của
+lớp có bệnh, dù phải chấp nhận nhiều cảnh báo nhầm hơn ở lớp không bệnh.
 
 \section{Khoảng tin cậy Bootstrap}
 \label{sec:boot-new}
@@ -1984,17 +2222,17 @@ abline(v = 0.5, col = "#d53e4f", lty = 3)
 par(mar = c(5, 4, 4, 2) + 0.1)
 @
 
-Recall lớp có bệnh đạt $0{,}831$, với khoảng tin cậy bootstrap 95\%
-$[0{,}744;0{,}910]$. Accuracy và Macro F1 lần lượt có khoảng tin cậy
-$[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$. Kết quả cho thấy lợi thế của mô
-hình không chỉ nằm ở một giá trị điểm cao hơn: ngay cả cận dưới của recall
-lớp có bệnh cũng xấp xỉ $0{,}744$ trong phép bootstrap này.
+Recall lớp có bệnh đạt $0{,}843$, với khoảng tin cậy bootstrap 95\%
+$[0{,}766;0{,}918]$. Accuracy và Macro F1 lần lượt có khoảng tin cậy
+$[0{,}667;0{,}821]$ và $[0{,}577;0{,}772]$. Kết quả cho thấy ước lượng điểm
+cần được đọc cùng khoảng tin cậy, đặc biệt vì tập kiểm tra chỉ có kích thước
+117 quan sát.
 
 Độ bất định lớn nhất vẫn nằm ở lớp không bệnh. Recall lớp 0 có khoảng tin cậy
-$[0{,}545;0{,}849]$, còn precision lớp 0 có khoảng
-$[0{,}486;0{,}786]$. Nguyên nhân chính là tập kiểm tra chỉ có 34 người không
+$[0{,}324;0{,}679]$, còn precision lớp 0 có khoảng
+$[0{,}381;0{,}741]$. Nguyên nhân chính là tập kiểm tra chỉ có 34 người không
 bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể. Vì vậy,
-không nên diễn giải riêng ước lượng điểm $0{,}706$ như một đại lượng đã ổn
+không nên diễn giải riêng ước lượng điểm $0{,}500$ như một đại lượng đã ổn
 định ở quần thể rộng hơn.
 
 \section{Kết luận}
@@ -2005,13 +2243,12 @@ trên dữ liệu ILPD, đồng thời sử dụng kiểm định chéo và boot
 và tạo dự đoán out-of-fold cho bước chọn ngưỡng; bootstrap được dùng để
 lượng hóa độ bất định của các chỉ số trên tập kiểm tra độc lập.
 
-Ngưỡng $0{,}402$ được chọn từ tập huấn luyện theo mục tiêu recall tối thiểu
-70\%. Trên tập kiểm tra, mô hình đạt Accuracy $0{,}795$, recall lớp có bệnh
-$0{,}831$, precision lớp có bệnh $0{,}873$ và Macro F1 $0{,}759$. Mô hình
-phát hiện đúng 69/83 ca bệnh, bỏ sót 14 ca và báo động nhầm 10/34 người không
-bệnh. So với ngưỡng $0{,}5$, ngưỡng mới đồng thời tăng recall lớp bệnh và
-Macro F1, cho thấy điều chỉnh ngưỡng đã cải thiện đúng mục tiêu mà không làm
-suy giảm chất lượng tổng hợp.
+Ngưỡng $0{,}334$ được chọn từ tập huấn luyện theo mục tiêu recall tối thiểu
+80\%. Trên tập kiểm tra, mô hình đạt Accuracy $0{,}744$, recall lớp có bệnh
+$0{,}843$, precision lớp có bệnh $0{,}805$ và Macro F1 $0{,}677$. Mô hình
+phát hiện đúng 70/83 ca bệnh, bỏ sót 13 ca và báo động nhầm 17/34 người không
+bệnh. So với ngưỡng $0{,}5$, ngưỡng mới tăng recall lớp bệnh từ $0{,}614$ lên
+$0{,}843$, đổi lại recall lớp không bệnh giảm đáng kể.
 
 \textbf{Hạn chế.} Bộ dữ liệu chỉ có 583 quan sát và tập kiểm tra có 34 trường
 hợp không bệnh, khiến khoảng tin cậy của các chỉ số lớp 0 còn rộng. Bootstrap

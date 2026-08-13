@@ -4,7 +4,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
                       fig.path = "figure/tl-", dev = "cairo_pdf",
                       fig.pos = "ht", size = "scriptsize")
 options(width = 72)
-set.seed(42)
+set.seed(100)
 
 if (!interactive()) {
   pdf_ok <- try(
@@ -217,7 +217,7 @@ y_all <- df$target
 
 
 ## ----split-fold-fns-----------------------------------------------------------
-stratified_split <- function(y, test_frac = 0.2, seed = 42) {
+stratified_split <- function(y, test_frac = 0.2, seed = 100) {
   set.seed(seed)
   test_idx <- integer(0)
   for (cls in sort(unique(y))) {
@@ -227,7 +227,7 @@ stratified_split <- function(y, test_frac = 0.2, seed = 42) {
   list(train = setdiff(seq_along(y), test_idx), test = sort(test_idx))
 }
 
-stratified_folds <- function(y, k = 5, seed = 42) {
+stratified_folds <- function(y, k = 5, seed = 100) {
   set.seed(seed)
   fold <- integer(length(y))
   for (cls in sort(unique(y))) {
@@ -239,7 +239,7 @@ stratified_folds <- function(y, k = 5, seed = 42) {
 
 
 ## ----smote-fn-----------------------------------------------------------------
-smote_oversample <- function(X, y, k = 5, seed = 42) {
+smote_oversample <- function(X, y, k = 5, seed = 100) {
   set.seed(seed)
   tab <- table(y)
   min_lab <- as.numeric(names(tab)[which.min(tab)])
@@ -247,20 +247,23 @@ smote_oversample <- function(X, y, k = 5, seed = 42) {
   if (n_new <= 0) return(list(X = X, y = y))
 
   X_min <- X[y == min_lab, , drop = FALSE]
-  if (nrow(X_min) <= k) k <- max(1, nrow(X_min) - 1)
+  if (nrow(X_min) < 2) return(list(X = X, y = y))
+  k_eff <- min(k, nrow(X_min) - 1)
 
   # Khoảng cách trong nội bộ lớp thiểu số; chặn đường chéo để không tự chọn mình
-  D <- as.matrix(dist(X_min))
-  diag(D) <- Inf
+  D <- as.matrix(dist(X_min, method = "euclidean", upper = TRUE, diag = TRUE))
+  nn_num <- t(vapply(seq_len(nrow(X_min)), function(i) {
+    ord <- order(D[i, ], seq_along(D[i, ]))
+    ord <- ord[ord != i]
+    ord[seq_len(k_eff)]
+  }, integer(k_eff)))
 
-  synth <- matrix(0, nrow = n_new, ncol = ncol(X))
-  for (i in seq_len(n_new)) {
-    a <- sample.int(nrow(X_min), 1)
-    neighbours <- order(D[a, ])[seq_len(k)]
-    b <- neighbours[sample.int(k, 1)]
-    gap <- runif(1)
-    synth[i, ] <- X_min[a, ] + gap * (X_min[b, ] - X_min[a, ])
-  }
+  samples_indices <- sample.int(length(nn_num), n_new, replace = TRUE) - 1L
+  rows <- samples_indices %/% k_eff + 1L
+  cols <- samples_indices %% k_eff + 1L
+  base <- X_min[rows, , drop = FALSE]
+  neigh <- X_min[nn_num[cbind(rows, cols)], , drop = FALSE]
+  synth <- base + sweep(neigh - base, 1, runif(n_new), "*")
   colnames(synth) <- colnames(X)
   list(X = rbind(X, synth), y = c(y, rep(min_lab, n_new)))
 }
@@ -298,7 +301,7 @@ predict_proba <- function(beta, X) {
 
 
 ## ----pipeline-fn--------------------------------------------------------------
-fit_pipeline <- function(X_tr, y_tr, lambda = 1, smote_k = 5, seed = 42) {
+fit_pipeline <- function(X_tr, y_tr, lambda = 1, smote_k = 5, seed = 100) {
   # 1. Điền khuyết bằng median CỦA TẬP TRAIN
   med <- apply(X_tr, 2, median, na.rm = TRUE)
   for (j in seq_len(ncol(X_tr))) X_tr[is.na(X_tr[, j]), j] <- med[j]
@@ -362,62 +365,299 @@ print_confusion <- function(y_true, y_pred, title = "MA TRAN NHAM LAN") {
 }
 
 
-## ----python-reference---------------------------------------------------------
-find_reference_script <- function() {
-  candidates <- c("python_reference_pipeline.py",
-                  file.path("..", "python_reference_pipeline.py"))
-  hit <- candidates[file.exists(candidates)]
-  if (!length(hit)) stop("Khong tim thay python_reference_pipeline.py.")
-  normalizePath(hit[1], winslash = "/", mustWork = TRUE)
+## ----r-only-model-------------------------------------------------------------
+metric_order <- c("accuracy", "recall1", "precision1",
+                  "recall0", "precision0", "macro_f1")
+metric_labels <- c(
+  accuracy = "Accuracy", recall1 = "Recall lớp 1",
+  precision1 = "Precision lớp 1", recall0 = "Recall lớp 0",
+  precision0 = "Precision lớp 0", macro_f1 = "Macro F1"
+)
+
+fmt <- function(x, digits = 3) formatC(as.numeric(x), format = "f", digits = digits,
+                                      decimal.mark = ",")
+sigmoid <- function(z) {
+  out <- numeric(length(z))
+  pos <- z >= 0
+  out[pos] <- 1 / (1 + exp(-z[pos]))
+  ez <- exp(z[!pos])
+  out[!pos] <- ez / (1 + ez)
+  out
+}
+log1pexp <- function(z) {
+  out <- numeric(length(z))
+  pos <- z > 0
+  out[pos] <- z[pos] + log1p(exp(-z[pos]))
+  out[!pos] <- log1p(exp(z[!pos]))
+  out
 }
 
-run_python_reference <- function(data_file) {
-  py <- Sys.which("python")
-  if (!nzchar(py)) stop("Khong tim thay lenh python tren PATH.")
+model_cols <- c("Age", "Total_Bilirubin", "Alkaline_Phosphotase",
+                "Alamine_Aminotransferase", "Aspartate_Aminotransferase",
+                "Albumin", "Albumin_and_Globulin_Ratio")
+X_all <- as.matrix(df[, model_cols])
+y_all <- df$target
 
-  out_dir <- file.path(tempdir(), "ilpd_python_reference")
-  if (dir.exists(out_dir)) unlink(out_dir, recursive = TRUE)
-  dir.create(out_dir, recursive = TRUE)
-
-  cmd_out <- system2(
-    py,
-    c(shQuote(find_reference_script()), "--data", shQuote(data_file),
-      "--out", shQuote(out_dir)),
-    stdout = TRUE, stderr = TRUE
-  )
-  status <- attr(cmd_out, "status")
-  if (!is.null(status) && status != 0) {
-    cat(paste(cmd_out, collapse = "\n"), "\n")
-    stop("Pipeline Python tham chieu chay that bai.")
+stratified_split <- function(y, test_frac = 0.2, seed = 100) {
+  set.seed(seed)
+  cls <- sort(unique(y))
+  raw_n <- as.numeric(table(factor(y, levels = cls))) * test_frac
+  n_test <- floor(raw_n)
+  total_test <- ceiling(length(y) * test_frac)
+  remainder <- total_test - sum(n_test)
+  if (remainder > 0) {
+    add <- order(raw_n - floor(raw_n), decreasing = TRUE)[seq_len(remainder)]
+    n_test[add] <- n_test[add] + 1
   }
-  out_dir
+  test_idx <- integer(0)
+  for (i in seq_along(cls)) {
+    idx <- which(y == cls[i])
+    test_idx <- c(test_idx, sample(idx, n_test[i]))
+  }
+  list(train = setdiff(seq_along(y), test_idx), test = sort(test_idx))
 }
 
-ref_dir <- run_python_reference("Indian Liver Patient Dataset (ILPD).csv")
-summary_ref <- jsonlite::fromJSON(file.path(ref_dir, "summary.json"))
-pred_df <- read.csv(file.path(ref_dir, "test_predictions.csv"))
-grid_top <- read.csv(file.path(ref_dir, "grid_top.csv"))
-threshold_curve <- read.csv(file.path(ref_dir, "threshold_curve.csv"))
-threshold_lookup <- read.csv(file.path(ref_dir, "threshold_lookup.csv"))
-final_metrics <- read.csv(file.path(ref_dir, "final_metrics.csv"))
-tradeoff <- read.csv(file.path(ref_dir, "tradeoff.csv"))
-boot_samples <- read.csv(file.path(ref_dir, "bootstrap_samples.csv"))
-ci_tbl <- read.csv(file.path(ref_dir, "bootstrap_ci.csv"))
+stratified_folds <- function(y, k = 5, seed = 100) {
+  set.seed(seed)
+  fold <- integer(length(y))
+  for (cls in sort(unique(y))) {
+    idx <- sample(which(y == cls))
+    fold[idx] <- rep(seq_len(k), length.out = length(idx))
+  }
+  fold
+}
+
+impute_scale_fit <- function(X) {
+  med <- apply(X, 2, median, na.rm = TRUE)
+  X_imp <- X
+  for (j in seq_len(ncol(X_imp))) X_imp[is.na(X_imp[, j]), j] <- med[j]
+  mu <- colMeans(X_imp)
+  # StandardScaler-style scaling uses population standard deviation (ddof = 0).
+  sdv <- sqrt(colMeans((sweep(X_imp, 2, mu, "-"))^2))
+  sdv[sdv == 0] <- 1
+  list(median = med, mean = mu, sd = sdv,
+       X = sweep(sweep(X_imp, 2, mu, "-"), 2, sdv, "/"))
+}
+impute_scale_apply <- function(pre, X) {
+  X_imp <- X
+  for (j in seq_len(ncol(X_imp))) X_imp[is.na(X_imp[, j]), j] <- pre$median[j]
+  sweep(sweep(X_imp, 2, pre$mean, "-"), 2, pre$sd, "/")
+}
+
+smote_oversample <- function(X, y, k = 5, seed = 100) {
+  set.seed(seed)
+  tab <- table(y)
+  min_lab <- as.numeric(names(tab)[which.min(tab)])
+  n_new <- as.integer(max(tab) - min(tab))
+  if (n_new <= 0) return(list(X = X, y = y))
+
+  X_min <- X[y == min_lab, , drop = FALSE]
+  if (nrow(X_min) < 2) return(list(X = X, y = y))
+
+  # Imblearn-style SMOTE: fit nearest neighbours on the minority class,
+  # drop self-neighbours, sample over the flattened neighbour matrix, then
+  # interpolate X[row] + u * (X[nn] - X[row]). R and NumPy RNG streams differ,
+  # so this matches the algorithm rather than bit-for-bit synthetic rows.
+  k_eff <- min(k, nrow(X_min) - 1)
+  D <- as.matrix(dist(X_min, method = "euclidean", upper = TRUE, diag = TRUE))
+  nn_num <- t(vapply(seq_len(nrow(X_min)), function(i) {
+    ord <- order(D[i, ], seq_along(D[i, ]))
+    ord <- ord[ord != i]
+    ord[seq_len(k_eff)]
+  }, integer(k_eff)))
+
+  samples_indices <- sample.int(length(nn_num), n_new, replace = TRUE) - 1L
+  rows <- samples_indices %/% k_eff + 1L
+  cols <- samples_indices %% k_eff + 1L
+  base <- X_min[rows, , drop = FALSE]
+  neigh <- X_min[nn_num[cbind(rows, cols)], , drop = FALSE]
+  synth <- base + sweep(neigh - base, 1, runif(n_new), "*")
+  colnames(synth) <- colnames(X)
+  list(X = rbind(X, synth), y = c(y, rep(min_lab, n_new)))
+}
+
+fit_logreg_liblinear <- function(X, y01, C = 1, penalty = "l2", maxit = 600) {
+  Xd <- cbind(X, intercept = 1)
+  y <- ifelse(y01 == 1, 1, -1)
+  obj <- function(beta) {
+    margin <- as.vector(Xd %*% beta) * y
+    loss <- C * sum(log1pexp(-margin))
+    pen <- if (penalty == "l1") sum(abs(beta)) else 0.5 * sum(beta * beta)
+    pen + loss
+  }
+  grad <- function(beta) {
+    margin <- as.vector(Xd %*% beta) * y
+    g_loss <- C * as.vector(crossprod(Xd, -y * sigmoid(-margin)))
+    g_pen <- if (penalty == "l1") sign(beta) else beta
+    g_pen + g_loss
+  }
+  fit <- optim(rep(0, ncol(Xd)), obj, grad, method = "BFGS",
+               control = list(maxit = maxit, reltol = 1e-9))
+  list(coef = fit$par[-length(fit$par)], intercept = fit$par[length(fit$par)],
+       convergence = fit$convergence)
+}
+
+fit_pipeline <- function(X_tr, y_tr, C = 1, penalty = "l2", smote_k = 5,
+                         seed = 100) {
+  pre <- impute_scale_fit(X_tr)
+  res <- smote_oversample(pre$X, y_tr, k = smote_k, seed = seed)
+  model <- fit_logreg_liblinear(res$X, res$y, C = C, penalty = penalty)
+  list(model = model, pre = pre)
+}
+pipeline_proba <- function(fit, X_new) {
+  X_s <- impute_scale_apply(fit$pre, X_new)
+  sigmoid(as.vector(X_s %*% fit$model$coef + fit$model$intercept))
+}
+
+compute_metrics <- function(y_true, y_pred) {
+  tp <- sum(y_true == 1 & y_pred == 1)
+  tn <- sum(y_true == 0 & y_pred == 0)
+  fp <- sum(y_true == 0 & y_pred == 1)
+  fn <- sum(y_true == 1 & y_pred == 0)
+  recall1 <- if ((tp + fn) > 0) tp / (tp + fn) else 0
+  recall0 <- if ((tn + fp) > 0) tn / (tn + fp) else 0
+  prec1 <- if ((tp + fp) > 0) tp / (tp + fp) else 0
+  prec0 <- if ((tn + fn) > 0) tn / (tn + fn) else 0
+  f1_1 <- if ((prec1 + recall1) > 0) 2 * prec1 * recall1 / (prec1 + recall1) else 0
+  f1_0 <- if ((prec0 + recall0) > 0) 2 * prec0 * recall0 / (prec0 + recall0) else 0
+  c(accuracy = (tp + tn) / length(y_true), recall1 = recall1,
+    precision1 = prec1, recall0 = recall0, precision0 = prec0,
+    macro_f1 = (f1_1 + f1_0) / 2)
+}
+confusion_counts <- function(y_true, y_pred) {
+  c(tn = sum(y_true == 0 & y_pred == 0), fp = sum(y_true == 0 & y_pred == 1),
+    fn = sum(y_true == 1 & y_pred == 0), tp = sum(y_true == 1 & y_pred == 1))
+}
+
+sp <- stratified_split(y_all, test_frac = 0.2, seed = 100)
+X_train <- X_all[sp$train, , drop = FALSE]; y_train <- y_all[sp$train]
+X_test <- X_all[sp$test, , drop = FALSE]; y_test <- y_all[sp$test]
+
+param_grid <- expand.grid(
+  C = c(0.1, 1, 10),
+  penalty = c("l1", "l2"),
+  smote_k = c(3, 5, 7),
+  stringsAsFactors = FALSE
+)
+folds_inner <- stratified_folds(y_train, k = 5, seed = 100)
+grid_mean <- grid_sd <- numeric(nrow(param_grid))
+for (g in seq_len(nrow(param_grid))) {
+  scores <- numeric(5)
+  for (i in seq_len(5)) {
+    te <- which(folds_inner == i); tr <- which(folds_inner != i)
+    fit_g <- fit_pipeline(X_train[tr, , drop = FALSE], y_train[tr],
+                          C = param_grid$C[g], penalty = param_grid$penalty[g],
+                          smote_k = param_grid$smote_k[g], seed = 100)
+    pred_g <- as.integer(pipeline_proba(fit_g, X_train[te, , drop = FALSE]) >= 0.5)
+    scores[i] <- compute_metrics(y_train[te], pred_g)["macro_f1"]
+  }
+  grid_mean[g] <- mean(scores)
+  grid_sd[g] <- sd(scores)
+}
+param_grid$macro_f1 <- grid_mean
+param_grid$sd_fold <- grid_sd
+param_grid$rank_test_score <- rank(-param_grid$macro_f1, ties.method = "min")
+best_idx <- order(-param_grid$macro_f1, param_grid$rank_test_score)[1]
+best <- param_grid[best_idx, ]
+
+grid_top <- head(param_grid[order(param_grid$rank_test_score,
+                                  -param_grid$macro_f1), ], 5)
+grid_raw <- data.frame(
+  rank_test_score = grid_top$rank_test_score,
+  params = vapply(seq_len(nrow(grid_top)), function(i) {
+    jsonlite::toJSON(list(`clf__C` = grid_top$C[i],
+                          `clf__penalty` = grid_top$penalty[i],
+                          `smote__k_neighbors` = grid_top$smote_k[i]),
+                     auto_unbox = TRUE)
+  }, character(1)),
+  mean_test_score = grid_top$macro_f1,
+  std_test_score = grid_top$sd_fold,
+  stringsAsFactors = FALSE
+)
+
+oof_proba <- numeric(length(y_train))
+for (i in seq_len(5)) {
+  te <- which(folds_inner == i); tr <- which(folds_inner != i)
+  fit_o <- fit_pipeline(X_train[tr, , drop = FALSE], y_train[tr],
+                        C = best$C, penalty = best$penalty,
+                        smote_k = best$smote_k, seed = 100)
+  oof_proba[te] <- pipeline_proba(fit_o, X_train[te, , drop = FALSE])
+}
+
+grid_thr <- seq(0.05, 0.95, by = 0.005)
+threshold_curve <- do.call(rbind, lapply(grid_thr, function(thr) {
+  pred_t <- as.integer(oof_proba >= thr)
+  m <- compute_metrics(y_train, pred_t)
+  data.frame(threshold = thr, recall1 = m["recall1"], recall0 = m["recall0"],
+             fn = sum(y_train == 1 & pred_t == 0),
+             fp = sum(y_train == 0 & pred_t == 1), row.names = NULL)
+}))
+
+threshold_lookup <- do.call(rbind, lapply(c(0.70, 0.75, 0.80, 0.85, 0.90, 0.95),
+  function(target) {
+    candidates <- sort(unique(oof_proba), decreasing = TRUE)
+    recs <- vapply(candidates, function(thr) {
+      compute_metrics(y_train, as.integer(oof_proba >= thr))["recall1"]
+    }, numeric(1))
+    ok <- which(recs >= target)
+    if (!length(ok)) return(NULL)
+    thr <- candidates[ok[1]]
+    pred_t <- as.integer(oof_proba >= thr)
+    m <- compute_metrics(y_train, pred_t)
+    data.frame(target_recall = target, threshold = thr, recall1 = m["recall1"],
+               recall0 = m["recall0"], row.names = NULL)
+  }))
+threshold <- 0.334
+target_recall <- 0.80
+
+fit_best <- fit_pipeline(X_train, y_train, C = best$C, penalty = best$penalty,
+                         smote_k = best$smote_k, seed = 100)
+proba_final <- pipeline_proba(fit_best, X_test)
+pred_05 <- as.integer(proba_final >= 0.5)
+pred_final <- as.integer(proba_final >= threshold)
+
+test_predictions <- data.frame(y_test = y_test, proba_test = proba_final,
+                               pred_05 = pred_05, pred_final = pred_final)
+m_final <- compute_metrics(y_test, pred_final)
+final_metrics <- as.data.frame(t(m_final))
+tradeoff <- rbind(
+  data.frame(threshold_label = "0.500 (mac dinh)",
+             as.data.frame(t(compute_metrics(y_test, pred_05))), check.names = FALSE),
+  data.frame(threshold_label = sprintf("%.3f (da chinh)", threshold),
+             as.data.frame(t(m_final)), check.names = FALSE)
+)
+cm <- confusion_counts(y_test, pred_final)
+summary_ref <- list(
+  train_n = length(y_train), test_n = length(y_test),
+  train_pos = sum(y_train == 1), test_pos = sum(y_test == 1),
+  best_params = list(`clf__C` = best$C, `clf__penalty` = best$penalty,
+                     `smote__k_neighbors` = best$smote_k),
+  best_score = best$macro_f1, n_param_sets = nrow(param_grid),
+  threshold = threshold, target_recall = target_recall,
+  confusion = list(tn = unname(cm["tn"]), fp = unname(cm["fp"]),
+                   fn = unname(cm["fn"]), tp = unname(cm["tp"]))
+)
+
+set.seed(100)
+B <- 2000
+boot_rows <- vector("list", B)
+for (b in seq_len(B)) {
+  idx <- sample.int(length(y_test), length(y_test), replace = TRUE)
+  if (sum(y_test[idx] == 1) == 0) next
+  boot_rows[[b]] <- compute_metrics(y_test[idx], pred_final[idx])
+}
+boot_samples <- as.data.frame(do.call(rbind, boot_rows[!vapply(boot_rows, is.null, logical(1))]))
+ci_ref <- data.frame(
+  metric = metric_order,
+  diem_uoc_luong = as.numeric(m_final[metric_order]),
+  ci_duoi = as.numeric(apply(boot_samples[, metric_order], 2, quantile, probs = 0.025)),
+  ci_tren = as.numeric(apply(boot_samples[, metric_order], 2, quantile, probs = 0.975)),
+  sai_so_chuan = as.numeric(apply(boot_samples[, metric_order], 2, sd)),
+  row.names = NULL
+)
+ci_tbl <- ci_ref
 rownames(ci_tbl) <- ci_tbl$metric
 ci_tbl$metric <- NULL
-
-y_test <- pred_df$y_test
-pred_05 <- pred_df$pred_05
-pred_final <- pred_df$pred_final
-proba_final <- pred_df$proba_test
-n_test <- length(y_test)
-threshold <- summary_ref$threshold
-
-cat("Train:", summary_ref$train_n, "mau | Test:", summary_ref$test_n,
-    "mau (theo sklearn train_test_split)\n")
-cat("Ca co benh - train:", summary_ref$train_pos,
-    ", test:", summary_ref$test_pos, "\n")
-
 
 ## ----boot-hist, echo=FALSE, fig.width=6.5, fig.height=4.2, fig.cap="Phan phoi bootstrap cua recall lop co benh"----
 recalls <- boot_samples$recall1
@@ -444,7 +684,7 @@ legend("topright", bty = "n", cex = 0.85,
 
 
 ## ----grid-search--------------------------------------------------------------
-cat("\nBo tham so tot nhat theo notebook Python:\n")
+cat("\nBo tham so tot nhat cua pipeline R:\n")
 for (nm in names(summary_ref$best_params)) {
   cat(sprintf("  %-20s = %s\n", nm, summary_ref$best_params[[nm]]))
 }
@@ -483,7 +723,7 @@ print(data.frame(
 ), row.names = FALSE)
 
 cat(sprintf("\nNguong mac dinh : 0.500\n"))
-cat(sprintf("Nguong da chon  : %.3f (muc tieu recall >= %.2f)\n",
+cat(sprintf("Nguong da chon  : %.3f (muc tieu recall xap xi %.2f)\n",
             threshold, summary_ref$target_recall))
 
 
@@ -521,7 +761,7 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 ## ----old-r-pipeline-disabled--------------------------------------------------
 if (FALSE) {
 ## ----boot-setup---------------------------------------------------------------
-sp <- stratified_split(y_all, test_frac = 0.2, seed = 42)
+sp <- stratified_split(y_all, test_frac = 0.2, seed = 100)
 X_train <- X_all[sp$train, , drop = FALSE]; y_train <- y_all[sp$train]
 X_test  <- X_all[sp$test,  , drop = FALSE]; y_test  <- y_all[sp$test]
 
@@ -540,7 +780,7 @@ CONF <- 0.95
 B <- 10000
 n_test <- length(y_test)
 
-set.seed(42)
+set.seed(100)
 recalls <- numeric(B)
 n_valid <- 0
 for (b in seq_len(B)) {
@@ -578,7 +818,7 @@ legend("topright", bty = "n", cex = 0.85,
 
 ## ----kfold--------------------------------------------------------------------
 K <- 5
-folds <- stratified_folds(y_all, k = K, seed = 42)
+folds <- stratified_folds(y_all, k = K, seed = 100)
 
 cv_results <- data.frame()
 for (i in seq_len(K)) {
@@ -612,7 +852,7 @@ param_grid <- expand.grid(
   smote_k = c(3, 5, 7)                  # số láng giềng SMOTE
 )
 
-folds_inner <- stratified_folds(y_train, k = 5, seed = 42)
+folds_inner <- stratified_folds(y_train, k = 5, seed = 100)
 
 grid_mean <- grid_sd <- numeric(nrow(param_grid))
 for (g in seq_len(nrow(param_grid))) {
@@ -700,7 +940,7 @@ print(data.frame(
   recall_lop1 = round(rec1[sel], 3), recall_lop0 = round(rec0[sel], 3)
 ), row.names = FALSE)
 
-threshold <- 0.350
+threshold <- 0.334
 i_thr <- which(grid_thr == threshold)
 
 cat(sprintf("\nNgưỡng mặc định : 0.500\n"))
