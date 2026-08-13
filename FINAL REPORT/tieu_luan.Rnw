@@ -1096,19 +1096,12 @@ ci_ref <- data.frame(
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Chia dữ liệu và phòng ngừa rò rỉ}\par\smallskip
 \label{sec:pipeline}
 
-Toàn bộ dữ liệu được chia phân tầng theo tỷ lệ 80:20 để tỷ lệ hai lớp trong
-mỗi tập gần với tỷ lệ của dữ liệu ban đầu. Tập huấn luyện gồm 466 quan sát,
-trong đó có 333 trường hợp
-mắc bệnh; tập kiểm tra gồm 117 quan sát, với 83 trường hợp mắc bệnh. Tập kiểm
-tra chỉ được sử dụng sau khi quá trình lựa chọn mô hình và ngưỡng phân loại
-đã hoàn tất.
+Toàn bộ dữ liệu được chia theo tỷ lệ 80:20 bằng phương pháp phân tầng nhằm duy trì tỷ lệ hai lớp gần với phân bố ban đầu. Tập huấn luyện gồm 466 quan sát, trong đó có 333 trường hợp mắc bệnh, trong khi tập kiểm tra gồm 117 quan sát với 83 trường hợp mắc bệnh. Tập kiểm tra được giữ độc lập và chỉ sử dụng sau khi quá trình lựa chọn mô hình cũng như xác định ngưỡng phân loại đã hoàn tất.
 
-Để tránh rò rỉ dữ liệu, các bước điền khuyết, chuẩn hóa và cân bằng lớp đều
-được thực hiện trong phạm vi dữ liệu huấn luyện của từng fold. Trung vị và
-các tham số chuẩn hóa vì thế không mang thông tin từ phần xác thực. Tương tự,
-SMOTE chỉ tạo mẫu từ phần huấn luyện trước khi mô hình được ước lượng,
-nhờ đó kết quả đánh giá phản ánh đúng khả năng dự đoán trên dữ liệu chưa xuất
-hiện trong quá trình học.
+Do dữ liệu có sự mất cân bằng giữa hai lớp, phương pháp \textbf{SMOTE (Synthetic Minority Over-sampling Technique)} được áp dụng trên tập huấn luyện để tăng mức độ đại diện của lớp thiểu số. SMOTE tạo thêm các mẫu tổng hợp bằng cách nội suy giữa các quan sát thuộc lớp thiểu số và các láng giềng gần nhất của chúng, thay vì sao chép trực tiếp các mẫu hiện có. Cách tiếp cận này giúp giảm ảnh hưởng của mất cân bằng lớp và hỗ trợ mô hình học tốt hơn đặc trưng của lớp ít xuất hiện.
+
+Để tránh rò rỉ dữ liệu, toàn bộ các bước tiền xử lý, bao gồm điền khuyết giá trị thiếu, chuẩn hóa và SMOTE, đều được thực hiện riêng trong phần dữ liệu huấn luyện của từng fold. Nhờ đó, các thống kê dùng cho điền khuyết và chuẩn hóa không chứa thông tin từ phần xác thực, đồng thời các mẫu tổng hợp do SMOTE tạo ra cũng chỉ dựa trên dữ liệu huấn luyện. Quy trình này giúp bảo đảm kết quả đánh giá phản ánh sát hơn khả năng dự đoán của mô hình trên các quan sát chưa xuất hiện trong quá trình học.
+
 
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Mô hình và chỉ số đánh giá}\par\smallskip
 
@@ -1118,22 +1111,24 @@ cũng tạo cơ sở cho việc điều chỉnh ngưỡng phân loại theo mụ
 phần tiếp theo. SMOTE được kết hợp trong quá trình huấn luyện để hạn chế ảnh
 hưởng của sự chênh lệch số lượng giữa hai lớp.
 
-Vì lớp có bệnh chiếm đa số, Accuracy có thể che khuất khả năng nhận diện của
-từng nhóm. Do đó, kết quả được xem xét thông qua recall và precision của cả
-lớp có bệnh (lớp 1) và lớp không bệnh (lớp 0). Macro F1 được dùng làm tiêu
-chí lựa chọn mô hình vì chỉ số này dành trọng số ngang nhau cho hai lớp, qua
-đó đưa ra đánh giá cân bằng hơn về chất lượng phân loại tổng thể.
+Do lớp có bệnh chiếm tỷ lệ lớn trong dữ liệu, Accuracy đơn thuần chưa phản ánh đầy đủ khả năng
+phân loại của mô hình. Trong bối cảnh sàng lọc, việc bỏ sót một trường hợp mắc bệnh được xem là
+nghiêm trọng hơn so với việc cảnh báo nhầm một trường hợp không mắc bệnh. 
+Vì vậy, \textbf{Recall của lớp có bệnh (lớp 1)} được ưu tiên nhằm đánh giá khả năng phát hiện đúng
+các trường hợp cần được lưu ý. Bên cạnh đó, precision và các chỉ số của lớp không bệnh vẫn được 
+theo dõi để đánh giá mức độ đánh đổi khi tăng độ nhạy. 
+
 
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Lựa chọn mô hình bằng kiểm định chéo}\par\smallskip
 
 Trong nghiên cứu này, mỗi phương án là một cấu hình của mô hình hồi
-quy logistic, được xác định bởi ba lựa chọn: dạng phạt L1 hoặc L2; hệ số
-$C \in \{0{,}1; 1; 10\}$ kiểm soát mức điều chuẩn; và
+quy logistic, được xác định bởi ba lựa chọn: dạng phạt L1 (Lasso) hoặc L2 (Ridge); hệ số
+$C \in \{0{,}1; 1; 10\}$ kiểm soát mức regularization; và
 số láng giềng của SMOTE $k \in \{3; 5; 7\}$. Sự kết hợp của các giá trị này
 tạo thành 18 cấu hình. Các cấu hình sử dụng cùng tập biến và các bước tiền xử
 lý, chỉ khác nhau ở ba lựa chọn trên.
 
-Mười tám cấu hình được đánh giá trên tập huấn luyện bằng kiểm định chéo
+Những cấu hình trên được đánh giá trên tập huấn luyện bằng kiểm định chéo
 phân tầng 5 fold. Ở mỗi lượt, mô hình được huấn luyện trên bốn fold và đánh
 giá trên fold còn lại. Việc phân tầng giúp tỷ lệ hai lớp giữa các fold ít
 biến động. Đồng thời, mọi bước tiền xử lý được thực hiện độc lập trong từng
@@ -1182,11 +1177,6 @@ diện người không bệnh. Vì vậy, recall lớp không bệnh được th
 ngưỡng cao nhất còn đáp ứng recall mục tiêu được chọn để vừa giảm bỏ sót, vừa
 hạn chế số cảnh báo nhầm tăng thêm.
 
-Sau khi chọn mô hình, xác suất out-of-fold của tập huấn luyện được tạo
-bằng cùng kiểm định chéo 5 fold. Ngưỡng không được dò trên tập kiểm tra. Với
-mục tiêu phát hiện ít nhất 80\% ca bệnh trên dự đoán out-of-fold, quy tắc lựa
-chọn lấy ngưỡng cao nhất vẫn thỏa điều kiện recall. Cách làm này ưu tiên độ
-nhạy nhưng tránh hạ ngưỡng sâu hơn mức cần thiết.
 
 <<ref-threshold-table-data, echo=FALSE>>=
 threshold_tbl <- data.frame(
@@ -1227,9 +1217,7 @@ par(op)
 
 Ngưỡng được chọn là $0{,}334$, tương ứng với mức recall mục tiêu 80\% trên
 dự đoán out-of-fold của tập huấn luyện. Tại ngưỡng này, recall lớp có bệnh
-đạt $0{,}802$ và recall lớp không bệnh còn $0{,}391$. So với mức mục tiêu
-75\%, lựa chọn này chấp nhận thêm cảnh báo nhầm để giảm số ca bệnh bị bỏ sót.
-
+đạt $0{,}802$ và recall lớp không bệnh còn $0{,}391$. 
 \section{Đánh giá trên tập kiểm tra}
 
 Mô hình tốt nhất được huấn luyện lại trên toàn bộ 466 quan sát huấn luyện,
@@ -1380,37 +1368,29 @@ cần được đọc cùng khoảng tin cậy, đặc biệt vì tập kiểm t
 Độ bất định lớn nhất vẫn nằm ở lớp không bệnh. Recall lớp 0 có khoảng tin cậy
 $[0{,}324;0{,}679]$, còn precision lớp 0 có khoảng
 $[0{,}381;0{,}741]$. Nguyên nhân chính là tập kiểm tra chỉ có 34 người không
-bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể. Vì vậy,
-không nên diễn giải riêng ước lượng điểm $0{,}500$ như một đại lượng đã ổn
-định ở quần thể rộng hơn.
+bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể.
 
 \section{Kết luận}
 
-Báo cáo đã xây dựng và đánh giá một quy trình hồi quy logistic có điều chuẩn
-trên dữ liệu ILPD, đồng thời sử dụng kiểm định chéo và bootstrap cho hai mục
-đích khác nhau. Kiểm định chéo phân tầng 5 fold được dùng để lựa chọn mô hình
-và tạo dự đoán out-of-fold cho bước chọn ngưỡng; bootstrap được dùng để
-lượng hóa độ bất định của các chỉ số trên tập kiểm tra độc lập.
+Báo cáo đã xây dựng và đánh giá quy trình phân loại dựa trên hồi quy logistic trên bộ dữ liệu ILPD.
+Trong quy trình này, kiểm định chéo phân tầng 5 fold và bootstrap được sử dụng cho hai mục đích
+riêng biệt: kiểm định chéo phục vụ lựa chọn mô hình và tạo các dự đoán out-of-fold để xác định
+ngưỡng phân loại, trong khi bootstrap được sử dụng để đánh giá mức độ ổn định của các chỉ số trên
+tập kiểm tra độc lập.
 
-Ngưỡng $0{,}334$ được chọn từ tập huấn luyện theo mục tiêu recall tối thiểu
-80\%. Trên tập kiểm tra, mô hình đạt Accuracy $0{,}744$, recall lớp có bệnh
-$0{,}843$, precision lớp có bệnh $0{,}805$ và Macro F1 $0{,}677$. Mô hình
-phát hiện đúng 70/83 ca bệnh, bỏ sót 13 ca và báo động nhầm 17/34 người không
-bệnh. So với ngưỡng $0{,}5$, ngưỡng mới tăng recall lớp bệnh từ $0{,}614$ lên
-$0{,}843$, đổi lại recall lớp không bệnh giảm đáng kể.
+Dựa trên mục tiêu đạt recall tối thiểu 80\% đối với lớp có bệnh, ngưỡng phân loại $0{,}334$
+được lựa chọn hoàn toàn từ tập huấn luyện. Trên tập kiểm tra, mô hình đạt Accuracy $0{,}744$, 
+recall lớp có bệnh $0{,}843$, precision lớp có bệnh $0{,}805$ và Macro F1 $0{,}677$. 
+Cụ thể, mô hình nhận diện đúng 70/83 trường hợp mắc bệnh, bỏ sót 13 trường hợp và phân loại nhầm 
+17/34 trường hợp không bệnh. So với ngưỡng mặc định $0{,}5$, việc điều chỉnh ngưỡng giúp recall 
+của lớp có bệnh tăng từ $0{,}614$ lên $0{,}843$, qua đó cải thiện đáng kể khả năng phát hiện bệnh,
+nhưng đồng thời làm giảm recall của lớp không bệnh. Kết quả này phản ánh sự đánh đổi phù hợp
+với mục tiêu của bài toán, trong đó việc hạn chế bỏ sót các trường hợp mắc bệnh được ưu tiên hơn
+so với nguy cơ gia tăng số trường hợp cảnh báo nhầm.
 
-\textbf{Hạn chế.} Bộ dữ liệu chỉ có 583 quan sát và tập kiểm tra có 34 trường
-hợp không bệnh, khiến khoảng tin cậy của các chỉ số lớp 0 còn rộng. Bootstrap
-trong báo cáo giữ cố định mô hình nên chưa phản ánh biến thiên do huấn luyện
-lại. Ngoài ra, đây là dữ liệu quan sát từ một khu vực cụ thể; kết quả hiện tại
-chỉ có ý nghĩa đánh giá mô hình trên bộ ILPD, chưa đủ để suy rộng thành hiệu
-quả chẩn đoán lâm sàng.
+\textbf{Hạn chế.} Bộ dữ liệu chỉ gồm 583 quan sát, trong đó tập kiểm tra có 34 trường hợp không bệnh, do đó các chỉ số đánh giá cho lớp này vẫn có mức biến thiên tương đối lớn. Bên cạnh đó, quy trình bootstrap trong báo cáo được thực hiện trên các dự đoán của một mô hình đã cố định và không bao gồm bước huấn luyện lại ở mỗi lần lấy mẫu, vì vậy chưa phản ánh đầy đủ biến thiên có thể phát sinh từ quá trình xây dựng mô hình. Ngoài ra, ILPD là bộ dữ liệu quan sát được thu thập tại một khu vực cụ thể, nên các kết quả thu được chủ yếu phản ánh hiệu năng của mô hình trên bộ dữ liệu này và chưa đủ cơ sở để khẳng định khả năng ứng dụng trong thực hành chẩn đoán lâm sàng.
 
-\textbf{Hướng phát triển.} Các nghiên cứu tiếp theo có thể lặp lại quá trình
-huấn luyện trên nhiều cách chia dữ liệu, huấn luyện lại mô hình trong từng
-vòng bootstrap và kiểm định trên một tập dữ liệu ngoài. Việc so sánh với các
-mô hình phi tuyến cũng nên được thực hiện với cùng cách chia dữ liệu và cùng
-tiêu chí đánh giá để kết quả so sánh có ý nghĩa.
+\textbf{Hướng phát triển.} Trong các nghiên cứu tiếp theo, độ ổn định của mô hình có thể được khảo sát sâu hơn thông qua việc lặp lại quá trình huấn luyện trên nhiều cách chia dữ liệu khác nhau hoặc kết hợp bước huấn luyện lại mô hình trong từng vòng bootstrap. Việc đánh giá trên một tập dữ liệu độc lập từ nguồn khác cũng cần được thực hiện để kiểm tra khả năng tổng quát hóa của mô hình. Đồng thời, các mô hình phi tuyến có thể được đưa vào so sánh với cùng cách chia dữ liệu, quy trình tiền xử lý và tiêu chí đánh giá, qua đó bảo đảm tính nhất quán và công bằng trong quá trình đối chiếu kết quả.
 
 \clearpage
 \section*{Tài liệu tham khảo}
