@@ -1927,11 +1927,13 @@ tiêu hạn chế bỏ sót ca bệnh.
 \section{Khoảng tin cậy Bootstrap}
 \label{sec:boot-new}
 
-Các chỉ số trên vẫn là ước lượng từ một tập kiểm tra hữu hạn. Báo cáo lấy mẫu
-lại có hoàn lại 2.000 lần từ các cặp nhãn thực tế và dự đoán cuối cùng, mỗi
-lần giữ nguyên cỡ mẫu 117. Mô hình không được huấn luyện lại trong từng vòng,
-do đó khoảng tin cậy phản ánh bất định do thành phần tập kiểm tra, không bao
-gồm biến thiên phát sinh khi thay đổi tập huấn luyện.
+Do các chỉ số đánh giá được ước lượng từ một tập kiểm tra có kích thước hữu hạn, phương pháp Bootstrap được sử dụng để lượng hóa 
+mức độ bất định của các kết quả. Cụ thể, 2.000 mẫu Bootstrap được tạo bằng cách lấy mẫu có hoàn lại từ các cặp gồm nhãn thực tế 
+và dự đoán cuối cùng, với kích thước mỗi mẫu được giữ nguyên là 117 quan sát.
+
+Trong quá trình này, mô hình không được huấn luyện lại ở từng lần lấy mẫu. Vì vậy, khoảng tin cậy thu được phản ánh sự biến thiên
+từ các thành phần của tập kiểm tra và không bao gồm bất định phát sinh từ quá trình huấn luyện trên các tập dữ liệu khác nhau.
+
 
 <<ref-bootstrap-table-data, echo=FALSE>>=
 metric_labels <- c(
@@ -1953,7 +1955,7 @@ kbl_tab(ci_tbl,
                      "Sai số chuẩn"))
 @
 
-<<ref-boot-hist, echo=FALSE, fig.width=6.5, fig.height=4.2, fig.cap="Phân phối bootstrap của recall lớp có bệnh">>=
+<<ref-boot-hist, echo=FALSE, fig.pos="H", fig.width=5.8, fig.height=3.1, fig.cap="Phân phối bootstrap của recall lớp có bệnh">>=
 hist(boot_samples$recall1, breaks = 35, col = "#66c2a5", border = "white",
      main = "Phân phối bootstrap của recall lớp có bệnh",
      xlab = "Recall lớp có bệnh", ylab = "Tần số")
@@ -1980,18 +1982,16 @@ abline(v = 0.5, col = "#d53e4f", lty = 3)
 par(mar = c(5, 4, 4, 2) + 0.1)
 @
 
-Recall lớp có bệnh đạt $0{,}831$, với khoảng tin cậy bootstrap 95\%
-$[0{,}744;0{,}910]$. Accuracy và Macro F1 lần lượt có khoảng tin cậy
-$[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$. Kết quả cho thấy lợi thế của mô
-hình không chỉ nằm ở một giá trị điểm cao hơn: ngay cả cận dưới của recall
-lớp có bệnh cũng xấp xỉ $0{,}744$ trong phép bootstrap này.
+Recall của lớp có bệnh đạt $0{,}831$, với khoảng tin cậy Bootstrap 95\% từ $0{,}744$ đến $0{,}910$. 
+Đối với Accuracy và Macro F1, các khoảng tin cậy tương ứng lần lượt là $[0{,}718;0{,}872]$ và $[0{,}676;0{,}840]$. 
+Đáng chú ý, cận dưới của khoảng tin cậy đối với Recall lớp có bệnh vẫn đạt khoảng $0{,}744$, cho thấy khả năng phát hiện
+các trường hợp mắc bệnh của mô hình được duy trì ở mức tương đối cao ngay cả khi xét đến biến thiên do thành phần của tập kiểm tra.
+
 
 Độ bất định lớn nhất vẫn nằm ở lớp không bệnh. Recall lớp 0 có khoảng tin cậy
 $[0{,}545;0{,}849]$, còn precision lớp 0 có khoảng
 $[0{,}486;0{,}786]$. Nguyên nhân chính là tập kiểm tra chỉ có 34 người không
-bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể. Vì vậy,
-không nên diễn giải riêng ước lượng điểm $0{,}706$ như một đại lượng đã ổn
-định ở quần thể rộng hơn.
+bệnh, nên một vài dự đoán thay đổi cũng làm chỉ số dao động đáng kể. 
 
 \section{Kết luận}
 
