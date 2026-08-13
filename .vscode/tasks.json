@@ -1,0 +1,57 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Knit final report Rnw",
+      "type": "shell",
+      "command": "Rscript",
+      "args": ["-e", "knitr::knit('tieu_luan.Rnw')"],
+      "options": {
+        "cwd": "${workspaceFolder}/FINAL REPORT"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "XeLaTeX final report pass 1",
+      "type": "shell",
+      "command": "xelatex",
+      "args": [
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "tieu_luan.tex"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/FINAL REPORT"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "XeLaTeX final report pass 2",
+      "type": "shell",
+      "command": "xelatex",
+      "args": [
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "tieu_luan.tex"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/FINAL REPORT"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build final report PDF",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Knit final report Rnw",
+        "XeLaTeX final report pass 1",
+        "XeLaTeX final report pass 2"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
