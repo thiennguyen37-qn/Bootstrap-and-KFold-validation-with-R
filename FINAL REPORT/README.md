@@ -26,7 +26,23 @@ Cài gói R nếu máy chưa có:
 install.packages(c("knitr", "jsonlite"))
 ```
 
-## Cách 1: Chạy Bằng VS Code Hoặc Terminal
+## Cách 1: Chạy Bằng VS Code
+
+Nếu mở toàn bộ repository trong VS Code, có thể build báo cáo bằng phím tắt:
+
+```text
+Ctrl + Shift + B
+```
+
+Task mặc định `Build final report PDF` sẽ tự chuyển vào thư mục `FINAL REPORT`,
+tạo file `tieu_luan.tex` từ `tieu_luan.Rnw`, sau đó chạy `xelatex` hai lần để
+tạo lại `tieu_luan.pdf`.
+
+Lưu ý: cách này chỉ hoạt động khi mở toàn bộ repository, vì cấu hình task của
+VS Code nằm trong thư mục `.vscode` ở root repository. Nếu chỉ tải riêng thư
+mục `FINAL REPORT`, hãy dùng cách chạy bằng terminal hoặc RStudio bên dưới.
+
+## Cách 2: Chạy Bằng Terminal
 
 Mở terminal tại thư mục `FINAL REPORT`.
 
@@ -51,7 +67,7 @@ xelatex tieu_luan.tex
 
 Sau bước này, file `tieu_luan.pdf` sẽ được tạo lại trong thư mục `FINAL REPORT`.
 
-## Cách 2: Chạy Bằng RStudio
+## Cách 3: Chạy Bằng RStudio
 
 Mở RStudio, sau đó mở thư mục `FINAL REPORT` hoặc đặt working directory về thư
 mục này.
@@ -87,4 +103,3 @@ Khi build lại báo cáo, có thể phát sinh thêm các file và thư mục p
 - `tieu_luan.aux`, `tieu_luan.log`, `tieu_luan.out`, `tieu_luan.toc`: file phụ
   của LaTeX.
 - `Rplots.pdf`: file plot phụ nếu R sinh hình ngoài thiết bị của `knitr`.
-
