@@ -1734,24 +1734,20 @@ chí lựa chọn mô hình vì chỉ số này dành trọng số ngang nhau ch
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Lựa chọn mô hình bằng kiểm định chéo}\par\smallskip
 
 Trong nghiên cứu này, mỗi phương án là một cấu hình của mô hình hồi
-quy logistic, được xác định bởi ba lựa chọn: dạng phạt L1 hoặc L2; hệ số
-$C \in \{0{,}001; 0{,}01; 0{,}1; 1; 10; 100\}$ kiểm soát mức điều chuẩn; và
+quy logistic, được xác định bởi ba lựa chọn: dạng phạt L1 (Lasso) hoặc L2 (Ridge); hệ số
+$C \in \{0{,}001; 0{,}01; 0{,}1; 1; 10; 100\}$ kiểm soát mức điều chuẩn (regularization); và
 số láng giềng của SMOTE $k \in \{3; 5; 7\}$. Sự kết hợp của các giá trị này
 tạo thành 36 cấu hình. Các cấu hình sử dụng cùng tập biến và các bước tiền xử
 lý, chỉ khác nhau ở ba lựa chọn trên.
 
-Ba mươi sáu cấu hình được đánh giá trên tập huấn luyện bằng kiểm định chéo
-phân tầng 5 fold. Ở mỗi lượt, mô hình được huấn luyện trên bốn fold và đánh
-giá trên fold còn lại. Việc phân tầng giúp tỷ lệ hai lớp giữa các fold ít
-biến động. Đồng thời, mọi bước tiền xử lý được thực hiện độc lập trong từng
-lượt để dữ liệu xác thực không tham gia vào quá trình huấn luyện.
+Những cấu hình trên được đánh giá trên tập huấn luyện bằng kiểm định chéo
+phân tầng 5 fold (5-fold stratified cross-validation). Ở mỗi lượt, mô hình được huấn luyện 
+trên bốn fold và đánh giá trên fold còn lại. Hiệu năng của mỗi phương án được tổng hợp 
+thông qua Macro F1 trung bình trên năm fold. Phương án đạt giá trị Macro F1 trung bình 
+cao nhất được lựa chọn và huấn luyện lại trên toàn bộ tập huấn luyện để thu được mô hình cuối cùng.
 
-Hiệu năng của mỗi cấu hình được tổng hợp bằng Macro F1 trung bình trên năm
-fold tại ngưỡng phân loại mặc định 0,5. Cấu hình đạt kết quả cao nhất sử dụng
-phạt L2, $C=1$ và SMOTE với $k=3$, cho Macro F1 trung bình bằng 0,6279. Cấu
-hình này được huấn luyện lại trên toàn bộ tập huấn luyện để tạo mô hình nền.
-Ngưỡng phân loại sau đó được khảo sát riêng ở phần tiếp theo nhằm cân bằng
-khả năng nhận diện lớp có bệnh và lớp không bệnh.
+Ở bảng dưới đây, cấu hình đạt kết quả cao nhất sử dụng
+phạt L2, $C=1$ và SMOTE với $k=3$, cho Macro F1 trung bình bằng 0,6279.
 
 <<ref-grid-table-data, echo=FALSE>>=
 grid_params <- lapply(grid_raw$params, jsonlite::fromJSON)
@@ -1783,17 +1779,17 @@ cần được ưu tiên kiểm soát vì có thể khiến một ca bệnh khô
 thời; trong khi cảnh báo nhầm vẫn có thể được kiểm tra lại bằng các bước xác
 nhận tiếp theo. Accuracy không thể hiện riêng loại sai sót này.
 
-Recall lớp có bệnh không được tối đa hóa một cách độc lập. Nếu hạ ngưỡng quá
-thấp, mô hình có thể báo bệnh cho gần như mọi quan sát và mất khả năng nhận
+Nếu hạ ngưỡng quá thấp, mô hình có thể báo bệnh cho gần như mọi quan sát và mất khả năng nhận
 diện người không bệnh. Vì vậy, recall lớp không bệnh được theo dõi song song;
 ngưỡng cao nhất còn đáp ứng recall mục tiêu được chọn để vừa giảm bỏ sót, vừa
 hạn chế số cảnh báo nhầm tăng thêm.
 
-Sau khi chọn mô hình, xác suất out-of-fold của tập huấn luyện được tạo
-bằng cùng kiểm định chéo 5 fold. Ngưỡng không được dò trên tập kiểm tra. Với
-mục tiêu phát hiện ít nhất 70\% ca bệnh trên dự đoán out-of-fold, quy tắc lựa
-chọn lấy ngưỡng cao nhất vẫn thỏa điều kiện recall. Cách làm này ưu tiên độ
-nhạy nhưng tránh hạ ngưỡng sâu hơn mức cần thiết.
+Sau khi xác định mô hình phù hợp, ngưỡng phân loại được lựa chọn dựa trên xác suất dự đoán
+out-of-fold của tập huấn luyện, thu được từ cùng quy trình kiểm định chéo phân tầng 5 fold.
+Do mục tiêu của bài toán là ưu tiên phát hiện các trường hợp mắc bệnh, ngưỡng phân loại
+được xác định sao cho \textbf{Recall của lớp bệnh đạt tối thiểu 70\%} nhằm duy trì khả năng phát hiện
+bệnh cần thiết, đồng thời không làm gia tăng quá mức số trường hợp không mắc bệnh bị cảnh báo nhầm.
+
 
 <<ref-threshold-table-data, echo=FALSE>>=
 threshold_tbl <- data.frame(
