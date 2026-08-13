@@ -1,8 +1,7 @@
-# Hướng Dẫn Chạy Lại Báo Cáo
+# Hướng Dẫn Triển Khai Bài Tiểu Luận
 
 Thư mục này chứa bản nộp cuối cùng của tiểu luận. Toàn bộ pipeline mô hình trong
-`tieu_luan.Rnw` và `tieu_luan_code.R` được thực hiện hoàn toàn bằng R, không
-gọi script tham chiếu bên ngoài.
+`tieu_luan.Rnw` và `tieu_luan_code.R` được thực hiện hoàn toàn bằng R.
 
 ## Danh Sách Tệp
 
