@@ -1638,13 +1638,16 @@ knitr::opts_chunk$set(eval = TRUE)
 
 \Needspace{4\baselineskip}\noindent\textbf{Tập biến sử dụng}\par\smallskip
 
-Sau bước phân tích khám phá, mô hình sử dụng bảy biến: \texttt{Age},
-\texttt{Total\_Bilirubin}, \texttt{Alkaline\_Phosphotase},
-\texttt{Alamine\_Aminotransferase}, \texttt{Aspartate\_Aminotransferase},
-\texttt{Albumin} và \texttt{Albumin\_and\_Globulin\_Ratio}. Năm biến có
-phân phối lệch phải được biến đổi $\log(1+x)$. Ba biến
-\texttt{Direct\_Bilirubin}, \texttt{Gender} và \texttt{Total\_Protiens}
-được loại theo kết quả lựa chọn đặc trưng đã trình bày ở phần trước.
+Trên cơ sở kết quả phân tích khám phá và lựa chọn đặc trưng, bảy biến được
+đưa vào mô hình, gồm \texttt{Age}, \texttt{Total\_Bilirubin},
+\texttt{Alkaline\_Phosphotase}, \texttt{Alamine\_Aminotransferase},
+\texttt{Aspartate\_Aminotransferase}, \texttt{Albumin} và
+\texttt{Albumin\_and\_Globulin\_Ratio}. Trong số này, bốn biến có phân phối
+lệch phải được sử dụng sau phép biến đổi $\log(1+x)$ nhằm hạn chế ảnh hưởng
+của các giá trị quá lớn. Biến \texttt{Direct\_Bilirubin} được loại do đa
+cộng tuyến mạnh với \texttt{Total\_Bilirubin}; hai biến \texttt{Gender} và
+\texttt{Total\_Protiens} không đạt ý nghĩa thống kê sau hiệu chỉnh FDR nên
+không được đưa vào mô hình.
 
 <<ref-load, include=FALSE>>=
 find_first_file <- function(paths, label) {
@@ -1700,42 +1703,55 @@ m_final <- unlist(final_metrics[1, metric_order], use.names = TRUE)
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Chia dữ liệu và phòng ngừa rò rỉ}\par\smallskip
 \label{sec:pipeline}
 
-Dữ liệu được chia phân tầng theo tỷ lệ 80:20, gồm 466 quan sát huấn luyện và
-117 quan sát kiểm tra; lớp có bệnh lần lượt có 333 và 83 quan sát. Tập kiểm
-tra được giữ nguyên cho đến bước đánh giá cuối cùng.
+Toàn bộ dữ liệu được chia phân tầng theo tỷ lệ 80:20 để tỷ lệ hai lớp trong
+mỗi tập gần với tỷ lệ của dữ liệu ban đầu. Tập huấn luyện gồm 466 quan sát,
+trong đó có 333 trường hợp
+mắc bệnh; tập kiểm tra gồm 117 quan sát, với 83 trường hợp mắc bệnh. Tập kiểm
+tra chỉ được sử dụng sau khi quá trình lựa chọn mô hình và ngưỡng phân loại
+đã hoàn tất.
 
-Trong mỗi fold huấn luyện, quy trình lần lượt điền giá trị thiếu bằng trung
-vị, chuẩn hóa biến, cân bằng lớp bằng SMOTE và khớp hồi quy logistic. Mọi
-tham số tiền xử lý chỉ được ước lượng từ phần huấn luyện của fold tương ứng.
-SMOTE cũng chỉ được áp dụng sau khi chia fold, do đó mẫu tổng hợp không chứa
-thông tin từ phần xác thực hoặc tập kiểm tra.
+Để tránh rò rỉ dữ liệu, các bước điền khuyết, chuẩn hóa và cân bằng lớp đều
+được thực hiện trong phạm vi dữ liệu huấn luyện của từng fold. Trung vị và
+các tham số chuẩn hóa vì thế không mang thông tin từ phần xác thực. Tương tự,
+SMOTE chỉ tạo mẫu từ phần huấn luyện trước khi mô hình được ước lượng,
+nhờ đó kết quả đánh giá phản ánh đúng khả năng dự đoán trên dữ liệu chưa xuất
+hiện trong quá trình học.
 
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Mô hình và chỉ số đánh giá}\par\smallskip
 
-Mô hình được sử dụng là hồi quy logistic có điều chuẩn, kết hợp với SMOTE để
-giảm ảnh hưởng của chênh lệch số lượng giữa hai lớp. Đây là mô hình tương đối
-gọn, cho phép ước lượng xác suất mắc bệnh và thuận tiện cho việc điều chỉnh
-ngưỡng phân loại theo mục tiêu phát hiện ca bệnh.
+Hồi quy logistic được lựa chọn vì phù hợp với bài toán phân
+loại nhị phân và cho phép ước lượng trực tiếp xác suất mắc bệnh. Đặc điểm này
+cũng tạo cơ sở cho việc điều chỉnh ngưỡng phân loại theo mục tiêu sàng lọc ở
+phần tiếp theo. SMOTE được kết hợp trong quá trình huấn luyện để hạn chế ảnh
+hưởng của sự chênh lệch số lượng giữa hai lớp.
 
-Do lớp có bệnh chiếm đa số, Accuracy không đủ để mô tả riêng khả năng nhận
-diện từng lớp. Báo cáo vì vậy sử dụng recall và precision cho cả lớp có bệnh
-(lớp 1) lẫn lớp không bệnh (lớp 0), đồng thời dùng Macro F1 làm tiêu chí lựa
-chọn mô hình. Macro F1 cho hai lớp trọng số ngang nhau nên hạn chế việc một
-lớp đông hơn chi phối hoàn toàn kết quả.
+Vì lớp có bệnh chiếm đa số, Accuracy có thể che khuất khả năng nhận diện của
+từng nhóm. Do đó, kết quả được xem xét thông qua recall và precision của cả
+lớp có bệnh (lớp 1) và lớp không bệnh (lớp 0). Macro F1 được dùng làm tiêu
+chí lựa chọn mô hình vì chỉ số này dành trọng số ngang nhau cho hai lớp, qua
+đó đưa ra đánh giá cân bằng hơn về chất lượng phân loại tổng thể.
 
 \Needspace{4\baselineskip}\medskip\noindent\textbf{Lựa chọn mô hình bằng kiểm định chéo}\par\smallskip
 
-Mô hình được lựa chọn hoàn toàn từ tập huấn luyện bằng kiểm định chéo phân
-tầng 5 fold. Ở mỗi lượt, bốn fold được dùng để huấn luyện và fold còn lại
-được dùng để đánh giá. Toàn bộ các bước điền khuyết, chuẩn hóa và SMOTE đều
-được thực hiện lại bên trong từng lượt, nhờ đó phần xác thực không tham gia
-vào quá trình học mô hình.
+Trong nghiên cứu này, mỗi phương án là một cấu hình của mô hình hồi
+quy logistic, được xác định bởi ba lựa chọn: dạng phạt L1 hoặc L2; hệ số
+$C \in \{0{,}001; 0{,}01; 0{,}1; 1; 10; 100\}$ kiểm soát mức điều chuẩn; và
+số láng giềng của SMOTE $k \in \{3; 5; 7\}$. Sự kết hợp của các giá trị này
+tạo thành 36 cấu hình. Các cấu hình sử dụng cùng tập biến và các bước tiền xử
+lý, chỉ khác nhau ở ba lựa chọn trên.
 
-Macro F1 trung bình được dùng làm tiêu chí lựa chọn vì phản ánh đồng thời
-khả năng nhận diện lớp có bệnh và lớp không bệnh. Phương án đạt kết quả tốt
-nhất trên năm fold sau đó được huấn luyện lại bằng toàn bộ tập huấn luyện.
-Tập kiểm tra vẫn được giữ riêng, nên kết quả cuối không bị tác động bởi quá
-trình lựa chọn mô hình.
+Ba mươi sáu cấu hình được đánh giá trên tập huấn luyện bằng kiểm định chéo
+phân tầng 5 fold. Ở mỗi lượt, mô hình được huấn luyện trên bốn fold và đánh
+giá trên fold còn lại. Việc phân tầng giúp tỷ lệ hai lớp giữa các fold ít
+biến động. Đồng thời, mọi bước tiền xử lý được thực hiện độc lập trong từng
+lượt để dữ liệu xác thực không tham gia vào quá trình huấn luyện.
+
+Hiệu năng của mỗi cấu hình được tổng hợp bằng Macro F1 trung bình trên năm
+fold tại ngưỡng phân loại mặc định 0,5. Cấu hình đạt kết quả cao nhất sử dụng
+phạt L2, $C=1$ và SMOTE với $k=3$, cho Macro F1 trung bình bằng 0,6279. Cấu
+hình này được huấn luyện lại trên toàn bộ tập huấn luyện để tạo mô hình nền.
+Ngưỡng phân loại sau đó được khảo sát riêng ở phần tiếp theo nhằm cân bằng
+khả năng nhận diện lớp có bệnh và lớp không bệnh.
 
 <<ref-grid-table-data, echo=FALSE>>=
 grid_params <- lapply(grid_raw$params, jsonlite::fromJSON)
@@ -1750,7 +1766,7 @@ grid_tbl <- data.frame(
 )
 @
 
-<<ref-grid-table, include=FALSE>>=
+<<ref-grid-table, echo=FALSE, results='asis'>>=
 kbl_tab(grid_tbl,
        "Năm cấu hình có Macro F1 cao nhất trong kiểm định chéo 5 fold",
        "ref-grid-top5",
